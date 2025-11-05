@@ -12,7 +12,9 @@
   "dependencies": {
     "@fluentui/react-components": "^9.72.4",
     "react": "19",
-    "react-dom": "19"
+    "react-dom": "19",
+    "react-router": "^7.9.5",
+    "react-router-dom": "^7.9.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

@@ -1,9 +1,10 @@
-function App() {
+import { BrowserRouter } from "react-router";
+import AppRoutes from "./routes/routes";
+
+export default function App() {
   return (
-    <>
-      <h1>Flowboard Test</h1>
-    </>
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   );
 }
-
-export default App
