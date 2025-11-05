@@ -1,6 +1,5 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { FluentProvider, webDarkTheme, webLightTheme } from '@fluentui/react-components';
+import { FluentProvider, webLightTheme } from '@fluentui/react-components';
 import App from './App.tsx'
 
 

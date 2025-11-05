@@ -1,6 +1,6 @@
 import { Button, makeStyles, tokens, Card, typographyStyles, TabList, Tab } from '@fluentui/react-components';
 import { Home24Regular, Sparkle24Regular, People24Regular, Mail24Regular } from '@fluentui/react-icons';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo.webp';
 
 const useStyles = makeStyles({
@@ -54,7 +54,6 @@ const useStyles = makeStyles({
 
 export default function PublicHeader() {
     const styles = useStyles();
-    const location = useLocation();
     const navigate = useNavigate();
     const pathname = location.pathname;
 
@@ -106,7 +105,7 @@ export default function PublicHeader() {
 
 
                 <div className={styles.right}>
-                    <Button appearance="primary">Log In</Button>
+                    <Button appearance="primary" onClick={() => navigate("/login")}>Log In</Button>
                 </div>
             </header>
         </Card>

@@ -1,6 +1,7 @@
 import { Button, makeStyles, tokens, Text, Card } from '@fluentui/react-components';
 import { typographyStyles } from '@fluentui/react-components';
-import kanban from '../assets/kanban.png';
+import kanban from '../../assets/kanban.webp';
+import { useNavigate } from 'react-router';
 
 const useStyles = makeStyles({
     root: {
@@ -61,8 +62,10 @@ const useStyles = makeStyles({
     },
 });
 
+
 export default function HomeHero() {
     const styles = useStyles();
+    const navigate = useNavigate();
 
     return (
         <Card className={styles.root}>
@@ -72,9 +75,9 @@ export default function HomeHero() {
                 <h1 className={styles.title}>Flow of the Board</h1>
 
                 <div className={styles.actions}>
-                    <Button appearance="primary">Sign Up</Button>
+                    <Button appearance="primary" onClick={() => navigate('/register')}>Sign Up</Button>
                 </div>
             </div>
-        </Card>
+        </Card >
     );
 }
