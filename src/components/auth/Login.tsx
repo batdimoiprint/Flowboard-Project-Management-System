@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { useAxios } from '../../hooks/useAxios';
 import { useLoginForm } from '../styles/Styles';
-import { useUser } from '../../context/userContext';
+import { useUser } from '../../hooks/useUser';
 import type { User } from '../../context/userContext';
 
 

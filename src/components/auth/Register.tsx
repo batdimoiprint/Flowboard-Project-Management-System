@@ -81,9 +81,10 @@ export default function Register() {
             if (result) {
                 navigate('/login');
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             // Additional catch for any unexpected errors
-            setFormError(err?.message || 'An unexpected error occurred');
+            const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+            setFormError(errorMessage);
         }
     };
 

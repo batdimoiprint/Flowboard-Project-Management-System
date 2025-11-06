@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
 export interface User {
@@ -23,13 +23,10 @@ interface UserContextType {
 
 const USER_STORAGE_KEY = 'flowboard_user';
 
-export const UserContext = createContext<UserContextType | undefined>(undefined);
+const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export function useUser() {
-    const ctx = useContext(UserContext);
-    if (!ctx) throw new Error("useUser must be used within UserContext.Provider");
-    return ctx;
-}
+// eslint-disable-next-line react-refresh/only-export-components
+export { UserContext };
 
 interface UserProviderProps {
     children: ReactNode;

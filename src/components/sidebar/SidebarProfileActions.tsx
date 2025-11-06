@@ -2,7 +2,7 @@ import { Person20Filled } from "@fluentui/react-icons";
 import { useSidebarProfileActionsStyles } from "../styles/Styles";
 import { Button, Persona, NavItem } from "@fluentui/react-components";
 import ThemeToggle from "../styles/ThemeToggle";
-import { useUser } from "../../context/userContext";
+import { useUser } from "../../hooks/useUser";
 import { useNavigate } from "react-router";
 
 export default function SidebarProfileActions() {

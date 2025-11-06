@@ -11,7 +11,7 @@ import {
     Delete24Regular, Dismiss24Regular
 } from '@fluentui/react-icons';
 import { useEffect, useRef, useState } from 'react';
-import { useUser } from '../../context/userContext';
+import { useUser } from '../../hooks/useUser';
 
 
 export interface TaskDialogProps {

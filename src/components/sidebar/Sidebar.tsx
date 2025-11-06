@@ -24,8 +24,8 @@ export default function Sidebar() {
     // Allow multiple categories open (adjust if single-open behavior is desired)
     const isMultiple = true;
 
-    function handleCategoryToggle(_: Event | React.SyntheticEvent, data: any) {
-        const category = data.categoryValue as string | undefined;
+    function handleCategoryToggle(_: Event | React.SyntheticEvent, data: { categoryValue?: string }) {
+        const category = data.categoryValue;
         if (!category) return;
 
         if (isMultiple) {

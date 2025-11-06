@@ -1,6 +1,6 @@
 import { ToggleButton } from "@fluentui/react-components";
 import { WeatherMoon20Filled, WeatherSunny20Filled } from "@fluentui/react-icons";
-import { useTheme } from "../../App";
+import { useTheme } from "../../context/themeContext";
 
 export default function ThemeToggle({ className }: { className?: string }) {
     const { darkMode, setDarkMode } = useTheme();

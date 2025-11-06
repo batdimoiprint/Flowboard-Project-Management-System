@@ -2,21 +2,9 @@
 import { FluentProvider, webDarkTheme, webLightTheme } from '@fluentui/react-components';
 import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/routes";
-import { createContext, useContext, useState } from "react";
+import { useState } from "react";
 import { UserProvider } from "./context/userContext";
-
-type ThemeContextType = {
-  darkMode: boolean;
-  setDarkMode: (checked: boolean) => void;
-};
-
-export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-export function useTheme() {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error("useTheme must be used within ThemeContext.Provider");
-  return ctx;
-}
+import { ThemeContext } from "./context/themeContext";
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(false);

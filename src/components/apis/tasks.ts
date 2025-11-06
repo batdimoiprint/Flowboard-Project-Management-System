@@ -91,7 +91,16 @@ export const tasksApi = {
     },
 
     patchTask: async (taskId: string, updates: Partial<CreateTaskData>): Promise<TaskResponse> => {
-        const payload: any = {};
+        const payload: Partial<{
+            title: string;
+            description: string;
+            priority: string;
+            status: string;
+            category: string;
+            startDate: string;
+            endDate: string;
+            assignedTo: string;
+        }> = {};
 
         // Only include fields that are provided
         if (updates.title !== undefined) payload.title = updates.title;

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import type { AxiosRequestConfig } from 'axios';
 
 const axiosInstance = axios.create({
@@ -13,6 +13,7 @@ interface UseAxiosResult<T> {
     fetchData: (url: string, config?: AxiosRequestConfig) => Promise<T | null>;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useAxios<T = any>(): UseAxiosResult<T> {
     const [data, setData] = useState<T | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -29,8 +30,14 @@ export function useAxios<T = any>(): UseAxiosResult<T> {
             });
             setData(response.data);
             return response.data;
-        } catch (err: any) {
-            setError(err.response?.data?.message || err.message || 'Unknown error');
+        } catch (err: unknown) {
+            if (err instanceof AxiosError) {
+                setError(err.response?.data?.message || err.message || 'Unknown error');
+            } else if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError('Unknown error');
+            }
             return null;
         } finally {
             setLoading(false);

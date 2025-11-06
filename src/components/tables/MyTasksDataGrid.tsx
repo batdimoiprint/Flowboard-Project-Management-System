@@ -17,7 +17,7 @@ import TaskDialog from '../dialogs/TaskDialog';
 import type { Task } from '../../types/MyTasksTypes';
 import { TaskListSquarePerson24Regular } from "@fluentui/react-icons";
 import { tasksApi } from '../apis/tasks';
-import { useUser } from '../../context/userContext';
+import { useUser } from '../../hooks/useUser';
 
 // Utility function to format date to yyyy-MM-dd for HTML date inputs
 const formatDateForInput = (dateString: string): string => {
@@ -121,7 +121,7 @@ function MyTasksDataGrid() {
                 console.log('Task _id:', task._id);
 
                 // Handle both _id and id from API
-                const taskId = task._id || (task as any).id;
+                const taskId = task._id || (task as { id?: string }).id || '';
                 console.log('Using taskId:', taskId);
 
                 return {
@@ -190,8 +190,17 @@ function MyTasksDataGrid() {
         console.log(`Updating field: ${fieldName} with value: ${value} for task: ${editingTaskId}`);
 
         try {
-            const updates: any = {};
-            updates[fieldName] = value;
+            const updates: Partial<{
+                title: string;
+                description: string;
+                priority: string;
+                status: string;
+                category: string;
+                startDate: string;
+                endDate: string;
+                assignedTo: string;
+            }> = {};
+            updates[fieldName as keyof typeof updates] = value;
 
             // Call PATCH API to update just this field
             console.log('Sending PATCH request with:', updates);
@@ -202,9 +211,12 @@ function MyTasksDataGrid() {
             await fetchTasks();
 
             console.log('Tasks refreshed after PATCH');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to update task field:', error);
-            setSubmitError(error.response?.data?.message || error.message || 'Failed to update task');
+            const errorMessage = error instanceof Error && 'response' in error
+                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || error.message || 'Failed to update task'
+                : 'Failed to update task';
+            setSubmitError(errorMessage);
         }
     }
 
@@ -271,8 +283,11 @@ function MyTasksDataGrid() {
                 comments: '',
             });
             setDialogMode('add');
-        } catch (error: any) {
-            setSubmitError(error.response?.data?.message || error.message || 'Failed to create task');
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error && 'response' in error
+                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || error.message || 'Failed to create task'
+                : 'Failed to create task';
+            setSubmitError(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
@@ -322,9 +337,12 @@ function MyTasksDataGrid() {
             });
 
             console.log('Tasks refreshed after delete');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Delete error:', error);
-            setSubmitError(error.response?.data?.message || error.message || 'Failed to delete task');
+            const errorMessage = error instanceof Error && 'response' in error
+                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || error.message || 'Failed to delete task'
+                : 'Failed to delete task';
+            setSubmitError(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
