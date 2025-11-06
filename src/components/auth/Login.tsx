@@ -1,46 +1,12 @@
 
-import { Button, Input, Label, makeStyles, tokens, Card, Text } from '@fluentui/react-components';
-import { typographyStyles } from '@fluentui/react-components';
+import { Button, Input, Label, tokens, Card, Text } from '@fluentui/react-components';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import {useLoginForm} from '../styles/Styles'
 
-const useStyles = makeStyles({
-    root: {
-        height: '100vh',
-        maxWidth: '360px',
-        maxHeight: '857px',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: tokens.spacingHorizontalXXL,
-
-
-    },
-    title: {
-        ...typographyStyles.title2,
-        textAlign: 'left',
-        marginBottom: tokens.spacingVerticalL,
-    },
-
-    field: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: tokens.spacingVerticalXS,
-    },
-    form: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: tokens.spacingVerticalXXXL,
-    },
-    actions: {
-        marginTop: tokens.spacingVerticalL,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: tokens.spacingVerticalS,
-    },
-});
 
 export default function Login() {
-    const styles = useStyles();
+    const styles = useLoginForm();
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -52,7 +18,8 @@ export default function Login() {
         if (!email || !password) {
             setError('Please enter both email and password.');
             return;
-        }
+        } 
+        navigate("/home");
         // TODO: Implement authentication logic
     };
 

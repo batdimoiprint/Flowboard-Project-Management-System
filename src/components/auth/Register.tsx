@@ -1,59 +1,13 @@
 
-import { Button, Input, Label, makeStyles, tokens, Card, Text } from '@fluentui/react-components';
-import { typographyStyles } from '@fluentui/react-components';
+import { Button, Input, Label, tokens, Card, Text } from '@fluentui/react-components';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import {useRegisterFormStyles } from '../styles/Styles'
 
-const useStyles = makeStyles({
-    root: {
-        height: '100vh',
-        maxWidth: '400px',
-        maxHeight: '1000px',
-        display: 'flex',
-        flexDirection: 'column',
-        margin: '0 auto',
-        padding: tokens.spacingHorizontalXXL,
-
-
-    },
-    title: {
-        ...typographyStyles.title2,
-        textAlign: 'left',
-        marginBottom: tokens.spacingVerticalL,
-    },
-    field: {
-        display: 'flex',
-        flexDirection: 'column',
-
-    },
-    form: {
-        display: 'flex',
-        flexDirection: 'column',
-
-    },
-    section: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: tokens.spacingVerticalL,
-        marginBottom: tokens.spacingVerticalXXL,
-        padding: `${tokens.spacingVerticalL} 0`,
-    },
-    sectionTitle: {
-        ...typographyStyles.subtitle1,
-        color: tokens.colorNeutralForeground2,
-        marginBottom: tokens.spacingVerticalM,
-    },
-    actions: {
-        marginTop: tokens.spacingVerticalL,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: tokens.spacingVerticalS,
-    },
-});
 
 export default function Register() {
 
-    const styles = useStyles();
+    const styles = useRegisterFormStyles();
     const navigate = useNavigate();
     const [userName, setUserName] = useState('');
     const [lastName, setLastName] = useState('');
