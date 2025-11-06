@@ -17,6 +17,7 @@ import TaskDialog from '../dialogs/TaskDialog';
 import type { Task } from '../../types/MyTasksTypes';
 import { TaskListSquarePerson24Regular } from "@fluentui/react-icons";
 import { tasksApi } from '../apis/tasks';
+import type { TaskResponse } from '../apis/tasks';
 import { useUser } from '../../hooks/useUser';
 
 // Utility function to format date to yyyy-MM-dd for HTML date inputs
@@ -111,17 +112,34 @@ function MyTasksDataGrid() {
     async function fetchTasks() {
         try {
             setLoading(true);
-            const fetchedTasks = await tasksApi.getTasks();
-            console.log('Fetched tasks from API:', fetchedTasks);
-            console.log('First task sample:', fetchedTasks[0]);
+            const fetched = await tasksApi.getTasks();
+            console.log('Fetched tasks raw response from API:', fetched);
+
+            // Normalize different possible response shapes
+            // common shapes: Task[] | { data: Task[] } | { tasks: Task[] }
+            let fetchedTasksArray: unknown[] = [];
+            if (Array.isArray(fetched)) {
+                fetchedTasksArray = fetched;
+            } else if (fetched && typeof fetched === 'object' && 'data' in fetched && Array.isArray((fetched as Record<string, unknown>).data)) {
+                fetchedTasksArray = (fetched as { data: unknown[] }).data;
+            } else if (fetched && typeof fetched === 'object' && 'tasks' in fetched && Array.isArray((fetched as Record<string, unknown>).tasks)) {
+                fetchedTasksArray = (fetched as { tasks: unknown[] }).tasks;
+            } else {
+                // Unexpected shape — avoid crashing and surface the error in console
+                console.error('Unexpected tasks response shape, expected an array. Response:', fetched);
+                setTasks([]);
+                return;
+            }
+
+            console.log('Normalized tasks array sample:', fetchedTasksArray[0]);
 
             // Transform API response to match local Task type
-            const transformedTasks: Task[] = fetchedTasks.map(task => {
+            const transformedTasks: Task[] = (fetchedTasksArray as TaskResponse[]).map((task: TaskResponse) => {
                 console.log('Transforming task:', task);
                 console.log('Task _id:', task._id);
 
                 // Handle both _id and id from API
-                const taskId = task._id || (task as { id?: string }).id || '';
+                const taskId = task._id || (task as { id?: string })?.id || '';
                 console.log('Using taskId:', taskId);
 
                 return {

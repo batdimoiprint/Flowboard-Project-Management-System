@@ -25,7 +25,6 @@ const USER_STORAGE_KEY = 'flowboard_user';
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-// eslint-disable-next-line react-refresh/only-export-components
 export { UserContext };
 
 interface UserProviderProps {
