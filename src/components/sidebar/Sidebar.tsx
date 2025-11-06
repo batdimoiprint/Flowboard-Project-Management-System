@@ -1,83 +1,78 @@
-import * as React from "react";
 import {
-    AppItem,
-    Hamburger,
-    NavCategory,
-    NavCategoryItem,
-    NavDivider,
+    Card,
     NavDrawer,
     NavDrawerBody,
     NavDrawerHeader,
     NavItem,
-    NavSectionHeader,
-    tokens,
     Text,
-    Button,
+    tokens,
 } from "@fluentui/react-components";
+import { TaskListSquarePerson20Regular } from "@fluentui/react-icons";
+import { useState } from "react";
+import logo from '../../assets/logo.webp';
 import SidebarProfileActions from "./SidebarProfileActions";
-import {
-    Board20Filled,
-    Board20Regular,
-    MegaphoneLoud20Filled,
-    MegaphoneLoud20Regular,
-    NotePin20Filled,
-    NotePin20Regular,
-    PersonCircle32Regular,
-    bundleIcon,
-} from "@fluentui/react-icons";
+import { useSidebarStyles } from '../styles/Styles';
 
-const Dashboard = bundleIcon(Board20Filled, Board20Regular);
-const Announcements = bundleIcon(MegaphoneLoud20Filled, MegaphoneLoud20Regular);
-const JobPostings = bundleIcon(NotePin20Filled, NotePin20Regular);
+import ProjectList from './ProjectList';
+import NotificationList from "./NotificationList";
 
 export default function Sidebar() {
-    const [isOpen, setIsOpen] = React.useState(true);
-    const [notifications, setNotifications] = React.useState<string[]>([]);
-    const [darkMode, setDarkMode] = React.useState(false);
 
-    function readAllNotifications() {
-        setNotifications([]);
+    const [openCategories, setOpenCategories] = useState<string[]>(['projects']);
+    const styles = useSidebarStyles();
+
+    // Allow multiple categories open (adjust if single-open behavior is desired)
+    const isMultiple = true;
+
+    function handleCategoryToggle(_: Event | React.SyntheticEvent, data: any) {
+        const category = data.categoryValue as string | undefined;
+        if (!category) return;
+
+        if (isMultiple) {
+            if (openCategories.includes(category)) {
+                setOpenCategories(openCategories.filter((c) => c !== category));
+            } else {
+                setOpenCategories([...openCategories, category]);
+            }
+        } else {
+            if (openCategories.includes(category)) setOpenCategories([]);
+            else setOpenCategories([category]);
+        }
     }
 
     return (
-        <div style={{ height: "100vh", minWidth: 260, background: tokens.colorNeutralBackground2, borderRight: `1px solid ${tokens.colorNeutralStroke2}` }}>
-            <NavDrawer open={isOpen} type="inline" className="sidebar-nav" style={{ minHeight: "100vh" }}>
-                <NavDrawerHeader>
-                    <div style={{ display: "flex", alignItems: "center", gap: tokens.spacingHorizontalS, padding: tokens.spacingHorizontalL }}>
-                        <PersonCircle32Regular />
-                        <Text weight="semibold" size={400}>FlowBoard</Text>
-                        <Hamburger onClick={() => setIsOpen(!isOpen)} />
-                    </div>
+        <Card className={styles.root}>
+            <NavDrawer
+                type="inline"
+                open={true}
+                multiple={isMultiple}
+                onNavCategoryItemToggle={handleCategoryToggle}
+                openCategories={openCategories}
+                className={styles.drawer}
+                style={{
+                    backgroundColor: tokens.colorNeutralBackground1
+                }}
+            >
+                <NavDrawerHeader className={styles.headerContainer}>
+                    <img src={logo} alt="FlowBoard" style={{ width: '48px', height: '48px' }} />
+                    <Text weight="semibold" size={700}>FlowBoard</Text>
                 </NavDrawerHeader>
-                <NavDrawerBody>
-                    <AppItem icon={<Dashboard />} as="a" href="#">My Tasks</AppItem>
-                    <NavSectionHeader>Projects</NavSectionHeader>
-                    <NavCategory value="projects">
-                        <NavCategoryItem icon={<JobPostings />}>Projects List</NavCategoryItem>
-   
-                    </NavCategory>
-                    <NavDivider />
-                    <NavSectionHeader>Notifications</NavSectionHeader>
-                    <NavCategory value="notifications">
-                        {notifications.length === 0 ? (
-                            <NavCategoryItem value="none">
-                                <Text as="span" style={{ color: tokens.colorNeutralForegroundDisabled }}>No notifications</Text>
-                            </NavCategoryItem>
-                        ) : (
-                            notifications.map((n, idx) => (
-                                <NavCategoryItem key={idx} value={`n-${idx}`} icon={<Announcements />}>
-                                    <NavItem as="button" value={`n-${idx}`}>{n}</NavItem>
-                                </NavCategoryItem>
-                            ))
-                        )}
-                    </NavCategory>
-                    <Button appearance="outline" size="small" onClick={readAllNotifications} style={{ marginTop: tokens.spacingVerticalXS, marginBottom: tokens.spacingVerticalM }}>
-                        Read All
-                    </Button>
-                    <NavDivider />
-                    <SidebarProfileActions darkMode={darkMode} setDarkMode={setDarkMode} />
+
+                <NavDrawerBody className={styles.body}>
+                    <div className={styles.bodyItems}>
+
+                        <NavItem as="button" value="myTasks" icon={<TaskListSquarePerson20Regular />}>
+                            My Tasks
+                        </NavItem>
+                        {/* Project List Section */}
+                        <ProjectList openCategories={openCategories} />
+
+                        <NotificationList openCategories={openCategories} />
+                    </div>
+
+                    <SidebarProfileActions />
                 </NavDrawerBody>
             </NavDrawer>
-        </div>
+        </Card>
     );
 }

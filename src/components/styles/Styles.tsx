@@ -1,5 +1,36 @@
+// MyTasksDataGrid Card styles
+export const useMyTasksCardStyles = makeStyles({
+	root: {
+		display: 'flex',
+		flexDirection: 'column',
+		width: '100%',
+		maxWidth: 'auto',
+		minHeight: '100%',
 
+		padding: tokens.spacingVerticalXXL,
+
+	},
+});
+// MyTasksDataGrid styles
+export const useMyTasksDataGridStyles = makeStyles({
+	root: {
+
+	},
+	headerRow: {
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+
+	},
+	title: {
+		margin: 0,
+	},
+});
 import { makeStyles, tokens, typographyStyles } from '@fluentui/react-components';
+
+
+
+
 
 // HomeHero styles
 export const useHomeHeroStyles = makeStyles({
@@ -8,8 +39,8 @@ export const useHomeHeroStyles = makeStyles({
 		display: 'flex',
 		alignItems: 'center',
 		justifyContent: 'center',
-		minHeight: tokens.spacingVerticalXXXL, // fallback for hero height
-		paddingTop: tokens.spacingVerticalXXXL,
+		minHeight: "91vh", // fallback for hero height
+		paddingTop: tokens.spacingVerticalNone,
 		paddingBottom: tokens.spacingVerticalXXXL,
 		paddingLeft: tokens.spacingHorizontalXXL,
 		paddingRight: tokens.spacingHorizontalXXL,
@@ -62,75 +93,79 @@ export const useHomeHeroStyles = makeStyles({
 
 // Sidebar styles
 export const useSidebarStyles = makeStyles({
-	// root: {
-	// 	width: '320px',
-	// 	display: 'flex',
-	// 	flexDirection: 'column',
-	// 	height: '98vh',
-	// },
-	// header: {
-	// 	display: 'flex',
-	// 	alignItems: 'center',
-	// 	gap: tokens.spacingHorizontalS,
-	// 	...typographyStyles.title3,
-	// },
-	// logo: {
-	// 	width: '40px',
-	// 	height: '40px',
-	// 	borderRadius: '6px',
-	// 	background: tokens.colorNeutralBackground3,
-	// 	display: 'flex',
-	// 	alignItems: 'center',
-	// 	justifyContent: 'center',
-	// },
-	// section: {
-	// 	display: 'flex',
-	// 	flexDirection: 'column',
-	// 	gap: tokens.spacingVerticalS,
-	// 	background: 'transparent',
-	// },
-	// list: {
-	// 	display: 'flex',
-	// 	flexDirection: 'column',
-	// 	gap: tokens.spacingVerticalXS,
-	// },
-	// listItem: {
-	// 	padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
-	// 	borderRadius: '4px',
-	// 	background: tokens.colorNeutralBackground1,
-	// 	color: tokens.colorNeutralForeground1,
-	// 	cursor: 'pointer',
-	// },
-	// activeItem: {
-	// 	background: tokens.colorNeutralBackground3,
-	// 	borderLeft: `4px solid ${tokens.colorBrandForeground1}`,
-	// },
-	// notifications: {
-	// 	display: 'flex',
-	// 	flexDirection: 'column',
-	// 	gap: tokens.spacingVerticalXS,
-	// 	maxHeight: '160px',
-	// 	overflow: 'auto',
-	// },
-	// profile: {
-	// 	display: 'flex',
-	// 	flexDirection: 'column',
-	// 	alignItems: 'center',
-	// 	gap: tokens.spacingVerticalS,
-	// 	paddingTop: tokens.spacingVerticalL,
-	// 	paddingBottom: tokens.spacingVerticalL,
-	// },
-	// profileName: {
-	// 	fontWeight: '600',
-	// },
-	// actions: {
-	// 	display: 'flex',
-	// 	flexDirection: 'column',
-	// 	gap: tokens.spacingVerticalS,
-	// },
-	// actionButton: {
-	// 	justifyContent: 'flex-start',
-	// }
+	root: {
+		display: "flex",
+		flexDirection: "column",
+		width: '100%',
+		maxWidth: "40dvh",
+		margin: tokens.spacingHorizontalL,
+		padding: tokens.spacingHorizontalL,
+
+	},
+	drawer: {
+		display: "flex",
+		flexDirection: "column",
+		width: 'auto',
+		height: '100%',
+		alignItems: "left",
+		justifyContent: "space-between",
+		gap: tokens.spacingVerticalS
+	},
+
+	body: {
+		display: "flex",
+		flexDirection: "column",
+		width: 'auto',
+		height: '100%',
+		alignItems: "left",
+		justifyContent: "space-between",
+		gap: tokens.spacingVerticalS
+	},
+	bodyItems: {
+		display: "flex",
+		flexDirection: "column",
+		height: 'auto',
+		alignItems: "left",
+		justifyContent: "space-between",
+		gap: tokens.spacingVerticalS
+
+	},
+	headerContainer: {
+		display: "flex",
+		flexDirection: "row",
+		width: "auto",
+		gap: tokens.spacingVerticalS,
+		padding: tokens.spacingHorizontalM,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+});
+
+// SidebarProfileActions styles
+export const useSidebarProfileActionsStyles = makeStyles({
+	root: {
+		display: "flex",
+		flexDirection: "column",
+		width: 'auto%',
+		height: 'auto',
+		alignItems: "center",
+		justifyContent: "space-between",
+		gap: tokens.spacingVerticalL,
+	},
+
+	actionsContainer: {
+		width: '100%',
+		display: 'flex',
+		flexDirection: 'column',
+		gap: tokens.spacingVerticalL,
+		alignItems: 'center',
+		justifyContent: 'center',
+
+	},
+
+	button: {
+		width: '100%',
+	},
 });
 
 // PublicHeader styles
@@ -179,87 +214,87 @@ export const usePublicHeaderStyles = makeStyles({
 
 // Login Styles
 export const useLoginForm = makeStyles({
-    root: {
-        height: '100vh',
-        maxWidth: '360px',
-        maxHeight: '857px',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: tokens.spacingHorizontalXXL,
+	root: {
+		height: '100%',
+		width: '100%',
+		display: 'flex',
+		flexDirection: 'column',
 
 
-    },
-    title: {
-        ...typographyStyles.title2,
-        textAlign: 'left',
-        marginBottom: tokens.spacingVerticalL,
-    },
 
-    field: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: tokens.spacingVerticalXS,
-    },
-    form: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: tokens.spacingVerticalXXXL,
-    },
-    actions: {
-        marginTop: tokens.spacingVerticalL,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: tokens.spacingVerticalS,
-    },
+	},
+	title: {
+		...typographyStyles.title2,
+		textAlign: 'left',
+
+	},
+
+	field: {
+		display: 'flex',
+		flexDirection: 'column',
+		gap: tokens.spacingVerticalXS,
+	},
+	form: {
+		display: 'flex',
+		flexDirection: 'column',
+		gap: tokens.spacingVerticalXXXL,
+	},
+	actions: {
+		display: 'flex',
+		flexDirection: 'column',
+		gap: tokens.spacingVerticalS,
+	},
 });
 
 
 // Register Styles
 
 export const useRegisterFormStyles = makeStyles({
-    root: {
-        height: '100vh',
-        maxWidth: '400px',
-        maxHeight: '1000px',
-        display: 'flex',
-        flexDirection: 'column',
-        margin: '0 auto',
-        padding: tokens.spacingHorizontalXXL,
+	root: {
+		height: '100vh',
+		maxWidth: '400px',
+		maxHeight: '1000px',
+		display: 'flex',
+		flexDirection: 'column',
+		margin: '0 auto',
+		padding: tokens.spacingHorizontalXXL,
 
 
-    },
-    title: {
-        ...typographyStyles.title2,
-        textAlign: 'left',
-        marginBottom: tokens.spacingVerticalL,
-    },
-    field: {
-        display: 'flex',
-        flexDirection: 'column',
+	},
+	title: {
+		...typographyStyles.title2,
+		textAlign: 'left',
+		marginBottom: tokens.spacingVerticalL,
+	},
+	field: {
+		display: 'flex',
+		flexDirection: 'column',
 
-    },
-    form: {
-        display: 'flex',
-        flexDirection: 'column',
+	},
+	form: {
+		display: 'flex',
+		flexDirection: 'column',
 
-    },
-    section: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: tokens.spacingVerticalL,
-        marginBottom: tokens.spacingVerticalXXL,
-        padding: `${tokens.spacingVerticalL} 0`,
-    },
-    sectionTitle: {
-        ...typographyStyles.subtitle1,
-        color: tokens.colorNeutralForeground2,
-        marginBottom: tokens.spacingVerticalM,
-    },
-    actions: {
-        marginTop: tokens.spacingVerticalL,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: tokens.spacingVerticalS,
-    },
+	},
+	section: {
+		display: 'flex',
+		flexDirection: 'column',
+		gap: tokens.spacingVerticalL,
+		marginBottom: tokens.spacingVerticalXXL,
+		padding: `${tokens.spacingVerticalL} 0`,
+	},
+	sectionTitle: {
+		...typographyStyles.subtitle1,
+		color: tokens.colorNeutralForeground2,
+		marginBottom: tokens.spacingVerticalM,
+	},
+	actions: {
+		marginTop: tokens.spacingVerticalL,
+		display: 'flex',
+		flexDirection: 'column',
+		gap: tokens.spacingVerticalS,
+	},
 });
+
+
 

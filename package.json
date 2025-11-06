@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@fluentui/react-components": "^9.72.4",
+    "axios": "^1.13.2",
     "react": "19",
     "react-dom": "19",
+    "react-hook-form": "^7.66.0",
     "react-router": "^7.9.5",
     "react-router-dom": "^7.9.5"
   },

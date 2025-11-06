@@ -1,42 +1,44 @@
-import { tokens, Persona, Button, ToggleButton } from "@fluentui/react-components";
-import {
-    Person20Filled,
-    WeatherMoon20Filled,
-    WeatherSunny20Filled,
-    SignOut20Filled,
-} from "@fluentui/react-icons";
+import { Person20Filled } from "@fluentui/react-icons";
+import { useSidebarProfileActionsStyles } from "../styles/Styles";
+import { Button, Persona, NavItem } from "@fluentui/react-components";
+import ThemeToggle from "../styles/ThemeToggle";
+import { useUser } from "../../context/userContext";
+import { useNavigate } from "react-router";
 
-type SidebarProfileActionsProps = {
-    darkMode: boolean;
-    setDarkMode: (checked: boolean) => void;
-};
+export default function SidebarProfileActions() {
+    const styles = useSidebarProfileActionsStyles();
+    const { user, logout } = useUser();
+    const navigate = useNavigate();
 
-export default function SidebarProfileActions({ darkMode, setDarkMode }: SidebarProfileActionsProps) {
+    const handleSignOut = () => {
+        logout();
+        navigate('/login');
+    };
+
+    // Format user's full name
+    const fullName = user
+        ? `${user.firstName} ${user.middleName ? user.middleName + ' ' : ''}${user.lastName}`.trim()
+        : 'Guest User';
+
     return (
-        <div style={{ padding: `${tokens.spacingVerticalL} ${tokens.spacingHorizontalL}` }}>
-            <div style={{ textAlign: 'center', marginBottom: tokens.spacingVerticalL }}>
+        <div className={styles.root}>
+            <div >
                 <Persona
-                    name="John Kenny Reyes"
-                    secondaryText="Full Stack Vibe Coder"
+                    name={fullName}
+                    secondaryText={user?.email || 'Not logged in'}
                     presence={{ status: 'available' }}
                     size="huge"
+                    textPosition="below"
+                    avatar={user?.userIMG ? { image: { src: user.userIMG } } : undefined}
                 />
             </div>
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalS, alignItems: 'center', justifyContent: 'center' }}>
-                <Button appearance="primary" icon={<Person20Filled />}>
+            <div className={styles.actionsContainer}>
+                <ThemeToggle className={styles.button} />
+                <NavItem as="button" value="profile" className={styles.button} icon={<Person20Filled />}>
                     My Profile
-                </Button>
-                <ToggleButton
-                    checked={darkMode}
-                    onClick={() => setDarkMode(!darkMode)}
-                    icon={darkMode ? <WeatherMoon20Filled /> : <WeatherSunny20Filled />}
-                    aria-label="Toggle dark mode"
-                >
-                    Dark Theme
-                </ToggleButton>
-                <Button appearance="outline" icon={<SignOut20Filled />}>
-                    Sign Out
-                </Button>
+                </NavItem>
+                <Button appearance="primary" className={styles.button} onClick={handleSignOut}>Sign Out</Button>
+
             </div>
         </div>
     );

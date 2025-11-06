@@ -1,11 +1,12 @@
 import { Route, Routes } from "react-router";
 import PublicLayout from "../layout/PublicLayout";
 import Home from "../pages/home/Home";
-import Login from "../components/auth/Login";
-import Register from "../components/auth/Register";
+
 import NotFound from "../components/home/NotFound";
 import UserLayout from "../layout/UserLayout";
 import MyTasks from "../components/tables/MyTasks";
+import LoginPage from "../pages/auth/LoginPage";
+import RegisterPage from "../pages/auth/RegisterPage";
 
 
 const Features = () => <div>Features Page</div>;
@@ -25,8 +26,8 @@ export default function AppRoutes() {
                 <Route path="contact" element={<Contact />} />
 
                 {/* Auths */}
-                <Route path="login" element={<Login />} />
-                <Route path="register" element={<Register />} />
+                <Route path="login" element={<LoginPage />} />
+                <Route path="register" element={<RegisterPage />} />
 
 
 
