@@ -1,24 +1,7 @@
 import { useState, useCallback } from 'react';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 import type { AxiosRequestConfig } from 'axios';
-
-const axiosInstance = axios.create({
-    baseURL: "https://flowboard-backend.azurewebsites.net/",
-});
-
-// Add request interceptor to include JWT token in headers
-axiosInstance.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('flowboard_token') || localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
+import axiosInstance from '../components/apis/axiosInstance';
 
 interface UseAxiosResult<T> {
     data: T | null;

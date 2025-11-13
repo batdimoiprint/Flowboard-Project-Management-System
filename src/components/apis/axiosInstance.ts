@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+export const API_BASE_URL = "http://localhost:5158/";
+
 const axiosInstance = axios.create({
-    baseURL: "https://flowboard-backend.azurewebsites.net/",
+    baseURL: API_BASE_URL,
 });
 
 // Add auth token if available

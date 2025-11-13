@@ -32,25 +32,30 @@ export const userLayoutStyles = makeStyles({
 	layoutContainer: {
 		display: "flex",
 		flexDirection: "row",
-		width: "100vw",
+		width: "100%",
 		height: "100vh",
 		gap: tokens.spacingVerticalL,
 		padding: tokens.spacingVerticalL,
+
 		background: tokens.colorNeutralBackground1Pressed,
+
 		boxSizing: "border-box",
 		overflow: "hidden",
 	},
 	mainContent: {
 		display: "flex",
-		width: "100vw",
+		width: "100%",
 		flexDirection: "column",
 		gap: tokens.spacingHorizontalL,
+
 	},
 	header: {
 		display: "flex",
 		flexDirection: "row",
 		height: "auto",
-		gap: tokens.spacingHorizontalL,
+		width: "100%",
+
+		background: tokens.colorPaletteRedBackground2, // for debug
 	},
 	sectionContent: {
 		flex: 1,
@@ -60,6 +65,104 @@ export const userLayoutStyles = makeStyles({
 		backgroundColor: tokens.colorNeutralBackground2,
 		overflow: "auto",
 		minHeight: 0,
+	},
+});
+
+
+export const useHomeHeaderStyles = makeStyles({
+	header: {
+		display: "flex",
+		flexDirection: "row",
+		height: "auto",
+		width: "100%",
+		justifyContent: "space-around",
+		alignItems: "stretch",
+		gap: tokens.spacingHorizontalL
+		// background: tokens.colorPaletteRedBackground2 // for debug
+	},
+	leftCard: {
+		display: "flex",
+		flexDirection: "row",
+		width: "100%",
+		background: tokens.colorNeutralBackground1,
+		padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalXL}`,
+		justifyContent: "space-between",
+		alignItems: "center",
+
+	},
+	rightCard: {
+		display: "flex",
+		flexDirection: "row",
+		width: "auto",
+
+		alignItems: "center",
+	},
+	greetingCol: {
+		display: "flex",
+		flexDirection: "column",
+		width: "auto",
+	},
+	greetingTitle: {
+		width: "100%",
+		...typographyStyles.title1,
+	},
+	greetingName: {
+		color: tokens.colorNeutralForeground3,
+		fontSize: "18px",
+	},
+	statsRow: {
+		display: "flex",
+		flexDirection: "row",
+		alignItems: "center",
+		gap: "64px",
+	},
+	statItem: {
+		display: "flex",
+		alignItems: "center",
+		gap: "6px",
+	},
+	statNumber: {
+		fontWeight: 600,
+		fontSize: "18px",
+	},
+	statLabel: {
+		color: tokens.colorNeutralForeground3,
+		fontSize: "16px",
+	},
+
+	dateCol: {
+		display: "flex",
+		flexDirection: "row",
+		gap: tokens.spacingHorizontalL,
+		minWidth: 0,
+	},
+	dateTitle: {
+		fontSize: "28px",
+		fontWeight: 600,
+		display: "flex",
+		alignItems: "center",
+		gap: "8px",
+	},
+	moonIcon: {
+		fontSize: "28px",
+	},
+	dateTime: {
+		color: tokens.colorNeutralForeground3,
+		fontSize: "16px",
+	},
+	todayCol: {
+		display: "flex",
+		flexDirection: "column",
+		alignItems: "flex-end",
+		minWidth: 0,
+	},
+	todayCount: {
+		fontSize: "28px",
+		fontWeight: 600,
+	},
+	todayLabel: {
+		color: tokens.colorNeutralForeground3,
+		fontSize: "16px",
 	},
 });
 
@@ -81,12 +184,6 @@ export const useLoginPageStyle = makeStyles({
 		textShadow: `0 0 24px ${tokens.colorBrandBackground}, 0 0 48px ${tokens.colorPaletteMagentaBackground2}`,
 		display: "flex",
 		height: "100%",
-		"0%": {
-			textShadow: `0 0 24px ${tokens.colorBrandBackground}, 0 0 48px ${tokens.colorPaletteMagentaBackground2}`,
-		},
-		"100%": {
-			textShadow: `0 0 48px ${tokens.colorPaletteMagentaBackground2}, 0 0 24px ${tokens.colorBrandBackground}`,
-		},
 		alignItems: "left",
 		gap: 0,
 		padding: 0,
@@ -119,7 +216,7 @@ export const useRegisterPageStyle = makeStyles({
 		display: "flex",
 		height: "auto",
 		gap: tokens.spacingVerticalL,
-		// background: tokens.colorPaletteRedBackground2 // for debug
+
 	},
 
 	right: {
@@ -297,7 +394,6 @@ export const usePublicHeaderStyles = makeStyles({
 	},
 });
 
-
 // Task-related styles
 export const useMyTasksCardStyles = makeStyles({
 	root: {
@@ -383,20 +479,24 @@ export const useHomeHeroStyles = makeStyles({
 
 // Sidebar styles
 export const useSidebarStyles = makeStyles({
-	root: {
-		display: "flex",
-		flexDirection: "column",
-		width: "25%",
-		height: "auto",
-	},
 	drawer: {
 		display: "flex",
 		flexDirection: "column",
-		width: "auto",
+		width: "25%",
 		height: "100%",
 		alignItems: "left",
 		justifyContent: "space-between",
+		overflow: "hidden",
+		padding: tokens.spacingVerticalL,
 		gap: tokens.spacingVerticalS,
+		boxShadow: tokens.shadow4,
+	},
+	navItem: {
+
+		display: "flex",
+		flexDirection: "row",
+		width: "auto",
+		background: tokens.colorNeutralBackground2,
 	},
 	body: {
 		display: "flex",
@@ -406,7 +506,6 @@ export const useSidebarStyles = makeStyles({
 		alignItems: "left",
 		justifyContent: "space-between",
 		gap: tokens.spacingVerticalS,
-
 	},
 	bodyItems: {
 		display: "flex",
@@ -415,7 +514,6 @@ export const useSidebarStyles = makeStyles({
 		alignItems: "left",
 		justifyContent: "space-between",
 		gap: tokens.spacingVerticalS,
-
 	},
 	headerContainer: {
 		display: "flex",
@@ -425,7 +523,6 @@ export const useSidebarStyles = makeStyles({
 		padding: tokens.spacingHorizontalM,
 		alignItems: "center",
 		justifyContent: "center",
-
 	},
 });
 
@@ -433,7 +530,7 @@ export const useSidebarProfileActionsStyles = makeStyles({
 	root: {
 		display: "flex",
 		flexDirection: "column",
-		width: "auto%",
+		width: "auto",
 		height: "auto",
 		alignItems: "center",
 		justifyContent: "space-between",
@@ -449,6 +546,9 @@ export const useSidebarProfileActionsStyles = makeStyles({
 	},
 	button: {
 		width: "100%",
+	},
+	navItem: {
+		background: tokens.colorNeutralBackground2,
 	},
 });
 
@@ -498,17 +598,16 @@ export const useRegisterFormStyles = makeStyles({
 // My Profile
 export const useProfileStyles = makeStyles({
 	card: {
-		display: 'flex',
-		flexDirection: 'column',
+		display: "flex",
+		flexDirection: "column",
 		gap: tokens.spacingVerticalXL,
 		padding: tokens.spacingVerticalXXL,
-		// background: tokens.colorPaletteRedBackground2, // for debug
-		width: '100%',
-		height: '100%'
+		width: "100%",
+		height: "100%",
 	},
 	titleRow: {
-		display: 'flex',
-		alignItems: 'center',
+		display: "flex",
+		alignItems: "center",
 		gap: tokens.spacingHorizontalM,
 	},
 	title: {
@@ -516,19 +615,19 @@ export const useProfileStyles = makeStyles({
 		margin: 0,
 	},
 	userRow: {
-		display: 'flex',
-		alignItems: 'center',
-		justifyContent: 'space-between',
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "space-between",
 		gap: tokens.spacingHorizontalL,
 	},
 	userInfo: {
-		display: 'flex',
-		alignItems: 'center',
+		display: "flex",
+		alignItems: "center",
 		gap: tokens.spacingHorizontalL,
 	},
 	userText: {
-		display: 'flex',
-		flexDirection: 'column',
+		display: "flex",
+		flexDirection: "column",
 		gap: tokens.spacingVerticalXS,
 	},
 	userName: {
@@ -540,21 +639,21 @@ export const useProfileStyles = makeStyles({
 		color: tokens.colorNeutralForeground2,
 	},
 	formSection: {
-		display: 'flex',
-		flexDirection: 'column',
+		display: "flex",
+		flexDirection: "column",
 		gap: tokens.spacingVerticalL,
 	},
 	row: {
-		display: 'flex',
-		flexDirection: 'row',
+		display: "flex",
+		flexDirection: "row",
 		gap: tokens.spacingHorizontalM,
-		'@media (max-width: 768px)': {
-			flexDirection: 'column',
+		"@media (max-width: 768px)": {
+			flexDirection: "column",
 		},
 	},
 	field: {
-		display: 'flex',
-		flexDirection: 'column',
+		display: "flex",
+		flexDirection: "column",
 		flex: 1,
 		gap: tokens.spacingVerticalXS,
 	},
@@ -564,126 +663,27 @@ export const useProfileStyles = makeStyles({
 	},
 });
 
-export const useHomeHeaderStyles = makeStyles({
-	header: {
-		display: 'flex',
-		flexDirection: 'row',
-		width: '100%',
-		height: 'auto',
-		justifyContent: 'space-between',
-		alignItems: 'stretch',
-		gap: '32px'
-	},
-	leftCard: {
-		display: 'flex',
-		flexDirection: 'row',
-		background: tokens.colorNeutralBackground1,
-		padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalXL}`,
-		justifyContent: 'space-between',
-		alignItems: 'center',
-		flex: 1,
-	},
-	greetingCol: {
-		display: 'flex',
-		flexDirection: 'column',
-		width: 'auto',
-	},
-	greetingTitle: {
-		width: "100%",
-		...typographyStyles.title1
-	},
-	greetingName: {
-		color: tokens.colorNeutralForeground3,
-		fontSize: '18px',
-
-	},
-	statsRow: {
-		display: 'flex',
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: '64px',
-
-	},
-	statItem: {
-		display: 'flex',
-		alignItems: 'center',
-		gap: '6px',
-	},
-	statNumber: {
-		fontWeight: 600,
-		fontSize: '18px',
-	},
-	statLabel: {
-		color: tokens.colorNeutralForeground3,
-		fontSize: '16px',
-
-	},
-	rightCard: {
-		display: 'flex',
-		flexDirection: 'row',
-		background: tokens.colorNeutralBackground1,
-		alignItems: 'center',
-		minWidth: 0,
-
-	},
-	dateCol: {
-		display: 'flex',
-		flexDirection: 'column',
-		gap: '8px',
-		minWidth: 0,
-
-	},
-	dateTitle: {
-		fontSize: '28px',
-		fontWeight: 600,
-		display: 'flex',
-		alignItems: 'center',
-		gap: '8px',
-	},
-	moonIcon: {
-		fontSize: '28px',
-
-	},
-	dateTime: {
-		color: tokens.colorNeutralForeground3,
-		fontSize: '16px',
-
-	},
-	todayCol: {
-		display: 'flex',
-		flexDirection: 'column',
-		alignItems: 'flex-end',
-		minWidth: 0,
-	},
-	todayCount: {
-		fontSize: '28px',
-		fontWeight: 600,
-	},
-	todayLabel: {
-		color: tokens.colorNeutralForeground3,
-		fontSize: '16px',
-	},
-});
 
 // Stats header styles (shared)
 export const useStatsStyles = makeStyles({
 	statsRow: {
-		display: 'flex',
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: '64px',
+		display: "flex",
+		width: "100%",
+		flexDirection: "row",
+		alignItems: "center",
+		gap: "64px",
 	},
 	statItem: {
-		display: 'flex',
-		alignItems: 'center',
-		gap: '6px',
+		display: "flex",
+		alignItems: "center",
+		gap: "6px",
 	},
 	statNumber: {
 		fontWeight: 600,
-		fontSize: '18px',
+		fontSize: "18px",
 	},
 	statLabel: {
 		color: tokens.colorNeutralForeground3,
-		fontSize: '16px',
+		fontSize: "16px",
 	},
 });

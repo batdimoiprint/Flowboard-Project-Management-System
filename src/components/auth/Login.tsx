@@ -18,7 +18,7 @@ export default function Login() {
     const onSubmit = async (values: LoginRequest) => {
         setFormError('');
         setLoading(true);
-        
+
         try {
             await authApi.login(values);
             // Refresh user context with the logged-in user data
@@ -41,16 +41,16 @@ export default function Login() {
             <h2 className={styles.title}>Sign in</h2>
             <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
                 <div className={styles.field}>
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="userNameOrEmail">Username or Email</Label>
                     <Input
-                        id="email"
-                        type="email"
-                        placeholder="you@email.com"
-                        autoComplete="email"
-                        {...register('email', { required: 'Email is required' })}
+                        id="userNameOrEmail"
+                        type="text"
+                        placeholder="username or you@email.com"
+                        autoComplete="username"
+                        {...register('userNameOrEmail', { required: 'Username or Email is required' })}
                     />
-                    {errors.email && (
-                        <Text as="span" style={{ color: tokens.colorPaletteRedForeground1 }}>{errors.email.message}</Text>
+                    {errors.userNameOrEmail && (
+                        <Text as="span" style={{ color: tokens.colorPaletteRedForeground1 }}>{errors.userNameOrEmail.message}</Text>
                     )}
                 </div>
                 <div className={styles.field}>

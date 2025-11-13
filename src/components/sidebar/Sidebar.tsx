@@ -1,5 +1,4 @@
 import {
-    Card,
     NavDrawer,
     NavDrawerBody,
     NavDrawerHeader,
@@ -43,38 +42,38 @@ export default function Sidebar() {
     }
 
     return (
-        <Card className={styles.root}>
-            <NavDrawer
-                type="inline"
-                open={true}
-                multiple={isMultiple}
-                onNavCategoryItemToggle={handleCategoryToggle}
-                openCategories={openCategories}
-                className={styles.drawer}
-                style={{
-                    backgroundColor: tokens.colorNeutralBackground1
-                }}
-            >
-                <NavDrawerHeader className={styles.headerContainer}>
-                    <img src={logo} alt="FlowBoard" style={{ width: '48px', height: '48px' }} />
-                    <Text weight="semibold" size={700}>FlowBoard</Text>
-                </NavDrawerHeader>
+        // <Card className={styles.root}>
+        <NavDrawer
+            type="inline"
+            open={true}
+            multiple={isMultiple}
+            onNavCategoryItemToggle={handleCategoryToggle}
+            openCategories={openCategories}
+            className={styles.drawer}
+            style={{
+                backgroundColor: tokens.colorNeutralBackground1
+            }}
+        >
+            <NavDrawerHeader className={styles.headerContainer}>
+                <img src={logo} alt="FlowBoard" style={{ width: '48px', height: '48px' }} />
+                <Text weight="semibold" size={700}>FlowBoard</Text>
+            </NavDrawerHeader>
 
-                <NavDrawerBody className={styles.body}>
-                    <div className={styles.bodyItems}>
+            <NavDrawerBody className={styles.body}>
+                <div className={styles.bodyItems}>
 
-                        <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson20Regular />}>
-                            My Tasks
-                        </NavItem>
-                        {/* Project List Section */}
-                        <ProjectList openCategories={openCategories} />
+                    <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson20Regular />} className={styles.navItem}>
+                        My Tasks
+                    </NavItem>
+                    {/* Project List Section */}
+                    <ProjectList openCategories={openCategories} styles={styles} />
 
-                        <NotificationList openCategories={openCategories} />
-                    </div>
+                    <NotificationList openCategories={openCategories} styles={styles} />
+                </div>
 
-                    <SidebarProfileActions />
-                </NavDrawerBody>
-            </NavDrawer>
-        </Card>
+                <SidebarProfileActions />
+            </NavDrawerBody>
+        </NavDrawer>
+        // </Card>
     );
 }

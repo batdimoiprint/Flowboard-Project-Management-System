@@ -14,7 +14,7 @@ export interface User {
 }
 
 export interface LoginRequest {
-    email: string;
+    userNameOrEmail: string;
     password: string;
 }
 
@@ -45,7 +45,7 @@ export const authApi = {
     login: async (credentials: LoginRequest): Promise<LoginResponse> => {
         try {
             const response = await axiosInstance.post<LoginResponse>('/api/auth/login', credentials);
-            
+
             // Store token and user in localStorage
             if (response.data.token) {
                 localStorage.setItem('flowboard_token', response.data.token);
@@ -53,7 +53,7 @@ export const authApi = {
             if (response.data.user) {
                 localStorage.setItem('flowboard_user', JSON.stringify(response.data.user));
             }
-            
+
             return response.data;
         } catch (error: unknown) {
             if (error && typeof error === 'object' && 'response' in error) {
