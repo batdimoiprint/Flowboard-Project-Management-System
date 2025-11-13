@@ -3,6 +3,7 @@ import { usePublicHeaderStyles } from '../styles/Styles';
 import { Home24Regular, Sparkle24Regular, People24Regular, Mail24Regular } from '@fluentui/react-icons';
 import { useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo.webp';
+import ThemeToggle from '../styles/ThemeToggle';
 
 
 export default function PublicHeader() {
@@ -52,6 +53,7 @@ export default function PublicHeader() {
                 </TabList>
 
                 <div className={styles.right}>
+                    <ThemeToggle />
                     <Button appearance="primary" onClick={() => navigate("/login")}>Log In</Button>
                 </div>
             </header>

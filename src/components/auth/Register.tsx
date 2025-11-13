@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button, Input, Label, Card, Text } from '@fluentui/react-components';
 import { useNavigate } from 'react-router';
-import useRegisterStyles from '../../components/styles/RegisterStyles';
+import { useForm } from 'react-hook-form';
+import { useRegisterForm } from '../../components/styles/Styles';
 import { authApi } from '../apis/auth';
 import type { RegisterRequest } from '../apis/auth';
 
@@ -18,64 +19,24 @@ type RegisterFormInputs = {
 };
 
 export default function Register() {
-    const styles = useRegisterStyles();
+    const styles = useRegisterForm();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [formError, setFormError] = useState('');
-    const [form, setForm] = useState<RegisterFormInputs>({
-        userName: '',
-        firstName: '',
-        lastName: '',
-        middleName: '',
-        contactNumber: '',
-        birthDate: '',
-        email: '',
-        password: '',
-        userIMG: null,
-    });
-    const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof RegisterFormInputs, string>>>({});
+    const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormInputs>();
 
-    const validate = (): boolean => {
-        const errs: Partial<Record<keyof RegisterFormInputs, string>> = {};
-        if (!form.firstName.trim()) errs.firstName = 'First name is required';
-        if (!form.middleName.trim()) errs.middleName = 'Middle name is required';
-        if (!form.lastName.trim()) errs.lastName = 'Last name is required';
-        if (!form.contactNumber.trim()) errs.contactNumber = 'Contact number is required';
-        if (!form.birthDate) errs.birthDate = 'Birthdate is required';
-        if (!form.userName.trim()) errs.userName = 'Username is required';
-        if (!form.email.trim()) errs.email = 'Email is required';
-        if (!form.password.trim()) errs.password = 'Password is required';
-        setFieldErrors(errs);
-        return Object.keys(errs).length === 0;
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setForm(f => ({ ...f, [name]: value }));
-        setFieldErrors(errs => ({ ...errs, [name]: undefined }));
-    };
-
-    const onSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit = async (data: RegisterFormInputs) => {
         setFormError('');
-        if (!validate()) return;
+        setLoading(true);
 
         const payload: RegisterRequest = {
-            userName: form.userName,
-            firstName: form.firstName,
-            lastName: form.lastName,
-            middleName: form.middleName,
-            contactNumber: form.contactNumber,
-            birthDate: form.birthDate ? new Date(form.birthDate).toISOString() : '',
+            ...data,
+            birthDate: data.birthDate ? new Date(data.birthDate).toISOString() : '',
             userIMG: null,
-            email: form.email,
-            password: form.password,
         };
 
-        setLoading(true);
         try {
             await authApi.register(payload);
-            // Registration successful, navigate to login
             navigate('/login');
         } catch (err: unknown) {
             setFormError(err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -91,7 +52,7 @@ export default function Register() {
                 <h1 className={styles.title}>Create an account</h1>
             </div>
 
-            <form onSubmit={onSubmit}>
+            <form onSubmit={handleSubmit(onSubmit)}>
                 {/* Personal Information Section */}
                 <div className={styles.section}>
                     <div className={styles.sectionTitle}>Personal Information</div>
@@ -100,45 +61,39 @@ export default function Register() {
                             <Label htmlFor="firstName">First Name</Label>
                             <Input
                                 id="firstName"
-                                name="firstName"
                                 type="text"
                                 placeholder="Jane"
                                 autoComplete="given-name"
-                                value={form.firstName}
-                                onChange={handleChange}
+                                {...register('firstName', { required: 'First name is required' })}
                             />
-                            {fieldErrors.firstName && (
-                                <Text className={styles.errorText}>{fieldErrors.firstName}</Text>
+                            {errors.firstName && (
+                                <Text className={styles.errorText}>{errors.firstName.message}</Text>
                             )}
                         </div>
                         <div className={styles.field}>
                             <Label htmlFor="middleName">Middle Name</Label>
                             <Input
                                 id="middleName"
-                                name="middleName"
                                 type="text"
                                 placeholder="A"
                                 autoComplete="additional-name"
-                                value={form.middleName}
-                                onChange={handleChange}
+                                {...register('middleName', { required: 'Middle name is required' })}
                             />
-                            {fieldErrors.middleName && (
-                                <Text className={styles.errorText}>{fieldErrors.middleName}</Text>
+                            {errors.middleName && (
+                                <Text className={styles.errorText}>{errors.middleName.message}</Text>
                             )}
                         </div>
                         <div className={styles.field}>
                             <Label htmlFor="lastName">Last Name</Label>
                             <Input
                                 id="lastName"
-                                name="lastName"
                                 type="text"
                                 placeholder="Doe"
                                 autoComplete="family-name"
-                                value={form.lastName}
-                                onChange={handleChange}
+                                {...register('lastName', { required: 'Last name is required' })}
                             />
-                            {fieldErrors.lastName && (
-                                <Text className={styles.errorText}>{fieldErrors.lastName}</Text>
+                            {errors.lastName && (
+                                <Text className={styles.errorText}>{errors.lastName.message}</Text>
                             )}
                         </div>
                     </div>
@@ -147,29 +102,25 @@ export default function Register() {
                             <Label htmlFor="contactNumber">Contact Number</Label>
                             <Input
                                 id="contactNumber"
-                                name="contactNumber"
                                 type="tel"
                                 placeholder="+1234567890"
                                 autoComplete="tel"
-                                value={form.contactNumber}
-                                onChange={handleChange}
+                                {...register('contactNumber', { required: 'Contact number is required' })}
                             />
-                            {fieldErrors.contactNumber && (
-                                <Text className={styles.errorText}>{fieldErrors.contactNumber}</Text>
+                            {errors.contactNumber && (
+                                <Text className={styles.errorText}>{errors.contactNumber.message}</Text>
                             )}
                         </div>
                         <div className={styles.field}>
                             <Label htmlFor="birthDate">Birth Date</Label>
                             <Input
                                 id="birthDate"
-                                name="birthDate"
                                 type="date"
                                 autoComplete="bday"
-                                value={form.birthDate}
-                                onChange={handleChange}
+                                {...register('birthDate', { required: 'Birthdate is required' })}
                             />
-                            {fieldErrors.birthDate && (
-                                <Text className={styles.errorText}>{fieldErrors.birthDate}</Text>
+                            {errors.birthDate && (
+                                <Text className={styles.errorText}>{errors.birthDate.message}</Text>
                             )}
                         </div>
                     </div>
@@ -183,45 +134,51 @@ export default function Register() {
                             <Label htmlFor="userName">Username</Label>
                             <Input
                                 id="userName"
-                                name="userName"
                                 type="text"
                                 placeholder="jdoe"
                                 autoComplete="username"
-                                value={form.userName}
-                                onChange={handleChange}
+                                {...register('userName', { required: 'Username is required' })}
                             />
-                            {fieldErrors.userName && (
-                                <Text className={styles.errorText}>{fieldErrors.userName}</Text>
+                            {errors.userName && (
+                                <Text className={styles.errorText}>{errors.userName.message}</Text>
                             )}
                         </div>
                         <div className={styles.field}>
                             <Label htmlFor="email">Email</Label>
                             <Input
                                 id="email"
-                                name="email"
                                 type="email"
                                 placeholder="jane.doe@example.com"
                                 autoComplete="email"
-                                value={form.email}
-                                onChange={handleChange}
+                                {...register('email', {
+                                    required: 'Email is required',
+                                    pattern: {
+                                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                        message: 'Invalid email address'
+                                    }
+                                })}
                             />
-                            {fieldErrors.email && (
-                                <Text className={styles.errorText}>{fieldErrors.email}</Text>
+                            {errors.email && (
+                                <Text className={styles.errorText}>{errors.email.message}</Text>
                             )}
                         </div>
                         <div className={styles.field}>
                             <Label htmlFor="password">Password</Label>
                             <Input
                                 id="password"
-                                name="password"
                                 type="password"
                                 placeholder="P@ssw0rd!"
                                 autoComplete="new-password"
-                                value={form.password}
-                                onChange={handleChange}
+                                {...register('password', {
+                                    required: 'Password is required',
+                                    minLength: {
+                                        value: 6,
+                                        message: 'Password must be at least 6 characters'
+                                    }
+                                })}
                             />
-                            {fieldErrors.password && (
-                                <Text className={styles.errorText}>{fieldErrors.password}</Text>
+                            {errors.password && (
+                                <Text className={styles.errorText}>{errors.password.message}</Text>
                             )}
                         </div>
                     </div>

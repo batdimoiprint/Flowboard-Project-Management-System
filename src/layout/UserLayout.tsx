@@ -4,7 +4,7 @@ import NavigationHeader from '../components/headers/NavigationHeader';
 import Sidebar from '../components/sidebar/Sidebar';
 import StatsHeader from '../components/headers/StatsHeader';
 import HomeHeader from '../components/headers/HomeHeader';
-import { userLayoutStyles } from '../components/styles/LayoutStyles';
+import { userLayoutStyles } from '../components/styles/Styles';
 import { useLocation } from 'react-router-dom';
 
 export default function UserLayout() {

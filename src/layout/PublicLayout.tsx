@@ -1,7 +1,7 @@
 
 import PublicHeader from '../components/headers/PublicHeader';
 import { Outlet } from 'react-router';
-import { publicLayoutStyles } from '../components/styles/LayoutStyles';
+import { publicLayoutStyles } from '../components/styles/Styles';
 
 export default function PublicLayout() {
     const styles = publicLayoutStyles();
