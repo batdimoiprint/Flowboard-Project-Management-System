@@ -3,8 +3,22 @@ import axios, { AxiosError } from 'axios';
 import type { AxiosRequestConfig } from 'axios';
 
 const axiosInstance = axios.create({
-baseURL: 'https://flowboard-backend.azurewebsites.net/',
+    baseURL: import.meta.env.VITE_API_BASE_URL ,
 });
+
+// Add request interceptor to include JWT token in headers
+axiosInstance.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('flowboard_token') || localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
 
 interface UseAxiosResult<T> {
     data: T | null;
