@@ -15,11 +15,13 @@ import { useSidebarStyles } from '../styles/Styles';
 
 import ProjectList from './ProjectList';
 import NotificationList from "./NotificationList";
+import { useNavigate } from "react-router";
 
 export default function Sidebar() {
 
     const [openCategories, setOpenCategories] = useState<string[]>(['projects']);
     const styles = useSidebarStyles();
+    const navigate = useNavigate();
 
     // Allow multiple categories open (adjust if single-open behavior is desired)
     const isMultiple = true;
@@ -61,7 +63,7 @@ export default function Sidebar() {
                 <NavDrawerBody className={styles.body}>
                     <div className={styles.bodyItems}>
 
-                        <NavItem as="button" value="myTasks" icon={<TaskListSquarePerson20Regular />}>
+                        <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson20Regular />}>
                             My Tasks
                         </NavItem>
                         {/* Project List Section */}
