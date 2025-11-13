@@ -1,6 +1,8 @@
-import { Card } from '@fluentui/react-components'
-import Login from '../../components/auth/Login'
-import useAuthStyles from '../../components/styles/AuthStyles'
+
+import { Card } from '@fluentui/react-components';
+import Login from '../../components/auth/Login';
+import useAuthStyles from '../../components/styles/AuthStyles';
+import loginImg from '../../assets/login.png';
 
 export default function LoginPage() {
     const styles = useAuthStyles();
@@ -13,12 +15,12 @@ export default function LoginPage() {
             <div className={styles.right}>
                 <Card className={styles.card}>
                     <img
-                        src="/flowboard.svg"
-                        alt="Flowboard Logo"
+                        src={loginImg}
+                        alt="Flowboard Home"
                         className={styles.image}
                     />
                 </Card>
             </div>
         </div>
-    )
+    );
 }

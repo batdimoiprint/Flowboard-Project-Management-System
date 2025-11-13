@@ -16,7 +16,6 @@ export const userLayoutStyles = makeStyles({
         flexDirection: 'column',
         flex: 1,
         minHeight: '100%',
-
         overflow: 'auto',
     },
     header: {
@@ -36,6 +35,45 @@ export const userLayoutStyles = makeStyles({
         padding: tokens.spacingVerticalS,
         backgroundColor: tokens.colorNeutralBackground2,
         minHeight: 0, // for flex children to grow
+    },
+});
+
+export const publicLayoutStyles = makeStyles({
+    layoutContainer: {
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        minHeight: "100dvh",
+        margin: tokens.spacingHorizontalNone,
+        padding: tokens.spacingHorizontalNone,
+        overflow: "hidden",
+        backgroundColor: tokens.colorNeutralBackground2,
+    },
+    header: {
+        display: 'flex',
+        flexDirection: 'row',
+        width: '100%',
+        height: 'auto',
+        margin: tokens.spacingVerticalL,
+        gap: "auto"
+    },
+    mainContent: {
+        display: 'flex',
+        flexDirection: 'column',
+        width: "100%",
+        flex: 1,
+        minHeight: '100%',
+        overflow: 'auto',
+    },
+    sectionContent: {
+        flex: 1,
+        display: 'flex',
+        width: '1',
+        flexDirection: 'column',
+        margin: tokens.spacingVerticalS,
+        padding: tokens.spacingVerticalS,
+        backgroundColor: tokens.colorNeutralBackground2,
+        minHeight: 0,
     },
 });
 

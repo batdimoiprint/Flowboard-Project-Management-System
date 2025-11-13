@@ -1,6 +1,7 @@
 import { Card } from '@fluentui/react-components'
 import Register from '../../components/auth/Register'
 import useAuthStyles from '../../components/styles/AuthStyles'
+import registerImg from '../../assets/register.jpg';
 
 export default function RegisterPage() {
     const styles = useAuthStyles();
@@ -13,7 +14,7 @@ export default function RegisterPage() {
             <div className={styles.right}>
                 <Card className={styles.card}>
                     <img
-                        src="/flowboard.svg"
+                        src={registerImg}
                         alt="Flowboard Logo"
                         className={styles.image}
                     />

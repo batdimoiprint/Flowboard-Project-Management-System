@@ -34,12 +34,12 @@ const useAuthStyles = makeStyles({
         justifyContent: 'center',
         boxSizing: 'border-box',
         overflow: 'hidden',
-
+        padding: '0',
     },
     image: {
-        maxWidth: '100%',
-        maxHeight: '100%',
-        objectFit: 'contain',
+        width: '90%',
+        height: '90%',
+        objectFit: 'cover',
         display: 'block',
     },
 });

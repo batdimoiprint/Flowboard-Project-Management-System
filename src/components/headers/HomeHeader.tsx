@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { tokens, makeStyles, typographyStyles, Card } from '@fluentui/react-components';
-import { Checkmark24Regular, HourglassHalf24Regular, Timer24Regular, TextboxCheckmark24Regular, WeatherMoon20Filled, WeatherSunny20Filled } from '@fluentui/react-icons';
+import { WeatherMoon20Filled, WeatherSunny20Filled } from '@fluentui/react-icons';
+import StatsHeader from './StatsHeader';
 
 interface HomeHeaderProps {
     firstName: string;
@@ -160,32 +161,13 @@ export default function HomeHeader({
                 <span className={styles.greetingName}>{firstName}</span>
             </div>
             {/* Stats Row */}
-            <div className={styles.statsRow}>
-                {/* Total Tasks */}
-                <div className={styles.statItem}>
-                    <Checkmark24Regular style={{ color: tokens.colorBrandForeground1 }} />
-                    <span className={styles.statNumber}>{totalTasks}</span>
-                    <span className={styles.statLabel}>Total Tasks</span>
-                </div>
-                {/* Pending */}
-                <div className={styles.statItem}>
-                    <HourglassHalf24Regular style={{ color: '#288BE6' }} />
-                    <span className={styles.statNumber}>{pending}</span>
-                    <span className={styles.statLabel}>Pendings</span>
-                </div>
-                {/* Ongoing */}
-                <div className={styles.statItem}>
-                    <Timer24Regular style={{ color: '#E87C1E' }} />
-                    <span className={styles.statNumber}>{ongoing}</span>
-                    <span className={styles.statLabel}>Ongoing</span>
-                </div>
-                {/* Completed */}
-                <div className={styles.statItem}>
-                    <TextboxCheckmark24Regular style={{ color: '#1A8F3A' }} />
-                    <span className={styles.statNumber}>{completed}</span>
-                    <span className={styles.statLabel}>Completed</span>
-                </div>
-            </div>
+            <StatsHeader
+                totalTasks={totalTasks}
+                pending={pending}
+                ongoing={ongoing}
+                completed={completed}
+                className={styles.statsRow}
+            />
         </Card>
         {/* Right Card */}
         <Card className={styles.rightCard}>

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Button, Input, Label, Card, Text } from '@fluentui/react-components';
 import { useNavigate } from 'react-router';
-import { useAxios } from '../../hooks/useAxios';
 import useRegisterStyles from '../../components/styles/RegisterStyles';
+import { authApi } from '../apis/auth';
+import type { RegisterRequest } from '../apis/auth';
 
 type RegisterFormInputs = {
     userName: string;
@@ -19,7 +20,7 @@ type RegisterFormInputs = {
 export default function Register() {
     const styles = useRegisterStyles();
     const navigate = useNavigate();
-    const { error, loading, fetchData } = useAxios();
+    const [loading, setLoading] = useState(false);
     const [formError, setFormError] = useState('');
     const [form, setForm] = useState<RegisterFormInputs>({
         userName: '',
@@ -59,7 +60,7 @@ export default function Register() {
         setFormError('');
         if (!validate()) return;
 
-        const payload = {
+        const payload: RegisterRequest = {
             userName: form.userName,
             firstName: form.firstName,
             lastName: form.lastName,
@@ -71,20 +72,15 @@ export default function Register() {
             password: form.password,
         };
 
+        setLoading(true);
         try {
-            const result = await fetchData('/api/auth/register', {
-                method: 'POST',
-                data: payload,
-            });
-
-            // If we got a result, registration was successful
-            if (result) {
-                navigate('/login');
-            }
+            await authApi.register(payload);
+            // Registration successful, navigate to login
+            navigate('/login');
         } catch (err: unknown) {
-            // Additional catch for any unexpected errors
-            const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
-            setFormError(errorMessage);
+            setFormError(err instanceof Error ? err.message : 'An unexpected error occurred');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -232,9 +228,9 @@ export default function Register() {
                 </div>
 
                 {/* Error Message */}
-                {(formError || error) && (
+                {formError && (
                     <Text className={styles.errorText} style={{ marginTop: '8px' }}>
-                        {formError || error}
+                        {formError}
                     </Text>
                 )}
 

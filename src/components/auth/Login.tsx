@@ -1,50 +1,38 @@
 import { useState } from 'react';
-
 import { Button, Input, Label, tokens, Card, Text } from '@fluentui/react-components';
 import { useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
-import { useAxios } from '../../hooks/useAxios';
 import { useLoginForm } from '../styles/Styles';
+import { authApi } from '../apis/auth';
 import { useUser } from '../../hooks/useUser';
-import type { User } from '../../context/userContext';
-
-
-type LoginFormInputs = {
-    email: string;
-    password: string;
-};
-
-interface LoginResponse {
-    message: string;
-    token?: string;
-    user: User;
-}
+import type { LoginRequest } from '../apis/auth';
 
 export default function Login() {
     const styles = useLoginForm();
     const navigate = useNavigate();
-    const { setUser } = useUser();
-    const { register, handleSubmit, formState: { errors } } = useForm<LoginFormInputs>();
-    const { error, loading, fetchData } = useAxios<LoginResponse>();
+    const { refreshUser } = useUser();
+    const { register, handleSubmit, formState: { errors } } = useForm<LoginRequest>();
+    const [loading, setLoading] = useState(false);
     const [formError, setFormError] = useState('');
 
-    const onSubmit = async (values: LoginFormInputs) => {
+    const onSubmit = async (values: LoginRequest) => {
         setFormError('');
-        const result = await fetchData('/api/auth/login', {
-            method: 'POST',
-            data: values,
-        });
-        if (result && !error) {
-            // Store token in localStorage
-            if (result.token) {
-                localStorage.setItem('token', result.token);
-            }
-            // Store user data in context (which also stores in localStorage)
-            setUser(result.user);
-            // Redirect to home
+        setLoading(true);
+        
+        try {
+            await authApi.login(values);
+            // Refresh user context with the logged-in user data
+            refreshUser();
+            // Redirect to home after successful login
             navigate('/home');
-        } else if (error) {
-            setFormError(error);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                setFormError(error.message);
+            } else {
+                setFormError('An error occurred during login');
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -78,9 +66,9 @@ export default function Login() {
                         <Text as="span" style={{ color: tokens.colorPaletteRedForeground1 }}>{errors.password.message}</Text>
                     )}
                 </div>
-                {(formError || error) && (
+                {formError && (
                     <Text as="span" style={{ color: tokens.colorPaletteRedForeground1, marginTop: tokens.spacingVerticalXS }}>
-                        {formError || error}
+                        {formError}
                     </Text>
                 )}
                 <div className={styles.actions}>
