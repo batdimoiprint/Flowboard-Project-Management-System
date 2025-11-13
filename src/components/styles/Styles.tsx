@@ -28,31 +28,36 @@ export const publicLayoutStyles = makeStyles({
 // User Layout
 export const userLayoutStyles = makeStyles({
 	layoutContainer: {
-		margin: tokens.spacingHorizontalNone,
-		padding: tokens.spacingHorizontalNone,
+		display: 'flex',
+		flexDirection: 'row',
+		width: '100vw',
+		height: '100vh',
+		gap: tokens.spacingVerticalL,
+		padding: tokens.spacingVerticalL,
+		background: tokens.colorNeutralBackground1Pressed,
+		boxSizing: 'border-box',
+		overflow: 'hidden',
 	},
 	mainContent: {
 		display: 'flex',
+		width: '100vw',
 		flexDirection: 'column',
-		flex: 1,
-		minHeight: '100%',
-		overflow: 'auto',
+		gap: tokens.spacingHorizontalL,
 	},
 	header: {
 		display: 'flex',
 		flexDirection: 'row',
 		height: "auto",
-		margin: tokens.spacingVerticalS,
-		gap: "32px"
+		gap: tokens.spacingHorizontalL,
 	},
 	sectionContent: {
 		flex: 1,
 		display: 'flex',
-		width: '1',
 		flexDirection: 'column',
-		margin: tokens.spacingVerticalS,
-		padding: tokens.spacingVerticalS,
+
+
 		backgroundColor: tokens.colorNeutralBackground2,
+		overflow: 'auto',
 		minHeight: 0,
 	},
 });
@@ -73,6 +78,7 @@ export const useLoginPageStyle = makeStyles({
 		flexDirection: "row",
 		height: "86vh",
 		gap: tokens.spacingVerticalL,
+		padding: 0,
 	},
 
 	right: {
@@ -89,6 +95,9 @@ export const useLoginPageStyle = makeStyles({
 		gap: 0,
 		padding: 0,
 
+	},
+	card: {
+		padding: 0,
 	},
 	cardTitleContainer: {
 		padding: tokens.spacingVerticalXXL,
@@ -388,10 +397,8 @@ export const useSidebarStyles = makeStyles({
 	root: {
 		display: "flex",
 		flexDirection: "column",
-		width: '100%',
-		// maxWidth: "40dvh",
-		// margin: tokens.spacingHorizontalL,
-		// padding: tokens.spacingHorizontalL,
+		width: '25%',
+		height: "auto",
 	},
 	drawer: {
 		display: "flex",

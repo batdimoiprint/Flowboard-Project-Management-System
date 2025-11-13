@@ -1,4 +1,7 @@
 import { Route, Routes } from "react-router";
+import { useContext } from "react";
+import { UserContext } from "../context/userContext";
+import { Navigate } from "react-router-dom";
 import PublicLayout from "../layout/PublicLayout";
 import CreateProjectPage from "../pages/project/CreateProjectPage";
 import KanbanPage from "../pages/project/KanbanPage";
@@ -18,12 +21,24 @@ const Features = () => <div>Features Page</div>;
 const Team = () => <div>Team Page</div>;
 const Contact = () => <div>Contact Page</div>;
 
+import type { ReactNode } from "react";
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
+    const userCtx = useContext(UserContext);
+    if (!userCtx?.isAuthenticated) {
+        return <Navigate to="/login" replace />;
+    }
+    return <>{children}</>;
+}
+
 export default function AppRoutes() {
+    const userCtx = useContext(UserContext);
     return (
         <Routes>
             {/* Public routes */}
-            <Route path="/" element={<PublicLayout />}>
-
+            <Route path="/" element={
+                userCtx?.isAuthenticated ? <Navigate to="/home" replace /> : <PublicLayout />
+            }>
                 {/* Landing */}
                 <Route index element={<Landing />} />
                 <Route path="features" element={<Features />} />
@@ -36,8 +51,12 @@ export default function AppRoutes() {
                 <Route path="*" element={<NotFound />} />
             </Route>
 
-            {/* User routes */}
-            <Route path="/home" element={<UserLayout />}>
+            {/* Protected User routes */}
+            <Route path="/home" element={
+                <ProtectedRoute>
+                    <UserLayout />
+                </ProtectedRoute>
+            }>
                 {/* My Tasks*/}
                 <Route index element={<MyTasks />} />
                 <Route path="profile" element={<MyProfile />} />

@@ -15,6 +15,7 @@ type RegisterFormInputs = {
     birthDate: string;
     email: string;
     password: string;
+    verifyPassword: string;
     userIMG?: string | null;
 };
 
@@ -23,7 +24,10 @@ export default function Register() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [formError, setFormError] = useState('');
-    const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormInputs>();
+    const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFormInputs>({
+        mode: 'onBlur',
+        reValidateMode: 'onBlur'
+    });
 
     const onSubmit = async (data: RegisterFormInputs) => {
         setFormError('');
@@ -64,7 +68,15 @@ export default function Register() {
                                 type="text"
                                 placeholder="Jane"
                                 autoComplete="given-name"
-                                {...register('firstName', { required: 'First name is required' })}
+                                {...register('firstName', {
+                                    required: 'First name is required',
+                                    minLength: { value: 2, message: 'First name must be at least 2 characters' },
+                                    maxLength: { value: 50, message: 'First name must not exceed 50 characters' },
+                                    pattern: {
+                                        value: /^[a-zA-Z\s'-]+$/,
+                                        message: 'First name can only contain letters, spaces, hyphens, and apostrophes'
+                                    }
+                                })}
                             />
                             {errors.firstName && (
                                 <Text className={styles.errorText}>{errors.firstName.message}</Text>
@@ -77,7 +89,15 @@ export default function Register() {
                                 type="text"
                                 placeholder="A"
                                 autoComplete="additional-name"
-                                {...register('middleName', { required: 'Middle name is required' })}
+                                {...register('middleName', {
+                                    required: 'Middle name is required',
+                                    minLength: { value: 1, message: 'Middle name must be at least 1 character' },
+                                    maxLength: { value: 50, message: 'Middle name must not exceed 50 characters' },
+                                    pattern: {
+                                        value: /^[a-zA-Z\s'-]+$/,
+                                        message: 'Middle name can only contain letters, spaces, hyphens, and apostrophes'
+                                    }
+                                })}
                             />
                             {errors.middleName && (
                                 <Text className={styles.errorText}>{errors.middleName.message}</Text>
@@ -90,7 +110,15 @@ export default function Register() {
                                 type="text"
                                 placeholder="Doe"
                                 autoComplete="family-name"
-                                {...register('lastName', { required: 'Last name is required' })}
+                                {...register('lastName', {
+                                    required: 'Last name is required',
+                                    minLength: { value: 2, message: 'Last name must be at least 2 characters' },
+                                    maxLength: { value: 50, message: 'Last name must not exceed 50 characters' },
+                                    pattern: {
+                                        value: /^[a-zA-Z\s'-]+$/,
+                                        message: 'Last name can only contain letters, spaces, hyphens, and apostrophes'
+                                    }
+                                })}
                             />
                             {errors.lastName && (
                                 <Text className={styles.errorText}>{errors.lastName.message}</Text>
@@ -105,7 +133,13 @@ export default function Register() {
                                 type="tel"
                                 placeholder="+1234567890"
                                 autoComplete="tel"
-                                {...register('contactNumber', { required: 'Contact number is required' })}
+                                {...register('contactNumber', {
+                                    required: 'Contact number is required',
+                                    pattern: {
+                                        value: /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/,
+                                        message: 'Please enter a valid phone number'
+                                    }
+                                })}
                             />
                             {errors.contactNumber && (
                                 <Text className={styles.errorText}>{errors.contactNumber.message}</Text>
@@ -117,7 +151,18 @@ export default function Register() {
                                 id="birthDate"
                                 type="date"
                                 autoComplete="bday"
-                                {...register('birthDate', { required: 'Birthdate is required' })}
+                                {...register('birthDate', {
+                                    required: 'Birthdate is required',
+                                    validate: (value) => {
+                                        const birthDate = new Date(value);
+                                        const today = new Date();
+                                        const age = today.getFullYear() - birthDate.getFullYear();
+                                        const monthDiff = today.getMonth() - birthDate.getMonth();
+                                        const dayDiff = today.getDate() - birthDate.getDate();
+                                        const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+                                        return actualAge >= 13 || 'You must be at least 13 years old to register';
+                                    }
+                                })}
                             />
                             {errors.birthDate && (
                                 <Text className={styles.errorText}>{errors.birthDate.message}</Text>
@@ -137,7 +182,15 @@ export default function Register() {
                                 type="text"
                                 placeholder="jdoe"
                                 autoComplete="username"
-                                {...register('userName', { required: 'Username is required' })}
+                                {...register('userName', {
+                                    required: 'Username is required',
+                                    minLength: { value: 3, message: 'Username must be at least 3 characters' },
+                                    maxLength: { value: 20, message: 'Username must not exceed 20 characters' },
+                                    pattern: {
+                                        value: /^[a-zA-Z0-9_]+$/,
+                                        message: 'Username can only contain letters, numbers, and underscores'
+                                    }
+                                })}
                             />
                             {errors.userName && (
                                 <Text className={styles.errorText}>{errors.userName.message}</Text>
@@ -172,13 +225,33 @@ export default function Register() {
                                 {...register('password', {
                                     required: 'Password is required',
                                     minLength: {
-                                        value: 6,
-                                        message: 'Password must be at least 6 characters'
+                                        value: 8,
+                                        message: 'Password must be at least 8 characters'
+                                    },
+                                    pattern: {
+                                        value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/,
+                                        message: 'Password must contain uppercase, lowercase, number, and special character'
                                     }
                                 })}
                             />
                             {errors.password && (
                                 <Text className={styles.errorText}>{errors.password.message}</Text>
+                            )}
+                        </div>
+                        <div className={styles.field}>
+                            <Label htmlFor="verifyPassword">Verify Password</Label>
+                            <Input
+                                id="verifyPassword"
+                                type="password"
+                                placeholder="Confirm your password"
+                                autoComplete="new-password"
+                                {...register('verifyPassword', {
+                                    required: 'Please confirm your password',
+                                    validate: (value) => value === watch('password') || 'Passwords do not match'
+                                })}
+                            />
+                            {errors.verifyPassword && (
+                                <Text className={styles.errorText}>{errors.verifyPassword.message}</Text>
                             )}
                         </div>
                     </div>
