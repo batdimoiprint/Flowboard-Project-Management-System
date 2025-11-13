@@ -29,7 +29,8 @@ export interface TaskResponse {
     createdAt?: string;
     comments: Array<{
         authorId: string;
-        text: string;
+        text?: string;
+        content?: string | null;
         createdAt: string;
     }>;
 }
@@ -44,10 +45,14 @@ export const tasksApi = {
             categoryId: undefined, // Remove categoryId from payload
             status: taskData.status.toLowerCase().replace(' ', ' '), // e.g., "To Do" -> "to do"
             comments: taskData.comments ? [{
-                authorId: taskData.createdBy, // Assuming createdBy is the author
-                text: taskData.comments,
+                authorId: taskData.createdBy,
+                content: taskData.comments,
                 createdAt: new Date().toISOString(),
-            }] : [],
+            }] : [{
+                authorId: taskData.createdBy,
+                content: "Initial task created",
+                createdAt: new Date().toISOString(),
+            }],
         };
 
         const response = await axiosInstance.post<TaskResponse>('/api/tasks', payload);
@@ -105,5 +110,15 @@ export const tasksApi = {
 
     deleteTask: async (taskId: string): Promise<void> => {
         await axiosInstance.delete(`/api/tasks/${taskId}`);
+    },
+
+    addComment: async (taskId: string, commentData: { authorId: string; text: string }): Promise<TaskResponse> => {
+        const payload = {
+            authorId: commentData.authorId,
+            text: commentData.text,
+            createdAt: new Date().toISOString(),
+        };
+        const response = await axiosInstance.post<TaskResponse>(`/api/tasks/${taskId}/comments`, payload);
+        return response.data;
     },
 };

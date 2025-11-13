@@ -1,3 +1,14 @@
+// Comment field styles
+export const useCommentFieldStyles = makeStyles({
+	root: {
+
+		border: `1px solid ${tokens.colorNeutralStroke2}`,
+		borderRadius: tokens.borderRadiusMedium,
+		backgroundColor: tokens.colorNeutralBackground2,
+		padding: tokens.spacingVerticalL,
+		marginBottom: tokens.spacingVerticalM,
+	},
+});
 import {
 	makeStyles,
 	tokens,

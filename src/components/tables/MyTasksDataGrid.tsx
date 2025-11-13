@@ -12,12 +12,13 @@ import {
 } from '@fluentui/react-components';
 import type { TableColumnDefinition } from '@fluentui/react-components';
 import { useMyTasksDataGridStyles } from '../styles/Styles';
-import { Button, Input } from '@fluentui/react-components';
+import { Button, Input, Avatar, Badge } from '@fluentui/react-components';
 import TaskDialog from '../dialogs/TaskDialog';
 import type { Task } from '../../types/MyTasksTypes';
 import { TaskListSquarePerson24Regular } from "@fluentui/react-icons";
 import { tasksApi } from '../apis/tasks';
 import type { TaskResponse } from '../apis/tasks';
+import { usersApi } from '../apis/users';
 import { useUser } from '../../hooks/useUser';
 
 // Utility function to format date to yyyy-MM-dd for HTML date inputs
@@ -38,32 +39,99 @@ const columns: TableColumnDefinition<Task>[] = [
     createTableColumn<Task>({
         columnId: 'status',
         renderHeaderCell: () => 'Status',
-        renderCell: (item) => item.status,
+        renderCell: (item) => (
+            <Badge
+                appearance="outline"
+                size="extra-large"
+                color={
+                    item.status === 'To Do' ? 'brand' :
+                        item.status === 'In Progress' ? 'warning' :
+                            item.status === 'Done' ? 'success' :
+                                'informative'
+                }
+            >
+                {item.status}
+            </Badge>
+        ),
     }),
     createTableColumn<Task>({
         columnId: 'priority',
         renderHeaderCell: () => 'Priority',
-        renderCell: (item) => item.priority,
+        renderCell: (item) => (
+            <Badge
+                appearance="outline"
+                size="extra-large"
+                color={
+                    item.priority === 'Important' ? 'brand' :
+                        item.priority === 'Medium' ? 'warning' :
+                            item.priority === 'Done' ? 'success' :
+                                'informative'
+                }
+            >
+                {item.priority}
+            </Badge>
+        ),
     }),
     createTableColumn<Task>({
         columnId: 'createdBy',
         renderHeaderCell: () => 'Created By',
-        renderCell: (item) => item.createdBy,
+        renderCell: (item) => item.createdByUser ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Avatar
+                    name={`${item.createdByUser.firstName} ${item.createdByUser.lastName}`}
+                    size={32}
+
+                    color='blue'
+                    image={{ src: item.createdByUser.userIMG || undefined }}
+                />
+                {`${item.createdByUser.firstName} ${item.createdByUser.lastName}`}
+            </div>
+        ) : item.createdBy,
     }),
     createTableColumn<Task>({
         columnId: 'assignedTo',
         renderHeaderCell: () => 'Assigned To',
-        renderCell: (item) => item.assignedTo,
+        renderCell: (item) => item.assignedToUser ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Avatar
+                    name={`${item.assignedToUser.firstName} ${item.assignedToUser.lastName}`}
+                    size={32}
+                    color='blue'
+                    image={{ src: item.assignedToUser.userIMG || undefined }}
+                />
+                {`${item.assignedToUser.firstName} ${item.assignedToUser.lastName}`}
+            </div>
+        ) : item.assignedTo,
     }),
     createTableColumn<Task>({
         columnId: 'createdAt',
         renderHeaderCell: () => 'Created At',
-        renderCell: (item) => item.createdAt,
+        renderCell: (item) => {
+            if (!item.createdAt) return '';
+            const date = new Date(item.createdAt);
+            if (isNaN(date.getTime())) return item.createdAt;
+            return date.toLocaleString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+
+            });
+        },
     }),
     createTableColumn<Task>({
         columnId: 'endDate',
         renderHeaderCell: () => 'Due Date',
-        renderCell: (item) => item.endDate,
+        renderCell: (item) => {
+            if (!item.endDate) return '';
+            const date = new Date(item.endDate);
+            if (isNaN(date.getTime())) return item.endDate;
+            return date.toLocaleString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+
+            });
+        },
     }),
 
 ];
@@ -158,12 +226,57 @@ function MyTasksDataGrid() {
                     comments: task.comments.map(c => ({
                         authorId: c.authorId,
                         user: c.authorId, // Map authorId to user for backward compatibility
-                        text: c.text,
+                        text: c.text || c.content || undefined, // Support both 'text' and 'content' fields
+                        content: c.content || undefined,
                         createdAt: c.createdAt
                     })),
                 };
             });
             console.log('Transformed tasks:', transformedTasks);
+
+            // Fetch user details for assignedTo, createdBy, and comment authors
+            // Collect unique user IDs
+            const userIds = new Set<string>();
+            transformedTasks.forEach(task => {
+                if (task.assignedTo) userIds.add(task.assignedTo);
+                if (task.createdBy) userIds.add(task.createdBy);
+                task.comments.forEach(comment => {
+                    if (comment.authorId) userIds.add(comment.authorId);
+                });
+            });
+
+            // Fetch all users in parallel
+            const userPromises = Array.from(userIds).map(id =>
+                usersApi.getUserById(id).catch(err => {
+                    console.error(`Failed to fetch user ${id}:`, err);
+                    return null;
+                })
+            );
+            const users = await Promise.all(userPromises);
+
+            // Create a map of userId -> User
+            const userMap = new Map();
+            users.forEach((user, index) => {
+                if (user) {
+                    userMap.set(Array.from(userIds)[index], user);
+                }
+            });
+
+            // Attach user objects to tasks and comments
+            transformedTasks.forEach(task => {
+                if (task.assignedTo && userMap.has(task.assignedTo)) {
+                    task.assignedToUser = userMap.get(task.assignedTo);
+                }
+                if (task.createdBy && userMap.has(task.createdBy)) {
+                    task.createdByUser = userMap.get(task.createdBy);
+                }
+                task.comments.forEach(comment => {
+                    if (comment.authorId && userMap.has(comment.authorId)) {
+                        comment.authorUser = userMap.get(comment.authorId);
+                    }
+                });
+            });
+
             setTasks(transformedTasks);
         } catch (error) {
             console.error('Failed to fetch tasks:', error);
@@ -259,32 +372,10 @@ function MyTasksDataGrid() {
             };
 
             // Call the API to create the task
-            const createdTask = await tasksApi.createTask(taskData);
+            await tasksApi.createTask(taskData);
 
-            // Transform API response to match local Task type
-            const newTask: Task = {
-                _id: createdTask._id,
-                category: createdTask.category,
-                categoryId: createdTask.category, // Map category to categoryId for backward compatibility
-                assignedTo: createdTask.assignedTo,
-                title: createdTask.title,
-                description: createdTask.description,
-                priority: createdTask.priority,
-                status: createdTask.status,
-                startDate: createdTask.startDate,
-                endDate: createdTask.endDate,
-                createdBy: createdTask.createdBy,
-                createdAt: createdTask.createdAt,
-                comments: createdTask.comments.map(c => ({
-                    authorId: c.authorId,
-                    user: c.authorId, // Map authorId to user for backward compatibility
-                    text: c.text,
-                    createdAt: c.createdAt
-                })),
-            };
-
-            // Add to local state
-            setTasks((prev) => [newTask, ...prev]);
+            // Refresh tasks from server to get the latest data with user details
+            await fetchTasks();
 
             // Reset form and close dialog
             setOpen(false);
@@ -368,7 +459,7 @@ function MyTasksDataGrid() {
 
     function handleRowClick(task: Task) {
         console.log('handleRowClick called with task:', task);
-        console.log('Task ID:', task._id);
+        console.log('Task ID:', task.createdBy);
 
         setDialogMode('edit');
         setEditingTaskId(task._id);
@@ -385,7 +476,7 @@ function MyTasksDataGrid() {
             assignedTo: task.assignedTo,
             createdBy: task.createdBy,
             category: task.category || task.categoryId || '', // Use category from API, fallback to categoryId
-            comments: Array.isArray(task.comments) && task.comments.length > 0 ? task.comments.map(c => c.text).join('\n') : '',
+            comments: '', // Comments will be passed separately as an array
         });
         setOpen(true);
     }
@@ -455,6 +546,11 @@ function MyTasksDataGrid() {
                 isSubmitting={isSubmitting}
                 submitError={submitError}
                 dialogMode={dialogMode}
+                createdByUser={dialogMode === 'edit' ? tasks.find(t => t._id === editingTaskId)?.createdByUser : undefined}
+                assignedToUser={dialogMode === 'edit' ? tasks.find(t => t._id === editingTaskId)?.assignedToUser : undefined}
+                comments={dialogMode === 'edit' ? tasks.find(t => t._id === editingTaskId)?.comments : []}
+                taskId={editingTaskId || undefined}
+                onCommentAdded={fetchTasks}
             />
             {loading ? (
                 <div style={{ textAlign: 'center', padding: 24 }}>
