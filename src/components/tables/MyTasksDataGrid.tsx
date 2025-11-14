@@ -360,7 +360,7 @@ function MyTasksDataGrid() {
             // Ensure assignedTo and createdBy are set to current user's ID
             const taskData = {
                 category: form.category,
-                assignedTo: user?.id || '',
+                assignedTo: form.assignedTo || user?.id || '',
                 title: form.title,
                 description: form.description,
                 priority: form.priority,

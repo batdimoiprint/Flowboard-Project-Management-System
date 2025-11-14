@@ -41,8 +41,8 @@ export interface TaskDialogProps {
     isSubmitting?: boolean;
     submitError?: string | null;
     dialogMode?: 'add' | 'edit';
-    createdByUser?: { firstName: string; lastName: string; userIMG: string | null } | null;
-    assignedToUser?: { firstName: string; lastName: string; userIMG: string | null } | null;
+    createdByUser?: User | null;
+    assignedToUser?: User | null;
     comments?: Array<{
         authorId?: string;
         user?: string;
@@ -63,6 +63,9 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
     const [newComment, setNewComment] = useState('');
     const [isAddingComment, setIsAddingComment] = useState(false);
     const [commentError, setCommentError] = useState<string | null>(null);
+    const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
+    const [isLoadingAssignableUsers, setIsLoadingAssignableUsers] = useState(false);
+    const [assignableUsersError, setAssignableUsersError] = useState<string | null>(null);
     const styles = useCommentFieldStyles();
     const commentContainerStyle: CSSProperties = {
         border: `1px solid ${tokens.colorNeutralStroke1}`,
@@ -110,6 +113,82 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
         }
         fetchUserInfo();
     }, [user, user?.id, form.createdBy, dialogMode, createdByUser]);
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        let isSubscribed = true;
+        async function loadAssignableUsers() {
+            setIsLoadingAssignableUsers(true);
+            setAssignableUsersError(null);
+            try {
+                const fetchedUsers = await usersApi.getAllUsers();
+                if (isSubscribed) {
+                    setAssignableUsers(fetchedUsers);
+                }
+            } catch (error: unknown) {
+                console.error('Failed to load assignable users:', error);
+                if (isSubscribed) {
+                    const errorMessage = error instanceof Error && 'message' in error
+                        ? error.message
+                        : 'Unable to load users.';
+                    setAssignableUsersError(errorMessage);
+                }
+            } finally {
+                if (isSubscribed) {
+                    setIsLoadingAssignableUsers(false);
+                }
+            }
+        }
+
+        loadAssignableUsers();
+
+        return () => {
+            isSubscribed = false;
+        };
+    }, [open]);
+
+    useEffect(() => {
+        if (!user?.id) {
+            return;
+        }
+
+        setAssignableUsers(prev => {
+            const exists = prev.some(existing => existing.id === user.id);
+            return exists ? prev : [...prev, user];
+        });
+    }, [user]);
+
+    useEffect(() => {
+        if (!assignedToUser?.id) {
+            return;
+        }
+
+        setAssignableUsers(prev => {
+            const exists = prev.some(existing => existing.id === assignedToUser.id);
+            return exists ? prev : [...prev, assignedToUser];
+        });
+    }, [assignedToUser]);
+
+    function handleAssignedUserSelect(_: unknown, data: { optionValue?: string | number }) {
+        const selectedId = typeof data.optionValue === 'string' ? data.optionValue : null;
+        if (!selectedId) {
+            return;
+        }
+
+        const syntheticEvent = {
+            target: {
+                name: 'assignedTo',
+                value: selectedId,
+                tagName: 'SELECT',
+                type: 'select-one',
+            },
+        } as unknown as React.ChangeEvent<HTMLSelectElement>;
+
+        onInputChange(syntheticEvent);
+    }
 
     function handleTitleBlur() {
         setEditingTitle(false);
@@ -252,26 +331,44 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                             {/* <AddCircle32Filled /> */}
                         </Button>
 
-                        <Dropdown
-                            id="assign-member-dropdown"
-                            placeholder="Assign to me"
-                            value={assignedToUser ? `${assignedToUser.firstName} ${assignedToUser.lastName}` : (user ? `${user.firstName} ${user.lastName}` : 'Me')}
-                            style={{ minWidth: 180 }}
-                            disabled
-                        >
-                            <Option text={assignedToUser ? `${assignedToUser.firstName} ${assignedToUser.lastName}` : (user ? `${user.firstName} ${user.lastName}` : 'Me')}>
-                                <Persona
-                                    avatar={{
-                                        color: "colorful",
-                                        "aria-hidden": true,
-                                        image: (assignedToUser?.userIMG || user?.userIMG) ? { src: assignedToUser?.userIMG || user?.userIMG || '' } : undefined
-                                    }}
-                                    name={assignedToUser ? `${assignedToUser.firstName} ${assignedToUser.lastName}` : (user ? `${user.firstName} ${user.lastName}` : 'Me')}
-                                    presence={{ status: "available" }}
-                                    secondaryText={assignedToUser ? "Assigned" : "You"}
-                                />
-                            </Option>
-                        </Dropdown>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <Dropdown
+                                id="assign-member-dropdown"
+                                placeholder={isLoadingAssignableUsers ? 'Loading users…' : 'Select a member'}
+                                style={{ minWidth: 220 }}
+                                selectedOptions={form.assignedTo ? [form.assignedTo] : []}
+                                onOptionSelect={handleAssignedUserSelect}
+                                disabled={isLoadingAssignableUsers || assignableUsers.length === 0}
+                            >
+                                {isLoadingAssignableUsers && (
+                                    <Option value="loading" disabled text="Loading">
+                                        Loading users…
+                                    </Option>
+                                )}
+                                {!isLoadingAssignableUsers && assignableUsers.length === 0 && (
+                                    <Option value="no-users" disabled text="No users">
+                                        No users available
+                                    </Option>
+                                )}
+                                {assignableUsers.map(assignableUser => (
+                                    <Option key={assignableUser.id} value={assignableUser.id} text={`${assignableUser.firstName} ${assignableUser.lastName}`}>
+                                        <Persona
+                                            avatar={{
+                                                color: 'colorful',
+                                                image: assignableUser.userIMG ? { src: assignableUser.userIMG } : undefined,
+                                            }}
+                                            name={`${assignableUser.firstName} ${assignableUser.lastName}`}
+                                            secondaryText={assignableUser.email}
+                                        />
+                                    </Option>
+                                ))}
+                            </Dropdown>
+                            {assignableUsersError && (
+                                <span style={{ color: tokens.colorPaletteRedForeground3, fontSize: tokens.fontSizeBase100 }}>
+                                    {assignableUsersError}
+                                </span>
+                            )}
+                        </div>
                     </div>
                     {/* Row 3: Description */}
                     <Field label="Description" style={{ marginBottom: 16 }}>
