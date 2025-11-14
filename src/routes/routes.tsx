@@ -5,6 +5,7 @@ import { Navigate } from "react-router-dom";
 import PublicLayout from "../layout/PublicLayout";
 import CreateProjectPage from "../pages/project/CreateProjectPage";
 import KanbanPage from "../pages/project/KanbanPage";
+import ProjectListPage from "../pages/project/ProjectListPage";
 import ProjectPage from "../pages/project/ProjectPage";
 import TaskListPage from "../pages/project/TaskListPage";
 
@@ -61,16 +62,22 @@ export default function AppRoutes() {
                 <Route index element={<MyTasks />} />
                 <Route path="profile" element={<MyProfile />} />
 
-                {/* Project routes - TODO: Replace 'project' with actual project name/ID in future */}
+                {/* Project routes */}
                 <Route path="project">
-                    {/* Index: Project View Page */}
-                    <Route index element={<ProjectPage />} />
+                    {/* Index: Project List Page */}
+                    <Route index element={<ProjectListPage />} />
+
                     {/* Create Project Page */}
                     <Route path="create" element={<CreateProjectPage />} />
-                    {/* Kanban Page */}
-                    <Route path="kanban" element={<KanbanPage />} />
-                    {/* Task List Page */}
-                    <Route path="tasks" element={<TaskListPage />} />
+
+                    {/* Dynamic project views */}
+                    <Route path=":projectName">
+                        {/* Default sub-view for a project: team page */}
+                        <Route index element={<ProjectPage />} />
+                        <Route path="team" element={<ProjectPage />} />
+                        <Route path="kanban" element={<KanbanPage />} />
+                        <Route path="tasks" element={<TaskListPage />} />
+                    </Route>
                 </Route>
 
                 <Route path="*" element={<NotFound />} />

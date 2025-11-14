@@ -169,7 +169,7 @@ Authorization: Bearer {{login.response.body.token}}
 {
   "projectName": "New test Project",
   "description": "Project TESD description",
-  "teamMembers": ["690d04b90943671dbf22f65e"]
+  "teamMembers": []
 }
 
 ### ===============================

@@ -6,16 +6,18 @@ import StatsHeader from "../components/headers/StatsHeader";
 import HomeHeader from "../components/headers/HomeHeader";
 import { userLayoutStyles } from "../components/styles/Styles";
 import { useLocation } from "react-router-dom";
+import { Card } from "@fluentui/react-components";
+// import { Card } from "@fluentui/react-components";
 
 
 export default function UserLayout() {
     const styles = userLayoutStyles();
     const location = useLocation();
-    const isHome =
-        location.pathname === "/home" || location.pathname === "/home/";
-    const isProfile =
-        location.pathname === "/home/profile" ||
-        location.pathname === "/home/profile/";
+    const normalizedPath = location.pathname.replace(/\/+$/, "");
+    const isHome = normalizedPath === "/home";
+    const isProfile = normalizedPath === "/home/profile";
+    const isProjectRoot = normalizedPath === "/home/project";
+    const isProjectWithName = /^\/home\/project\/[^/]+(\/.*)?$/.test(normalizedPath);
 
     return (
         <div className={styles.layoutContainer}>
@@ -24,22 +26,24 @@ export default function UserLayout() {
 
             {/* Right column: header(s) and content */}
             <main className={styles.mainContent}>
-                {!isProfile && (
+                {/* Do not mount the header container at all on the project list root */}
+                {!isProfile && !isProjectRoot && (
                     <div className={styles.header}>
                         {isHome ? (
                             <HomeHeader />
-                        ) : (<>
-
-                            <NavigationHeader />
-
-
-                            <StatsHeader />
-
-                        </>
+                        ) : isProjectWithName ? (
+                            <Card className={styles.header} >
+                                <NavigationHeader />
+                                <StatsHeader />
+                            </Card>
+                        ) : (
+                            <>
+                                <NavigationHeader />
+                                <StatsHeader />
+                            </>
                         )}
                     </div>
-                )
-                }
+                )}
                 <section className={styles.sectionContent}>
                     <Outlet />
                 </section>

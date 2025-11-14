@@ -1,4 +1,4 @@
-import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Card } from "@fluentui/react-components";
+import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem } from "@fluentui/react-components";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Folder20Regular } from '@fluentui/react-icons';
 import React from 'react';
@@ -33,23 +33,24 @@ export default function NavigationHeader() {
     });
 
     return (
-        <Card>
-            <Breadcrumb aria-label="Breadcrumb">
-                {crumbs.map((c, idx) => (
-                    <React.Fragment key={c.path}>
-                        <BreadcrumbItem>
-                            <BreadcrumbButton
-                                onClick={() => navigate(c.path)}
-                                current={idx === crumbs.length - 1}
-                            >
-                                {idx === 0 && segments[0] === 'project' ? <Folder20Regular style={{ marginRight: 8 }} /> : null}
-                                {c.label}
-                            </BreadcrumbButton>
-                        </BreadcrumbItem>
-                        {idx < crumbs.length - 1 && <BreadcrumbDivider />}
-                    </React.Fragment>
-                ))}
-            </Breadcrumb>
-        </Card>
+
+        <Breadcrumb aria-label="Breadcrumb">
+            {crumbs.map((c, idx) => (
+                <React.Fragment key={c.path}>
+                    <BreadcrumbItem>
+                        <BreadcrumbButton
+                            onClick={() => navigate(c.path)}
+                            current={idx === crumbs.length - 1}
+                        >
+                            {idx === 0 && segments[0] === 'project' ? <Folder20Regular style={{ marginRight: 8 }} /> : null}
+                            {c.label}
+                        </BreadcrumbButton>
+                    </BreadcrumbItem>
+                    {idx < crumbs.length - 1 && <BreadcrumbDivider />}
+                </React.Fragment>
+            ))}
+        </Breadcrumb>
+
+
     );
 }

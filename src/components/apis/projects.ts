@@ -7,6 +7,8 @@ export interface Project {
     teamMembers: string[];
     createdAt?: string;
     updatedAt?: string;
+    createdBy?: string;
+    permissions?: Record<string, string>;
 }
 
 export interface CreateProjectRequest {

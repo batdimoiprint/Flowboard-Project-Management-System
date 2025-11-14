@@ -10,9 +10,8 @@ import {
     //  AddCircle32Filled,
     Delete24Regular, Dismiss24Regular
 } from '@fluentui/react-icons';
-// Remove duplicate imports
 import { useUser } from '../../hooks/useUser';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { usersApi } from '../apis/users';
 import type { User } from '../apis/auth';
 import { tasksApi } from '../apis/tasks';
@@ -65,7 +64,7 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
     const [isAddingComment, setIsAddingComment] = useState(false);
     const [commentError, setCommentError] = useState<string | null>(null);
     const styles = useCommentFieldStyles();
-    const commentContainerStyle = {
+    const commentContainerStyle: CSSProperties = {
         border: `1px solid ${tokens.colorNeutralStroke1}`,
         borderRadius: tokens.borderRadiusMedium,
         padding: tokens.spacingVerticalM,
@@ -73,12 +72,12 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
         overflowY: 'auto',
         marginBottom: tokens.spacingVerticalM,
     };
-    const commentTextStyle = {
+    const commentTextStyle: CSSProperties = {
         marginLeft: tokens.spacingHorizontalM,
         fontSize: tokens.fontSizeBase200,
         color: tokens.colorNeutralForeground1,
     };
-    const commentDateStyle = {
+    const commentDateStyle: CSSProperties = {
         fontSize: tokens.fontSizeBase100,
         marginLeft: 'auto',
         color: tokens.colorNeutralForeground3,

@@ -21,6 +21,7 @@ export default function Sidebar() {
     const [openCategories, setOpenCategories] = useState<string[]>(['projects']);
     const styles = useSidebarStyles();
     const navigate = useNavigate();
+    const handleProjectsNav = () => navigate('/home/project');
 
     // Allow multiple categories open (adjust if single-open behavior is desired)
     const isMultiple = true;
@@ -62,11 +63,11 @@ export default function Sidebar() {
             <NavDrawerBody className={styles.body}>
                 <div className={styles.bodyItems}>
 
-                    <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson20Regular />} className={styles.navItem}>
+                    <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson20Regular />} className={styles.navMainItem}>
                         My Tasks
                     </NavItem>
                     {/* Project List Section */}
-                    <ProjectList openCategories={openCategories} styles={styles} />
+                    <ProjectList openCategories={openCategories} styles={styles} onNavigateToProjects={handleProjectsNav} />
 
                     <NotificationList openCategories={openCategories} styles={styles} />
                 </div>
