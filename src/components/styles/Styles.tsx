@@ -154,31 +154,15 @@ export const mainLayoutStyles = makeStyles({
 
 	// For Sidebar export
 
-	// navItem: {
-	// 	display: "flex",
-	// 	flexDirection: "row",
-	// 	width: "auto",
-	// 	minHeight: "auto",
-	// 	alignItems: "center",
-	// 	justifyContent: "flex-start",
-	// 	gap: tokens.spacingHorizontalS,
-	// 	padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`,
-	// 	borderRadius: tokens.borderRadiusMedium,
-	// 	background: tokens.colorNeutralBackground2,
-	// },
-
-
-
-
 	/* styles for compact sub items under categories */
 	navSubItem: {
-		display: "flex",
-		flexDirection: "row",
-		width: "100%",
+
+
+
 		minHeight: "36px",
 		alignItems: "center",
 		justifyContent: "flex-start",
-		// marginLeft: tokens.spacingVerticalL,
+		marginTop: tokens.spacingVerticalXXS,
 		padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalL}`,
 		borderRadius: tokens.borderRadiusSmall,
 		background: tokens.colorNeutralBackground3,

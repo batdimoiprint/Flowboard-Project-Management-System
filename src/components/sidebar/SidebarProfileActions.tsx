@@ -1,12 +1,11 @@
-import { Person20Filled } from "@fluentui/react-icons";
-import { useSidebarProfileActionsStyles } from "../styles/Styles";
-import { Button, Persona, NavItem } from "@fluentui/react-components";
-import ThemeToggle from "../styles/ThemeToggle";
-import { useUser } from "../../hooks/useUser";
+import { Button, Persona, mergeClasses } from "@fluentui/react-components";
 import { useNavigate } from "react-router";
+import { useUser } from "../../hooks/useUser";
+import { mainLayoutStyles } from "../styles/Styles";
+import ThemeToggle from "../styles/ThemeToggle";
 
 export default function SidebarProfileActions() {
-    const styles = useSidebarProfileActionsStyles();
+    const s = mainLayoutStyles();
     const { user, logout } = useUser();
     const navigate = useNavigate();
 
@@ -21,25 +20,28 @@ export default function SidebarProfileActions() {
         : 'Guest User';
 
     return (
-        <div className={styles.root}>
-            <div >
-                <Persona
-                    name={fullName}
-                    secondaryText={user?.email || 'Not logged in'}
-                    presence={{ status: 'available' }}
-                    size="huge"
-                    textPosition="below"
-                    avatar={user?.userIMG ? { image: { src: user.userIMG } } : undefined}
-                />
-            </div>
-            <div className={styles.actionsContainer}>
-                <ThemeToggle className={styles.button} />
-                <NavItem as="button" value="profile" onClick={() => { navigate('/home/profile') }} className={styles.navMainItem} icon={<Person20Filled />}>
-                    My Profile
-                </NavItem>
-                <Button appearance="primary" className={styles.button} onClick={handleSignOut}>Sign Out</Button>
+        <div className={mergeClasses(s.flexColFill, s.gap)}>
 
-            </div>
+            <Persona
+                name={fullName}
+                secondaryText={user?.email || 'Not logged in'}
+                presence={{ status: 'available' }}
+                size="huge"
+                textPosition="below"
+                avatar={user?.userIMG ? { image: { src: user.userIMG } } : undefined}
+                onClick={() => { navigate('/home/profile') }}
+                className={s.pointer}
+            />
+
+
+            <ThemeToggle />
+            {/* <Button appearance="outline" icon={<Person20Filled />}>
+                    My Profile
+                </Button> */}
+
+
+
+            <Button appearance="primary" onClick={handleSignOut}>Sign Out</Button>
         </div>
     );
 }

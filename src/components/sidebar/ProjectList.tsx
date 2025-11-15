@@ -26,7 +26,7 @@ export default function ProjectList({ openCategories, onNavigateToProjects }: Pr
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const styles = mainLayoutStyles();
+    const s = mainLayoutStyles();
 
     useEffect(() => {
         let active = true;
@@ -80,7 +80,7 @@ export default function ProjectList({ openCategories, onNavigateToProjects }: Pr
                     value="projects"
                     icon={<Folder20Regular />}
                     aria-expanded={openCategories.includes('projects')}
-                    className={mergeClasses(styles.navMainItem)}
+                    className={mergeClasses(s.navMainItem)}
                     onClick={onNavigateToProjects}
                 >
                     Projects List
@@ -107,14 +107,14 @@ export default function ProjectList({ openCategories, onNavigateToProjects }: Pr
                             as="button"
                             key={project.id}
                             value={project.id}
-                            className={mergeClasses(styles.navSubItem)}
+                            className={mergeClasses(s.navSubItem)}
                             onClick={() => handleProjectClick(project.projectName)}
                         >
                             {project.projectName}
                         </NavSubItem>
 
                     ))}
-                    <NavSubItem as="button" className={styles.navSubItem} value="createProject"
+                    <NavSubItem as="button" className={s.navSubItem} value="createProject"
                         onClick={(event) => { event.stopPropagation(); navigate("/home/project/create"); }}>
                         <AddCircle24Regular />
                         <Label>Create Project</Label>
