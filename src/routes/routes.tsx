@@ -74,7 +74,7 @@ export default function AppRoutes() {
                     <Route path=":projectName">
                         {/* Default sub-view for a project: team page */}
                         <Route index element={<ProjectPage />} />
-                        <Route path="team" element={<ProjectPage />} />
+
                         <Route path="kanban" element={<KanbanPage />} />
                         <Route path="tasks" element={<TaskListPage />} />
                     </Route>

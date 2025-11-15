@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { NavCategory, NavCategoryItem, NavSubItemGroup, NavSubItem, NavSectionHeader, Button, Text, tokens } from "@fluentui/react-components";
-import { Folder20Regular } from "@fluentui/react-icons";
+import { NavCategory, NavCategoryItem, NavSubItemGroup, NavSubItem, NavSectionHeader, Button, Text, tokens, Label } from "@fluentui/react-components";
+import { AddCircle24Regular, Folder20Regular } from "@fluentui/react-icons";
 import { useSidebarStyles } from '../styles/Styles';
 import { useNavigate } from "react-router";
 import { projectsApi, type Project } from "../apis/projects";
@@ -67,7 +67,7 @@ export default function ProjectList({ openCategories, styles, onNavigateToProjec
 
     const handleProjectClick = (projectName: string) => {
         const slug = buildSlug(projectName);
-        navigate(`/home/project/${slug}/team`);
+        navigate(`/home/project/${slug}`);
     };
 
     return (
@@ -83,9 +83,7 @@ export default function ProjectList({ openCategories, styles, onNavigateToProjec
                     onClick={onNavigateToProjects}
                 >
                     Projects List
-                    <Button size="small" onClick={(event) => { event.stopPropagation(); navigate("/home/project/create"); }} appearance="secondary">
-                        Create Project
-                    </Button>
+
                 </NavCategoryItem>
 
                 <NavSubItemGroup>
@@ -114,7 +112,17 @@ export default function ProjectList({ openCategories, styles, onNavigateToProjec
                         >
                             {project.projectName}
                         </NavSubItem>
+
                     ))}
+                    <NavSubItem className={styles.navSubItem}
+                        onClick={(event) => { event.stopPropagation(); navigate("/home/project/create"); }}
+                        appearance="secondary">
+                        <AddCircle24Regular />
+                        {/* <Label>Create Project</Label> */}
+
+                    </NavSubItem>
+
+
                 </NavSubItemGroup>
             </NavCategory>
         </>

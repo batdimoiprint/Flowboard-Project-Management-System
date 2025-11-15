@@ -1,179 +1,217 @@
-// Comment field styles
-export const useCommentFieldStyles = makeStyles({
-	root: {
+import { makeStyles, tokens, typographyStyles, } from "@fluentui/react-components";
 
-		border: `1px solid ${tokens.colorNeutralStroke2}`,
-		borderRadius: tokens.borderRadiusMedium,
-		backgroundColor: tokens.colorNeutralBackground2,
-		padding: tokens.spacingVerticalL,
-		marginBottom: tokens.spacingVerticalM,
-	},
-});
-import {
-	makeStyles,
-	tokens,
-	typographyStyles,
-} from "@fluentui/react-components";
+export const mainLayoutStyles = makeStyles({
+	/////////////////////////////
+	// GLOBAL REUSABLE STYLES //
+	////////////////////////////
 
-///////////////////
-// LAYOUT STYLES //
-///////////////////
-
-// Public Layout
-export const publicLayoutStyles = makeStyles({
-	layoutContainer: {
+	publicLayout: {
+		boxSizing: "border-box",
 		display: "flex",
 		flexDirection: "column",
-		gap: tokens.spacingVerticalL,
-		padding: tokens.spacingVerticalL,
-		background: tokens.colorNeutralBackground1Pressed,
+		width: "100%",
+		height: "100vh",
+		flex: 1,
 	},
-	header: {},
-	mainContent: {
-		// margin: tokens.spacingVerticalL,
-	},
-	sectionContent: {
-		margin: tokens.spacingVerticalS,
-		padding: tokens.spacingVerticalS,
-	},
-});
 
-// User Layout
-export const userLayoutStyles = makeStyles({
-	layoutContainer: {
+	userLayout: {
+		boxSizing: "border-box",
 		display: "flex",
 		flexDirection: "row",
 		width: "100%",
 		height: "100vh",
-		gap: tokens.spacingVerticalL,
-		padding: tokens.spacingVerticalL,
+		flex: 1,
+	},
 
-		background: tokens.colorNeutralBackground1Pressed,
-
+	contentsLayout: {
 		boxSizing: "border-box",
-		overflow: "hidden",
-	},
-	mainContent: {
 		display: "flex",
-		width: "100%",
 		flexDirection: "column",
-		gap: tokens.spacingHorizontalL,
+		width: "100%",
+		flex: 1,
+		gap: tokens.spacingVerticalL,
 
 	},
-	header: {
+
+	mainBackground: {
+		background: tokens.colorNeutralBackground2Hover
+	},
+
+	artifCard: {
+		background: tokens.colorNeutralBackground1,
+		boxShadow: tokens.shadow4,
+		borderRadius: tokens.borderRadiusMedium
+	},
+
+	debugBG: {
+		background: tokens.colorPaletteRedBackground1
+	},
+
+	flexColFill: {
+		boxSizing: "border-box",
+		display: "flex",
+		flexDirection: "column",
+
+		height: "100%",
+		flex: 1,
+	},
+
+	flexColFit: {
+		boxSizing: "border-box",
+		display: "flex",
+		flexDirection: "column",
+
+		height: "100%",
+	},
+	flexRowFill: {
+		boxSizing: "border-box",
 		display: "flex",
 		flexDirection: "row",
-		height: "auto",
 		width: "100%",
 
-		// background: tokens.colorPaletteRedBackground2, // for debug
-	},
-	sectionContent: {
 		flex: 1,
+	},
+	flexRowFit: {
+		boxSizing: "border-box",
+		display: "flex",
+		flexDirection: "row",
+		width: "auto",
+	},
+
+	layoutPadding: {
+		boxSizing: "border-box",
+		padding: tokens.spacingHorizontalL,
+	},
+
+	alignCenter: {
+		alignItems: "center",
+		justifyContent: "center",
+	},
+
+	spaceBetween: {
+		justifyContent: 'space-between'
+	},
+
+	gap: {
+		gap: tokens.spacingVerticalL,
+	},
+
+	largeGap: {
+		gap: "4rem"
+	},
+
+	pointer: {
+		cursor: "pointer"
+	},
+
+	boldText: {
+		fontSize: tokens.fontSizeBase500,
+		fontWeight: tokens.fontWeightBold
+	},
+
+
+	/////////////////////////////////
+	// COMPONENTS REUSABLE STYLES //
+	////////////////////////////////
+	// Headers
+	header: {
+		boxSizing: "border-box",
+		display: "flex",
+		flexDirection: "row",
+		width: "100%",
+		height: "auto",
+		alignContent: 'center',
+		justifyContent: 'space-between'
+	},
+
+	logoIcon: {
+		width: "36px",
+		height: "36px",
+		display: "inline-flex",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+
+	brand: {
+		...typographyStyles.title2,
+		color: tokens.colorBrandForeground1
+	},
+
+
+
+
+
+	// For Sidebar export
+	drawer: {
+		width: "20vw",
+		// height: "97vh",
+	},
+	navItem: {
+		display: "flex",
+		flexDirection: "row",
+		width: "auto",
+		minHeight: "auto",
+		alignItems: "center",
+		justifyContent: "flex-start",
+		gap: tokens.spacingHorizontalS,
+		padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`,
+		borderRadius: tokens.borderRadiusMedium,
+		background: tokens.colorNeutralBackground2,
+	},
+
+	/* styles for top-level nav items (My Tasks, Projects heading) */
+	navMainItem: {
+		display: "flex",
+		flexDirection: "row",
+		width: "auto",
+		minHeight: "40px",
+		alignItems: "center",
+		justifyContent: "flex-start",
+		gap: tokens.spacingHorizontalS,
+		padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`,
+		borderRadius: tokens.borderRadiusMedium,
+		background: tokens.colorNeutralBackground2,
+	},
+
+	/* styles for compact sub items under categories */
+	navSubItem: {
+		display: "flex",
+		flexDirection: "row",
+		width: "auto",
+		minHeight: "36px",
+		alignItems: "center",
+		justifyContent: "flex-start",
+		gap: tokens.spacingHorizontalS,
+		padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalL}`,
+		borderRadius: tokens.borderRadiusSmall,
+		background: "transparent",
+	},
+
+	bodyItems: {
 		display: "flex",
 		flexDirection: "column",
-
-		backgroundColor: tokens.colorNeutralBackground2,
-		overflow: "auto",
-		minHeight: 0,
+		height: "auto",
+		alignItems: "left",
+		justifyContent: "space-between",
+		gap: tokens.spacingVerticalS,
 	},
+	headerContainer: {
+		display: "flex",
+		flexDirection: "row",
+		width: "auto",
+		gap: tokens.spacingVerticalS,
+		padding: tokens.spacingHorizontalM,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+
 });
 
 
-export const useHomeHeaderStyles = makeStyles({
-	header: {
-		display: "flex",
-		flexDirection: "row",
-		height: "auto",
-		width: "100%",
-		justifyContent: "space-around",
-		alignItems: "stretch",
-		gap: tokens.spacingHorizontalL
-	},
-	leftCard: {
-		display: "flex",
-		flexDirection: "row",
-		width: "100%",
-		background: tokens.colorNeutralBackground1,
-		padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalXL}`,
-		justifyContent: "space-between",
-		alignItems: "center",
 
-	},
-	rightCard: {
-		display: "flex",
-		flexDirection: "row",
-		width: "auto",
+// Sidebar styles
+export const useSidebarStyles = makeStyles({
 
-		alignItems: "center",
-	},
-	greetingCol: {
-		display: "flex",
-		flexDirection: "column",
-		width: "auto",
-	},
-	greetingTitle: {
-		width: "100%",
-		...typographyStyles.title1,
-	},
-	greetingName: {
-		color: tokens.colorNeutralForeground3,
-		fontSize: "18px",
-	},
-	statsRow: {
-		display: "flex",
-		flexDirection: "row",
-		alignItems: "center",
-		gap: "64px",
-	},
-	statItem: {
-		display: "flex",
-		alignItems: "center",
-		gap: "6px",
-	},
-	statNumber: {
-		fontWeight: 600,
-		fontSize: "18px",
-	},
-	statLabel: {
-		color: tokens.colorNeutralForeground3,
-		fontSize: "16px",
-	},
-
-	dateCol: {
-		display: "flex",
-		flexDirection: "row",
-		gap: tokens.spacingHorizontalL,
-		minWidth: 0,
-	},
-	dateTitle: {
-		fontSize: "28px",
-		fontWeight: 600,
-		display: "flex",
-		alignItems: "center",
-		gap: "8px",
-	},
-	moonIcon: {
-		fontSize: "28px",
-	},
-	dateTime: {
-		color: tokens.colorNeutralForeground3,
-		fontSize: "16px",
-	},
-	todayCol: {
-		display: "flex",
-		flexDirection: "column",
-		alignItems: "flex-end",
-		minWidth: 0,
-	},
-	todayCount: {
-		fontSize: "28px",
-		fontWeight: 600,
-	},
-	todayLabel: {
-		color: tokens.colorNeutralForeground3,
-		fontSize: "16px",
-	},
 });
 
 //////////////////
@@ -217,6 +255,18 @@ export const useLoginPageStyle = makeStyles({
 		color: tokens.colorBrandBackground,
 		margin: 0,
 		textAlign: "left",
+	},
+});
+
+// Comment field styles
+export const useCommentFieldStyles = makeStyles({
+	root: {
+
+		border: `1px solid ${tokens.colorNeutralStroke2}`,
+		borderRadius: tokens.borderRadiusMedium,
+		backgroundColor: tokens.colorNeutralBackground2,
+		padding: tokens.spacingVerticalL,
+		marginBottom: tokens.spacingVerticalM,
 	},
 });
 
@@ -360,50 +410,6 @@ export const useRegisterForm = makeStyles({
 	},
 });
 
-// Public header styles
-export const usePublicHeaderStyles = makeStyles({
-	header: {
-		display: "flex",
-		alignItems: "center",
-		justifyContent: "space-between",
-		height: "56px",
-		paddingLeft: tokens.spacingHorizontalL,
-		paddingRight: tokens.spacingHorizontalL,
-		backgroundColor: tokens.colorNeutralBackground1,
-		gap: tokens.spacingHorizontalM,
-	},
-	left: {
-		display: "flex",
-		alignItems: "center",
-		gap: tokens.spacingHorizontalS,
-	},
-	logoIcon: {
-		width: "48px",
-		height: "48px",
-		display: "inline-flex",
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	brand: {
-		...typographyStyles.title3,
-	},
-	nav: {
-		display: "flex",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: "100px",
-		flex: 1,
-	},
-	navLabel: {
-		fontSize: "14px",
-	},
-	right: {
-		display: "flex",
-		alignItems: "center",
-		gap: tokens.spacingHorizontalM,
-	},
-});
-
 // Task-related styles
 export const useMyTasksCardStyles = makeStyles({
 	root: {
@@ -435,7 +441,7 @@ export const useHomeHeroStyles = makeStyles({
 		display: "flex",
 		alignItems: "center",
 		justifyContent: "center",
-		minHeight: "91vh", // fallback for hero height
+		// minHeight: "91vh", // fallback for hero height
 		paddingTop: tokens.spacingVerticalNone,
 		paddingBottom: tokens.spacingVerticalXXXL,
 		paddingLeft: tokens.spacingHorizontalXXL,
@@ -487,89 +493,6 @@ export const useHomeHeroStyles = makeStyles({
 	},
 });
 
-// Sidebar styles
-export const useSidebarStyles = makeStyles({
-	drawer: {
-		display: "flex",
-		flexDirection: "column",
-		width: "25%",
-		/* let the drawer size itself and scroll if necessary */
-		height: "auto",
-		maxHeight: "100vh",
-		alignItems: "left",
-		justifyContent: "flex-start",
-		overflowY: "auto",
-		padding: tokens.spacingVerticalL,
-		gap: tokens.spacingVerticalS,
-		boxShadow: tokens.shadow4,
-	},
-	navItem: {
-		display: "flex",
-		flexDirection: "row",
-		width: "auto",
-		minHeight: "auto",
-		alignItems: "center",
-		justifyContent: "flex-start",
-		gap: tokens.spacingHorizontalS,
-		padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`,
-		borderRadius: tokens.borderRadiusMedium,
-		background: tokens.colorNeutralBackground2,
-	},
-
-	/* styles for top-level nav items (My Tasks, Projects heading) */
-	navMainItem: {
-		display: "flex",
-		flexDirection: "row",
-		width: "auto",
-		minHeight: "40px",
-		alignItems: "center",
-		justifyContent: "flex-start",
-		gap: tokens.spacingHorizontalS,
-		padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`,
-		borderRadius: tokens.borderRadiusMedium,
-		background: tokens.colorNeutralBackground2,
-	},
-
-	/* styles for compact sub items under categories */
-	navSubItem: {
-		display: "flex",
-		flexDirection: "row",
-		width: "auto",
-		minHeight: "36px",
-		alignItems: "center",
-		justifyContent: "flex-start",
-		gap: tokens.spacingHorizontalS,
-		padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalL}`,
-		borderRadius: tokens.borderRadiusSmall,
-		background: "transparent",
-	},
-	body: {
-		display: "flex",
-		flexDirection: "column",
-		width: "auto",
-		height: "100%",
-		alignItems: "left",
-		justifyContent: "space-between",
-		gap: tokens.spacingVerticalS,
-	},
-	bodyItems: {
-		display: "flex",
-		flexDirection: "column",
-		height: "auto",
-		alignItems: "left",
-		justifyContent: "space-between",
-		gap: tokens.spacingVerticalS,
-	},
-	headerContainer: {
-		display: "flex",
-		flexDirection: "row",
-		width: "auto",
-		gap: tokens.spacingVerticalS,
-		padding: tokens.spacingHorizontalM,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-});
 
 export const useSidebarProfileActionsStyles = makeStyles({
 	root: {

@@ -1,25 +1,24 @@
 import {
+    mergeClasses,
     NavDrawer,
     NavDrawerBody,
     NavDrawerHeader,
     NavItem,
-    Text,
-    tokens,
 } from "@fluentui/react-components";
 import { TaskListSquarePerson20Regular } from "@fluentui/react-icons";
 import { useState } from "react";
-import logo from '../../assets/logo.webp';
 import SidebarProfileActions from "./SidebarProfileActions";
-import { useSidebarStyles } from '../styles/Styles';
+import { mainLayoutStyles } from '../styles/Styles';
 
 import ProjectList from './ProjectList';
 import NotificationList from "./NotificationList";
 import { useNavigate } from "react-router";
+import BrandHeader from "../headers/BrandHeader";
 
 export default function Sidebar() {
 
     const [openCategories, setOpenCategories] = useState<string[]>(['projects']);
-    const styles = useSidebarStyles();
+    const s = mainLayoutStyles();
     const navigate = useNavigate();
     const handleProjectsNav = () => navigate('/home/project');
 
@@ -43,37 +42,35 @@ export default function Sidebar() {
     }
 
     return (
-        // <Card className={styles.root}>
+        // <Card className={s.root}>
         <NavDrawer
             type="inline"
             open={true}
             multiple={isMultiple}
             onNavCategoryItemToggle={handleCategoryToggle}
             openCategories={openCategories}
-            className={styles.drawer}
-            style={{
-                backgroundColor: tokens.colorNeutralBackground1
-            }}
+            className={mergeClasses(s.flexColFit, s.drawer, s.artifCard, s.layoutPadding, s.spaceBetween)}
         >
-            <NavDrawerHeader className={styles.headerContainer}>
-                <img src={logo} alt="FlowBoard" style={{ width: '48px', height: '48px' }} />
-                <Text weight="semibold" size={700}>FlowBoard</Text>
+            <NavDrawerHeader >
+                <BrandHeader navigateTo="/home" />
             </NavDrawerHeader>
 
-            <NavDrawerBody className={styles.body}>
-                <div className={styles.bodyItems}>
 
-                    <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson20Regular />} className={styles.navMainItem}>
-                        My Tasks
-                    </NavItem>
-                    {/* Project List Section */}
-                    <ProjectList openCategories={openCategories} styles={styles} onNavigateToProjects={handleProjectsNav} />
 
-                    <NotificationList openCategories={openCategories} styles={styles} />
-                </div>
+            <div className={mergeClasses(s.bodyItems, s.debugBG)}>
 
-                <SidebarProfileActions />
-            </NavDrawerBody>
+                <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson20Regular />} className={s.navMainItem}>
+                    My Tasks
+                </NavItem>
+                {/* Project List Section */}
+                <ProjectList openCategories={openCategories} styles={s} onNavigateToProjects={handleProjectsNav} />
+
+                <NotificationList openCategories={openCategories} styles={s} />
+            </div>
+
+            <SidebarProfileActions />
+
+
         </NavDrawer>
         // </Card>
     );
