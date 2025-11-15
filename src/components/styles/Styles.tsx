@@ -5,6 +5,12 @@ export const mainLayoutStyles = makeStyles({
 	// GLOBAL REUSABLE STYLES //
 	////////////////////////////
 
+
+	debugBG: {
+		background: tokens.colorPaletteRedBackground1,
+		// padding: "0",
+	},
+
 	publicLayout: {
 		boxSizing: "border-box",
 		display: "flex",
@@ -43,9 +49,7 @@ export const mainLayoutStyles = makeStyles({
 		borderRadius: tokens.borderRadiusMedium
 	},
 
-	debugBG: {
-		background: tokens.colorPaletteRedBackground1
-	},
+
 
 	flexColFill: {
 		boxSizing: "border-box",
@@ -137,15 +141,19 @@ export const mainLayoutStyles = makeStyles({
 		color: tokens.colorBrandForeground1
 	},
 
+	sidebar: {
+		maxWidth: "20vw",
+	},
+	sidebarBody: {
+		padding: "0",
+	},
+
 
 
 
 
 	// For Sidebar export
-	drawer: {
-		width: "20vw",
-		// height: "97vh",
-	},
+
 	navItem: {
 		display: "flex",
 		flexDirection: "row",
@@ -187,14 +195,6 @@ export const mainLayoutStyles = makeStyles({
 		background: "transparent",
 	},
 
-	bodyItems: {
-		display: "flex",
-		flexDirection: "column",
-		height: "auto",
-		alignItems: "left",
-		justifyContent: "space-between",
-		gap: tokens.spacingVerticalS,
-	},
 	headerContainer: {
 		display: "flex",
 		flexDirection: "row",
@@ -413,11 +413,10 @@ export const useRegisterForm = makeStyles({
 // Task-related styles
 export const useMyTasksCardStyles = makeStyles({
 	root: {
+		boxSizing: "content-box",
 		display: "flex",
 		flexDirection: "column",
-		width: "100%",
-		maxWidth: "auto",
-		minHeight: "100%",
+		height: "100vh",
 		padding: tokens.spacingVerticalXXL,
 	},
 });

@@ -5,15 +5,15 @@ import {
     NavDrawerHeader,
     NavItem,
 } from "@fluentui/react-components";
-import { TaskListSquarePerson20Regular } from "@fluentui/react-icons";
+import { TaskListSquarePerson24Regular } from "@fluentui/react-icons";
 import { useState } from "react";
-import SidebarProfileActions from "./SidebarProfileActions";
 import { mainLayoutStyles } from '../styles/Styles';
+import SidebarProfileActions from "./SidebarProfileActions";
 
-import ProjectList from './ProjectList';
-import NotificationList from "./NotificationList";
 import { useNavigate } from "react-router";
 import BrandHeader from "../headers/BrandHeader";
+import NotificationList from "./NotificationList";
+import ProjectList from './ProjectList';
 
 export default function Sidebar() {
 
@@ -49,29 +49,31 @@ export default function Sidebar() {
             multiple={isMultiple}
             onNavCategoryItemToggle={handleCategoryToggle}
             openCategories={openCategories}
-            className={mergeClasses(s.flexColFit, s.drawer, s.artifCard, s.layoutPadding, s.spaceBetween)}
+            className={mergeClasses(s.flexColFill, s.artifCard, s.layoutPadding, s.spaceBetween, s.gap, s.sidebar)}
         >
             <NavDrawerHeader >
                 <BrandHeader navigateTo="/home" />
             </NavDrawerHeader>
 
+            <NavDrawerBody
+
+                className={mergeClasses(s.flexColFit, s.sidebarBody)}>
+
+                <div className={mergeClasses(s.flexColFit)}>
+
+                    <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson24Regular />} className={s.navMainItem}>
+                        My Tasks
+                    </NavItem>
 
 
-            <div className={mergeClasses(s.bodyItems, s.debugBG)}>
+                    {/* Project List Section */}
+                    <ProjectList openCategories={openCategories} styles={s} onNavigateToProjects={handleProjectsNav} />
 
-                <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson20Regular />} className={s.navMainItem}>
-                    My Tasks
-                </NavItem>
-                {/* Project List Section */}
-                <ProjectList openCategories={openCategories} styles={s} onNavigateToProjects={handleProjectsNav} />
-
-                <NotificationList openCategories={openCategories} styles={s} />
-            </div>
-
+                    <NotificationList openCategories={openCategories} styles={s} />
+                </div>
+            </NavDrawerBody>
             <SidebarProfileActions />
-
-
-        </NavDrawer>
+        </NavDrawer >
         // </Card>
     );
 }
