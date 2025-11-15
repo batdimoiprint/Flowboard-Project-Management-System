@@ -154,18 +154,19 @@ export const mainLayoutStyles = makeStyles({
 
 	// For Sidebar export
 
-	navItem: {
-		display: "flex",
-		flexDirection: "row",
-		width: "auto",
-		minHeight: "auto",
-		alignItems: "center",
-		justifyContent: "flex-start",
-		gap: tokens.spacingHorizontalS,
-		padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`,
-		borderRadius: tokens.borderRadiusMedium,
-		background: tokens.colorNeutralBackground2,
-	},
+	// navItem: {
+	// 	display: "flex",
+	// 	flexDirection: "row",
+	// 	width: "auto",
+	// 	minHeight: "auto",
+	// 	alignItems: "center",
+	// 	justifyContent: "flex-start",
+	// 	gap: tokens.spacingHorizontalS,
+	// 	padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`,
+	// 	borderRadius: tokens.borderRadiusMedium,
+	// 	background: tokens.colorNeutralBackground2,
+	// },
+
 
 
 

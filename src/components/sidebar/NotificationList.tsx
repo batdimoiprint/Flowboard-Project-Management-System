@@ -23,10 +23,10 @@ export default function NotificationList({ openCategories }: NotificaionListProp
                 </NavCategoryItem>
 
                 <NavSubItemGroup>
-                    <NavSubItem href="#" value="1" className={styles.navItem}>
+                    <NavSubItem href="#" value="1" >
                         Julliana Rox has assigned a task.
                     </NavSubItem>
-                    <NavSubItem href="#" value="2" className={styles.navItem}>
+                    <NavSubItem href="#" value="2" >
                         Julliana Rox has assigned a task.
                     </NavSubItem>
                 </NavSubItemGroup>

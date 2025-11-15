@@ -1,4 +1,4 @@
-import { Label, NavCategory, NavCategoryItem, NavSectionHeader, NavSubItem, NavSubItemGroup, Text, tokens } from "@fluentui/react-components";
+import { Label, mergeClasses, NavCategory, NavCategoryItem, NavSectionHeader, NavSubItem, NavSubItemGroup, Text, tokens } from "@fluentui/react-components";
 import { AddCircle24Regular, Folder20Regular } from "@fluentui/react-icons";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from 'react-router';
@@ -10,7 +10,7 @@ interface ProjectListProps {
     onNavigateToProjects: () => void;
 }
 
-const RECENT_LIMIT = 5;
+const RECENT_LIMIT = 4;
 
 const buildSlug = (name: string) =>
     encodeURIComponent(
@@ -80,7 +80,7 @@ export default function ProjectList({ openCategories, onNavigateToProjects }: Pr
                     value="projects"
                     icon={<Folder20Regular />}
                     aria-expanded={openCategories.includes('projects')}
-                    className={styles.navMainItem}
+                    className={mergeClasses(styles.navMainItem)}
                     onClick={onNavigateToProjects}
                 >
                     Projects List
@@ -107,7 +107,7 @@ export default function ProjectList({ openCategories, onNavigateToProjects }: Pr
                             as="button"
                             key={project.id}
                             value={project.id}
-                            className={styles.navSubItem}
+                            className={mergeClasses(styles.navSubItem)}
                             onClick={() => handleProjectClick(project.projectName)}
                         >
                             {project.projectName}
@@ -123,7 +123,7 @@ export default function ProjectList({ openCategories, onNavigateToProjects }: Pr
 
 
                 </NavSubItemGroup>
-            </NavCategory>
+            </NavCategory >
         </>
     );
 }
