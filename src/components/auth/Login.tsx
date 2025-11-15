@@ -43,6 +43,7 @@ export default function Login() {
                 <div className={styles.field}>
                     <Label htmlFor="userNameOrEmail">Username or Email</Label>
                     <Input
+                        className={styles.field}
                         id="userNameOrEmail"
                         type="text"
                         placeholder="username or you@email.com"
@@ -56,6 +57,7 @@ export default function Login() {
                 <div className={styles.field}>
                     <Label htmlFor="password">Password</Label>
                     <Input
+                        className={styles.field}
                         id="password"
                         type="password"
                         placeholder="Password"
@@ -72,10 +74,10 @@ export default function Login() {
                     </Text>
                 )}
                 <div className={styles.actions}>
-                    <Button appearance="primary" type="submit" size="large" disabled={loading}>
+                    <Button className={styles.field} appearance="primary" type="submit" size="large" disabled={loading}>
                         {loading ? 'Signing In...' : 'Sign In'}
                     </Button>
-                    <Button appearance="outline" size="large" onClick={() => { navigate("/register") }} type="button">
+                    <Button className={styles.field} appearance="outline" size="large" onClick={() => { navigate("/register") }} type="button">
                         Create Account
                     </Button>
                 </div>

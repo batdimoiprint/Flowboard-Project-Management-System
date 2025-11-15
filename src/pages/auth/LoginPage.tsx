@@ -1,30 +1,29 @@
 
-import { Card, Text } from '@fluentui/react-components';
+import { Card, Label, mergeClasses } from '@fluentui/react-components';
 import Login from '../../components/auth/Login';
-import { useLoginPageStyle } from '../../components/styles/Styles';
+import { mainLayoutStyles } from '../../components/styles/Styles';
 import loginImg from '../../assets/login.png';
 
 export default function LoginPage() {
-    const styles = useLoginPageStyle();
+    const styles = mainLayoutStyles();
 
     return (
-        <div className={styles.layoutContainer}>
+        <div className={mergeClasses(styles.flexRowFill, styles.gap)}>
 
             <Login />
 
-            <div className={styles.right}>
-                <Card>
-                    <div className={styles.cardTitleContainer}>
-                        <Text className={styles.eyebrow}>Why guess project tasks if you can see</Text>
-                        <h1 className={styles.title}>Flow of the Board</h1>
-                    </div>
-                    <img
-                        src={loginImg}
-                        alt="Flowboard Home"
-                        className={styles.image}
-                    />
-                </Card>
-            </div>
-        </div>
+
+            <Card className={mergeClasses(styles.noPadding, styles.spaceBetween)}>
+                <div className={mergeClasses(styles.flexColFit, styles.layoutPadding)}>
+                    <Label  >Why guess project tasks if you can see</Label>
+                    <Label className={styles.brandTitle}>Flow of the Board</Label>
+                </div>
+                <img
+                    src={loginImg}
+                    alt="Flowboard Home"
+                />
+            </Card>
+
+        </div >
     );
 }

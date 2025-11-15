@@ -145,20 +145,15 @@ export const mainLayoutStyles = makeStyles({
 		maxWidth: "20vw",
 	},
 
-
 	/* styles for top-level nav items (My Tasks, Projects heading) */
 	navMainItem: {
 		background: tokens.colorNeutralBackground2,
 	},
 
-
 	// For Sidebar export
 
 	/* styles for compact sub items under categories */
 	navSubItem: {
-
-
-
 		minHeight: "36px",
 		alignItems: "center",
 		justifyContent: "flex-start",
@@ -169,59 +164,27 @@ export const mainLayoutStyles = makeStyles({
 	},
 
 
+	// Login
+	noPadding: {
+		padding: "0"
+	},
+
+	brandTitle: {
+		...typographyStyles.display,
+		color: tokens.colorBrandForeground1,
+		margin: 0,
+	},
+
 
 });
 
 
-
-// Sidebar styles
-export const useSidebarStyles = makeStyles({
-
-});
 
 //////////////////
 // PAGES STYLES //
 //////////////////
 
-// Login Page
-export const useLoginPageStyle = makeStyles({
-	layoutContainer: {
-		display: "flex",
-		flexDirection: "row",
-		height: "86vh",
-		gap: tokens.spacingVerticalL,
-		padding: 0,
-	},
 
-	right: {
-		textShadow: `0 0 24px ${tokens.colorBrandBackground}, 0 0 48px ${tokens.colorPaletteMagentaBackground2}`,
-		display: "flex",
-		height: "100%",
-		alignItems: "left",
-		gap: 0,
-		padding: 0,
-	},
-	card: {
-		padding: 0,
-	},
-	cardTitleContainer: {
-		padding: tokens.spacingVerticalXXL,
-	},
-	image: {
-		width: "100%",
-		objectFit: "contain",
-		padding: 0,
-	},
-	eyebrow: {
-		...typographyStyles.title3,
-	},
-	title: {
-		...typographyStyles.largeTitle,
-		color: tokens.colorBrandBackground,
-		margin: 0,
-		textAlign: "left",
-	},
-});
 
 // Comment field styles
 export const useCommentFieldStyles = makeStyles({
@@ -235,46 +198,6 @@ export const useCommentFieldStyles = makeStyles({
 	},
 });
 
-// Register Page
-export const useRegisterPageStyle = makeStyles({
-	layoutContainer: {
-		display: "flex",
-		height: "auto",
-		gap: tokens.spacingVerticalL,
-
-	},
-
-	right: {
-		display: "flex",
-		height: "100%",
-		width: "100%",
-	},
-	card: {
-		display: "flex",
-		width: "100%",
-		alignItems: "left",
-		gap: 0,
-		padding: 0,
-	},
-	cardTitleContainer: {
-		padding: tokens.spacingVerticalXXL,
-	},
-
-	image: {
-		width: "100%",
-		objectFit: "contain",
-		padding: 0,
-	},
-	eyebrow: {
-		...typographyStyles.title3,
-	},
-	title: {
-		...typographyStyles.largeTitle,
-		color: tokens.colorBrandBackground,
-		margin: 0,
-		textAlign: "left",
-	},
-});
 
 //////////////////////
 // COMPONENT STYLES //
@@ -318,8 +241,7 @@ export const useRegisterForm = makeStyles({
 	root: {
 		display: "flex",
 		flexDirection: "column",
-		height: "auto",
-		width: "250vh",
+		width: "100vh",
 		padding: tokens.spacingVerticalXXL,
 		gap: tokens.spacingVerticalL,
 	},
