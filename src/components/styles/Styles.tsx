@@ -144,12 +144,12 @@ export const mainLayoutStyles = makeStyles({
 	sidebar: {
 		maxWidth: "20vw",
 	},
-	sidebarBody: {
-		padding: "0",
+
+
+	/* styles for top-level nav items (My Tasks, Projects heading) */
+	navMainItem: {
+		background: tokens.colorNeutralBackground2,
 	},
-
-
-
 
 
 	// For Sidebar export
@@ -167,43 +167,23 @@ export const mainLayoutStyles = makeStyles({
 		background: tokens.colorNeutralBackground2,
 	},
 
-	/* styles for top-level nav items (My Tasks, Projects heading) */
-	navMainItem: {
-		display: "flex",
-		flexDirection: "row",
-		width: "auto",
-		minHeight: "40px",
-		alignItems: "center",
-		justifyContent: "flex-start",
-		gap: tokens.spacingHorizontalS,
-		padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalM}`,
-		borderRadius: tokens.borderRadiusMedium,
-		background: tokens.colorNeutralBackground2,
-	},
+
 
 	/* styles for compact sub items under categories */
 	navSubItem: {
 		display: "flex",
 		flexDirection: "row",
-		width: "auto",
+		width: "100%",
 		minHeight: "36px",
 		alignItems: "center",
 		justifyContent: "flex-start",
-		gap: tokens.spacingHorizontalS,
+		// marginLeft: tokens.spacingVerticalL,
 		padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalL}`,
 		borderRadius: tokens.borderRadiusSmall,
-		background: "transparent",
+		background: tokens.colorNeutralBackground3,
 	},
 
-	headerContainer: {
-		display: "flex",
-		flexDirection: "row",
-		width: "auto",
-		gap: tokens.spacingVerticalS,
-		padding: tokens.spacingHorizontalM,
-		alignItems: "center",
-		justifyContent: "center",
-	},
+
 
 });
 

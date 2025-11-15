@@ -12,7 +12,7 @@ import SidebarProfileActions from "./SidebarProfileActions";
 
 import { useNavigate } from "react-router";
 import BrandHeader from "../headers/BrandHeader";
-import NotificationList from "./NotificationList";
+// import NotificationList from "./NotificationList";
 import ProjectList from './ProjectList';
 
 export default function Sidebar() {
@@ -57,22 +57,21 @@ export default function Sidebar() {
 
             <NavDrawerBody
 
-                className={mergeClasses(s.flexColFit, s.sidebarBody)}>
+                className={mergeClasses(s.flexColFit)}>
+                <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson24Regular />} className={s.navMainItem}>
+                    My Tasks
+                </NavItem>
 
                 <div className={mergeClasses(s.flexColFit)}>
 
-                    <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson24Regular />} className={s.navMainItem}>
-                        My Tasks
-                    </NavItem>
-
-
                     {/* Project List Section */}
-                    <ProjectList openCategories={openCategories} styles={s} onNavigateToProjects={handleProjectsNav} />
+                    <ProjectList openCategories={openCategories} onNavigateToProjects={handleProjectsNav} />
 
-                    <NotificationList openCategories={openCategories} styles={s} />
+                    {/* <NotificationList openCategories={openCategories} /> */}
                 </div>
+                <SidebarProfileActions />
             </NavDrawerBody>
-            <SidebarProfileActions />
+
         </NavDrawer >
         // </Card>
     );

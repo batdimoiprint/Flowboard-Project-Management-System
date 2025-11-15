@@ -34,7 +34,7 @@ export default function SidebarProfileActions() {
             </div>
             <div className={styles.actionsContainer}>
                 <ThemeToggle className={styles.button} />
-                <NavItem as="button" value="profile" onClick={() => { navigate('/home/profile') }} className={styles.navItem} icon={<Person20Filled />}>
+                <NavItem as="button" value="profile" onClick={() => { navigate('/home/profile') }} className={styles.navMainItem} icon={<Person20Filled />}>
                     My Profile
                 </NavItem>
                 <Button appearance="primary" className={styles.button} onClick={handleSignOut}>Sign Out</Button>

@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { NavCategory, NavCategoryItem, NavSubItemGroup, NavSubItem, NavSectionHeader, Button, Text, tokens, Label } from "@fluentui/react-components";
+import { Label, NavCategory, NavCategoryItem, NavSectionHeader, NavSubItem, NavSubItemGroup, Text, tokens } from "@fluentui/react-components";
 import { AddCircle24Regular, Folder20Regular } from "@fluentui/react-icons";
-import { useSidebarStyles } from '../styles/Styles';
-import { useNavigate } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from 'react-router';
 import { projectsApi, type Project } from "../apis/projects";
+import { mainLayoutStyles } from '../styles/Styles';
 
 interface ProjectListProps {
     openCategories: string[];
-    styles: ReturnType<typeof useSidebarStyles>;
     onNavigateToProjects: () => void;
 }
 
@@ -22,11 +21,12 @@ const buildSlug = (name: string) =>
             .replace(/\s+/g, "-")
     );
 
-export default function ProjectList({ openCategories, styles, onNavigateToProjects }: ProjectListProps) {
+export default function ProjectList({ openCategories, onNavigateToProjects }: ProjectListProps) {
     const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const styles = mainLayoutStyles();
 
     useEffect(() => {
         let active = true;
@@ -72,9 +72,10 @@ export default function ProjectList({ openCategories, styles, onNavigateToProjec
 
     return (
         <>
-            <NavSectionHeader>Projects</NavSectionHeader>
+
             <NavCategory value="projects">
-                {/* category is a toggle-only control; children are links */}
+
+                <NavSectionHeader>Projects</NavSectionHeader>
                 <NavCategoryItem
                     value="projects"
                     icon={<Folder20Regular />}
@@ -85,7 +86,6 @@ export default function ProjectList({ openCategories, styles, onNavigateToProjec
                     Projects List
 
                 </NavCategoryItem>
-
                 <NavSubItemGroup>
                     {loading && (
                         <Text size={200} style={{ paddingInline: tokens.spacingHorizontalS }}>
@@ -114,11 +114,10 @@ export default function ProjectList({ openCategories, styles, onNavigateToProjec
                         </NavSubItem>
 
                     ))}
-                    <NavSubItem className={styles.navSubItem}
-                        onClick={(event) => { event.stopPropagation(); navigate("/home/project/create"); }}
-                        appearance="secondary">
+                    <NavSubItem as="button" className={styles.navSubItem} value="createProject"
+                        onClick={(event) => { event.stopPropagation(); navigate("/home/project/create"); }}>
                         <AddCircle24Regular />
-                        {/* <Label>Create Project</Label> */}
+                        <Label>Create Project</Label>
 
                     </NavSubItem>
 

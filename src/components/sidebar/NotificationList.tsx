@@ -1,13 +1,13 @@
 import { NavCategory, NavCategoryItem, NavSectionHeader, NavSubItem, NavSubItemGroup } from "@fluentui/react-components";
 import { ServiceBell20Regular } from "@fluentui/react-icons";
-import { useSidebarStyles } from '../styles/Styles';
+import { mainLayoutStyles } from '../styles/Styles';
 
 interface NotificaionListProps {
     openCategories: string[];
-    styles: ReturnType<typeof useSidebarStyles>;
 }
 
-export default function NotificationList({ openCategories, styles }: NotificaionListProps) {
+export default function NotificationList({ openCategories }: NotificaionListProps) {
+    const styles = mainLayoutStyles();
     return (
         <>
             <NavSectionHeader>Notifications</NavSectionHeader>
@@ -17,7 +17,7 @@ export default function NotificationList({ openCategories, styles }: Notificaion
                     value="notifications"
                     icon={<ServiceBell20Regular />}
                     aria-expanded={openCategories.includes('notifications')}
-                    className={styles.navItem}
+                    className={styles.navMainItem}
                 >
                     3 New Notifications
                 </NavCategoryItem>
