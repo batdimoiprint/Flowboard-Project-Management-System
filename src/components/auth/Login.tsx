@@ -37,7 +37,7 @@ export default function Login() {
     };
 
     return (
-        <Card className={mergeClasses(styles.layoutPadding, styles.flexColFit)} style={{ width: '55%' }}>
+        <Card className={mergeClasses(styles.layoutPadding, styles.flexColFit, styles.componentBorder)} style={{ width: '55%' }}>
             <h2 className={styles.brand}>Sign in</h2>
             <form className={styles.formSection} onSubmit={handleSubmit(onSubmit)}>
                 <div className={styles.formField}>

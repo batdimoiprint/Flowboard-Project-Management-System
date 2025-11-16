@@ -61,7 +61,7 @@ export default function Sidebar() {
 
 
                 <div className={mergeClasses(s.flexColFit)}>
-                    <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson24Regular />} className={s.navMainItem}>
+                    <NavItem value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson24Regular />} className={s.navMainItem}>
                         My Tasks
                     </NavItem>
 

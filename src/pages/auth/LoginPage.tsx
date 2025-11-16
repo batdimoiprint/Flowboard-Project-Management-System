@@ -13,7 +13,7 @@ export default function LoginPage() {
             <Login />
 
 
-            <Card className={mergeClasses(styles.spaceBetween)}>
+            <Card className={mergeClasses(styles.spaceBetween, styles.componentBorder)}>
                 <div className={mergeClasses(
                     styles.flexColFit,
                     styles.layoutPadding)}>

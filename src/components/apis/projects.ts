@@ -14,13 +14,21 @@ export interface Project {
 export interface CreateProjectRequest {
     projectName: string;
     description: string;
-    teamMembers: string[];
+    teamMembers?: string[];
 }
 
 export interface UpdateProjectRequest {
     projectName: string;
     description: string;
     teamMembers: string[];
+}
+
+export interface ProjectMembersRequest {
+    teamMembers: string[];
+}
+
+export interface ProjectMemberRemovalRequest {
+    teamMembers: string | string[];
 }
 
 export const projectsApi = {
@@ -31,6 +39,11 @@ export const projectsApi = {
 
     getProjectById: async (projectId: string): Promise<Project> => {
         const response = await axiosInstance.get<Project>(`/api/projects/${projectId}`);
+        return response.data;
+    },
+
+    getProjectsByUser: async (userId: string): Promise<Project[]> => {
+        const response = await axiosInstance.get<Project[]>(`/api/projects/${userId}`);
         return response.data;
     },
 
@@ -46,5 +59,17 @@ export const projectsApi = {
 
     deleteProject: async (projectId: string): Promise<void> => {
         await axiosInstance.delete(`/api/projects/${projectId}`);
+    },
+
+    addProjectMembers: async (projectId: string, memberIds: string[]): Promise<Project> => {
+        const payload: ProjectMembersRequest = { teamMembers: memberIds };
+        const response = await axiosInstance.post<Project>(`/api/projects/${projectId}/member`, payload);
+        return response.data;
+    },
+
+    removeProjectMembers: async (projectId: string, memberIds: string | string[]): Promise<Project> => {
+        const payload: ProjectMemberRemovalRequest = { teamMembers: memberIds };
+        const response = await axiosInstance.delete<Project>(`/api/projects/${projectId}/member`, { data: payload });
+        return response.data;
     },
 };
