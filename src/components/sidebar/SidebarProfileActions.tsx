@@ -20,7 +20,7 @@ export default function SidebarProfileActions() {
         : 'Guest User';
 
     return (
-        <div className={mergeClasses(s.flexColFill, s.gap)}>
+        <div className={mergeClasses(s.flexColFit, s.gap)}>
 
             <Persona
                 name={fullName}

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Button, Input, Label, Card, Text } from '@fluentui/react-components';
+import { Button, Input, Label, Card, Text, mergeClasses } from '@fluentui/react-components';
 import { useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
-import { useRegisterForm } from '../../components/styles/Styles';
+import { mainLayoutStyles } from '../../components/styles/Styles';
 import { authApi } from '../apis/auth';
 import type { RegisterRequest } from '../apis/auth';
 
@@ -20,7 +20,7 @@ type RegisterFormInputs = {
 };
 
 export default function Register() {
-    const styles = useRegisterForm();
+    const styles = mainLayoutStyles();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [formError, setFormError] = useState('');
@@ -50,18 +50,17 @@ export default function Register() {
     };
 
     return (
-        <Card className={styles.root}>
-            <div className={styles.header}>
-
-                <h1 className={styles.title}>Create an account</h1>
+        <Card className={mergeClasses(styles.layoutPadding, styles.fullWidth)}>
+            <div className={styles.formSection}>
+                <h1 className={styles.pageTitle}>Create an account</h1>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)}>
                 {/* Personal Information Section */}
                 <div className={styles.section}>
                     <div className={styles.sectionTitle}>Personal Information</div>
-                    <div className={styles.row}>
-                        <div className={styles.field}>
+                    <div className={styles.formRow}>
+                        <div className={styles.formField}>
                             <Label htmlFor="firstName">First Name</Label>
                             <Input
                                 id="firstName"
@@ -82,7 +81,7 @@ export default function Register() {
                                 <Text className={styles.errorText}>{errors.firstName.message}</Text>
                             )}
                         </div>
-                        <div className={styles.field}>
+                        <div className={styles.formField}>
                             <Label htmlFor="middleName">Middle Name</Label>
                             <Input
                                 id="middleName"
@@ -103,7 +102,7 @@ export default function Register() {
                                 <Text className={styles.errorText}>{errors.middleName.message}</Text>
                             )}
                         </div>
-                        <div className={styles.field}>
+                        <div className={styles.formField}>
                             <Label htmlFor="lastName">Last Name</Label>
                             <Input
                                 id="lastName"
@@ -125,8 +124,8 @@ export default function Register() {
                             )}
                         </div>
                     </div>
-                    <div className={styles.row}>
-                        <div className={styles.field}>
+                    <div className={styles.formRow}>
+                        <div className={styles.formField}>
                             <Label htmlFor="contactNumber">Contact Number</Label>
                             <Input
                                 id="contactNumber"
@@ -145,7 +144,7 @@ export default function Register() {
                                 <Text className={styles.errorText}>{errors.contactNumber.message}</Text>
                             )}
                         </div>
-                        <div className={styles.field}>
+                        <div className={styles.formField}>
                             <Label htmlFor="birthDate">Birth Date</Label>
                             <Input
                                 id="birthDate"
@@ -174,8 +173,8 @@ export default function Register() {
                 {/* Account Information Section */}
                 <div className={styles.section}>
                     <div className={styles.sectionTitle}>Account Information</div>
-                    <div className={styles.row}>
-                        <div className={styles.field}>
+                    <div className={styles.formRow}>
+                        <div className={styles.formField}>
                             <Label htmlFor="userName">Username</Label>
                             <Input
                                 id="userName"
@@ -196,7 +195,7 @@ export default function Register() {
                                 <Text className={styles.errorText}>{errors.userName.message}</Text>
                             )}
                         </div>
-                        <div className={styles.field}>
+                        <div className={styles.formField}>
                             <Label htmlFor="email">Email</Label>
                             <Input
                                 id="email"
@@ -215,7 +214,7 @@ export default function Register() {
                                 <Text className={styles.errorText}>{errors.email.message}</Text>
                             )}
                         </div>
-                        <div className={styles.field}>
+                        <div className={styles.formField}>
                             <Label htmlFor="password">Password</Label>
                             <Input
                                 id="password"
@@ -238,7 +237,7 @@ export default function Register() {
                                 <Text className={styles.errorText}>{errors.password.message}</Text>
                             )}
                         </div>
-                        <div className={styles.field}>
+                        <div className={styles.formField}>
                             <Label htmlFor="verifyPassword">Verify Password</Label>
                             <Input
                                 id="verifyPassword"
@@ -265,22 +264,19 @@ export default function Register() {
                 )}
 
                 {/* Action Buttons */}
-                <div className={styles.actions}>
+                <div className={styles.actionsRight}>
                     <Button
                         appearance="secondary"
-                        size="large"
                         onClick={() => navigate('/login')}
                         type="button"
-                        className={styles.secondaryButton}
+
                     >
                         Back to Login
                     </Button>
                     <Button
                         appearance="primary"
                         type="submit"
-                        size="large"
                         disabled={loading}
-                        className={styles.primaryButton}
                     >
                         {loading ? 'Creating Account...' : 'Create an Account'}
                     </Button>

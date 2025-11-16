@@ -13,8 +13,10 @@ export default function LoginPage() {
             <Login />
 
 
-            <Card className={mergeClasses(styles.noPadding, styles.spaceBetween)}>
-                <div className={mergeClasses(styles.flexColFit, styles.layoutPadding)}>
+            <Card className={mergeClasses(styles.spaceBetween)}>
+                <div className={mergeClasses(
+                    styles.flexColFit,
+                    styles.layoutPadding)}>
                     <Label  >Why guess project tasks if you can see</Label>
                     <Label className={styles.brandTitle}>Flow of the Board</Label>
                 </div>

@@ -12,7 +12,7 @@ export default function PublicHeader() {
     const pathname = location.pathname;
 
     return (
-        <Card >
+        <Card className={s.componentBorder}>
             <header className={mergeClasses(s.header)} role="banner">
                 <BrandHeader navigateTo="/" />
 

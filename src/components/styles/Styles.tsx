@@ -1,16 +1,27 @@
 import { makeStyles, tokens, typographyStyles, } from "@fluentui/react-components";
 
 export const mainLayoutStyles = makeStyles({
+	// Flex spacing helpers
+	spaceBetweenCol: {
+		display: "flex",
+		flexDirection: "column",
+		justifyContent: "space-between",
+	},
+	spaceBetweenRow: {
+		display: "flex",
+		flexDirection: "row",
+		justifyContent: "space-between",
+	},
 	/////////////////////////////
-	// GLOBAL REUSABLE STYLES //
-	////////////////////////////
+	// Layout & Global Styles //
+	/////////////////////////////
 
-
+	// Debug / dev helpers
 	debugBG: {
 		background: tokens.colorPaletteRedBackground1,
-		// padding: "0",
 	},
 
+	// Top-level layouts
 	publicLayout: {
 		boxSizing: "border-box",
 		display: "flex",
@@ -36,25 +47,31 @@ export const mainLayoutStyles = makeStyles({
 		width: "100%",
 		flex: 1,
 		gap: tokens.spacingVerticalL,
+	},
 
+	// Background / card surfaces
+
+	componentBorder: {
+		borderRadius: "24px"
 	},
 
 	mainBackground: {
-		background: tokens.colorNeutralBackground2Hover
+		background: tokens.colorNeutralBackground2Hover,
 	},
 
 	artifCard: {
 		background: tokens.colorNeutralBackground1,
 		boxShadow: tokens.shadow4,
-		borderRadius: tokens.borderRadiusMedium
+		borderRadius: tokens.borderRadiusMedium,
 	},
 
+	///////////////
 	// Helpers
+	///////////////
 	flexColFill: {
 		boxSizing: "border-box",
 		display: "flex",
 		flexDirection: "column",
-		height: "100%",
 		flex: 1,
 	},
 
@@ -62,21 +79,33 @@ export const mainLayoutStyles = makeStyles({
 		boxSizing: "border-box",
 		display: "flex",
 		flexDirection: "column",
-
-		height: "100%",
 	},
+
 	flexRowFill: {
 		boxSizing: "border-box",
 		display: "flex",
 		flexDirection: "row",
-		width: "100%",
 		flex: 1,
 	},
+
 	flexRowFit: {
 		boxSizing: "border-box",
 		display: "flex",
 		flexDirection: "row",
+	},
+
+	// New helpers for width/height control (Tailwind-like)
+	wFull: {
+		width: "100%",
+	},
+	wAuto: {
 		width: "auto",
+	},
+	hFull: {
+		height: "100%",
+	},
+	hAuto: {
+		height: "auto",
 	},
 
 	layoutPadding: {
@@ -90,7 +119,7 @@ export const mainLayoutStyles = makeStyles({
 	},
 
 	spaceBetween: {
-		justifyContent: 'space-between'
+		justifyContent: 'space-between',
 	},
 
 	gap: {
@@ -98,23 +127,21 @@ export const mainLayoutStyles = makeStyles({
 	},
 
 	largeGap: {
-		gap: "4rem"
+		gap: "4rem",
 	},
 
 	pointer: {
-		cursor: "pointer"
+		cursor: "pointer",
 	},
 
 	boldText: {
 		fontSize: tokens.fontSizeBase500,
-		fontWeight: tokens.fontWeightBold
+		fontWeight: tokens.fontWeightBold,
 	},
 
-
-	/////////////////////////////////
-	// COMPONENTS REUSABLE STYLES //
-	////////////////////////////////
-	// Headers
+	///////////////////////////
+	// Headers & Branding
+	///////////////////////////
 	header: {
 		boxSizing: "border-box",
 		display: "flex",
@@ -122,7 +149,7 @@ export const mainLayoutStyles = makeStyles({
 		width: "100%",
 		height: "auto",
 		alignContent: 'center',
-		justifyContent: 'space-between'
+		justifyContent: 'space-between',
 	},
 
 	logoIcon: {
@@ -135,9 +162,19 @@ export const mainLayoutStyles = makeStyles({
 
 	brand: {
 		...typographyStyles.title2,
-		color: tokens.colorBrandForeground1
+		color: tokens.colorBrandForeground1,
+		margin: 0
 	},
 
+	brandTitle: {
+		...typographyStyles.display,
+		color: tokens.colorBrandForeground1,
+		margin: 0,
+	},
+
+	///////////////////////////
+	// Sidebar & Navigation
+	///////////////////////////
 	sidebar: {
 		maxWidth: "20vw",
 	},
@@ -147,11 +184,9 @@ export const mainLayoutStyles = makeStyles({
 		background: tokens.colorNeutralBackground2,
 	},
 
-	// For Sidebar export
-
 	/* styles for compact sub items under categories */
 	navSubItem: {
-		minHeight: "36px",
+		minHeight: "2rem",
 		alignItems: "center",
 		justifyContent: "flex-start",
 		marginTop: tokens.spacingVerticalXXS,
@@ -160,34 +195,26 @@ export const mainLayoutStyles = makeStyles({
 		background: tokens.colorNeutralBackground3,
 	},
 
+	///////////////
+	// User text / persona
+	///////////////
 
-	// Login
-	noPadding: {
-		padding: "0"
+
+	personaRow: {
+		display: "flex",
+		alignItems: "center",
+		gap: tokens.spacingHorizontalM,
 	},
 
-	brandTitle: {
-		...typographyStyles.display,
-		color: tokens.colorBrandForeground1,
-		margin: 0,
-	},
-
-	// Layout helpers and component-specific global styles
-	// Reusable user text styles
-	userName: {
-		...typographyStyles.subtitle1,
-		fontWeight: tokens.fontWeightSemibold,
-	},
-	userSecondary: {
-		...typographyStyles.body1,
-		color: tokens.colorNeutralForeground2,
-	},
-	// Generic form helpers
+	///////////////
+	// Form helpers
+	///////////////
 	formSection: {
 		display: "flex",
 		flexDirection: "column",
 		gap: tokens.spacingVerticalL,
 	},
+
 	formRow: {
 		display: "flex",
 		flexDirection: "row",
@@ -196,55 +223,104 @@ export const mainLayoutStyles = makeStyles({
 			flexDirection: "column",
 		},
 	},
+
 	formField: {
 		display: "flex",
 		flexDirection: "column",
 		flex: 1,
 		gap: tokens.spacingVerticalXS,
 	},
+
 	errorText: {
 		color: tokens.colorPaletteRedForeground1,
 		fontSize: tokens.fontSizeBase200,
 	},
-	// Generic page/section helpers
+
+	textareaMinHeight: {
+		minHeight: "100px",
+	},
+
+	///////////////////////////
+	// Page / Section helpers
+	///////////////////////////
 	section: {
 		display: "flex",
 		flexDirection: "column",
 		gap: tokens.spacingVerticalS,
 	},
+
 	sectionTitle: {
 		...typographyStyles.subtitle1,
 		fontWeight: tokens.fontWeightSemibold,
 		margin: 0,
 	},
+
 	pageTitle: {
 		...typographyStyles.title1,
 		margin: 0,
 	},
+
 	fullWidth: {
 		width: "100%",
 	},
-	textareaMinHeight: {
-		minHeight: "100px",
-	},
-	personaRow: {
+	actionsLeft: {
 		display: "flex",
-		alignItems: "center",
-		gap: tokens.spacingHorizontalM,
+		justifyContent: "flex-start",
+		// gap: tokens.spacingHorizontalM,
+		// marginTop: tokens.spacingVerticalL,
 	},
-	inviteRow: {
-		display: "flex",
-		alignItems: "center",
-		gap: tokens.spacingHorizontalS,
-		cursor: "pointer",
-	},
+
 	actionsRight: {
 		display: "flex",
 		justifyContent: "flex-end",
+		// gap: tokens.spacingHorizontalM,
+		// marginTop: tokens.spacingVerticalL,
+	},
+
+
+
+	///////////////////////////
+	// Home Hero
+	///////////////////////////
+
+	homeBgImage: {
+		position: "absolute",
+		inset: 0,
+		width: "100%",
+		height: "100%",
+		objectFit: "cover",
+		zIndex: 0,
+		opacity: 0.2,
+		pointerEvents: "none",
+	},
+	homeContent: {
+		position: "relative",
+		zIndex: 1,
+		maxWidth: "700px",
+		width: "100%",
+		height: "50vh",
+		maxHeight: "680px",
+		margin: "0 auto",
+		borderRadius: tokens.borderRadiusLarge,
+		paddingTop: tokens.spacingVerticalXXXL,
+		paddingBottom: tokens.spacingVerticalXXXL,
+		paddingLeft: tokens.spacingHorizontalXXL,
+		paddingRight: tokens.spacingHorizontalXXL,
+	},
+	homeEyebrow: {
+		...typographyStyles.title3,
+	},
+	homeTitle: {
+		...typographyStyles.display,
+		color: tokens.colorBrandBackground,
+		margin: 0,
+
+		textAlign: "center",
+	},
+	homeActions: {
 		gap: tokens.spacingHorizontalM,
 		marginTop: tokens.spacingVerticalL,
 	},
-
 });
 
 
@@ -342,64 +418,7 @@ export const useRegisterForm = makeStyles({
 	},
 });
 
-// Home styles - Used
-export const useHomeHeroStyles = makeStyles({
-	root: {
-		position: "relative",
-		display: "flex",
-		alignItems: "center",
-		justifyContent: "center",
-		// minHeight: "91vh", // fallback for hero height
-		paddingTop: tokens.spacingVerticalNone,
-		paddingBottom: tokens.spacingVerticalXXXL,
-		paddingLeft: tokens.spacingHorizontalXXL,
-		paddingRight: tokens.spacingHorizontalXXL,
-		overflow: "hidden",
-	},
-	bgImage: {
-		position: "absolute",
-		inset: 0,
-		width: "100%",
-		height: "100%",
-		objectFit: "cover",
-		zIndex: 0,
-		opacity: 0.3,
-		pointerEvents: "none",
-	},
-	content: {
-		position: "relative",
-		zIndex: 1,
-		display: "flex",
-		flexDirection: "column",
-		alignItems: "center",
-		justifyContent: "center",
-		maxWidth: "700px",
-		width: "100%",
-		height: "50vh",
-		maxHeight: "680px",
-		margin: "0 auto",
-		borderRadius: tokens.borderRadiusLarge,
-		paddingTop: tokens.spacingVerticalXXXL,
-		paddingBottom: tokens.spacingVerticalXXXL,
-		paddingLeft: tokens.spacingHorizontalXXL,
-		paddingRight: tokens.spacingHorizontalXXL,
-	},
-	eyebrow: {
-		...typographyStyles.title3,
-	},
-	title: {
-		...typographyStyles.display,
-		color: tokens.colorBrandBackground,
-		margin: 0,
-		textAlign: "center",
-	},
-	actions: {
-		display: "flex",
-		gap: tokens.spacingHorizontalM,
-		marginTop: tokens.spacingVerticalL,
-		justifyContent: "center",
-	},
-});
+// Note: Home hero styles have been moved into `mainLayoutStyles` as home-prefixed keys
 
 // Stats header styles Todo: Maybe a new kwan for dashboard nalang
 export const useStatsStyles = makeStyles({

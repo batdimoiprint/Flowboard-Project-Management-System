@@ -11,17 +11,17 @@ export default function App() {
 
   const customLightTheme = {
     ...webLightTheme,
-    borderRadiusNone: '24px',
-    borderRadiusSmall: "24px",
-    borderRadiusMedium: "24px",
-    borderRadiusLarge: "24px",
+    // borderRadiusNone: '24px',
+    // borderRadiusSmall: "24px",
+    // borderRadiusMedium: "24px",
+    // borderRadiusLarge: "24px",
   };
   const customDarkTheme = {
     ...webDarkTheme,
-    borderRadiusNone: '24px',
-    borderRadiusSmall: "24px",
-    borderRadiusMedium: "24px",
-    borderRadiusLarge: "24px",
+    // borderRadiusNone: '24px',
+    // borderRadiusSmall: "24px",
+    // borderRadiusMedium: "24px",
+    // borderRadiusLarge: "24px",
   };
   const theme = darkMode ? customDarkTheme : customLightTheme;
 

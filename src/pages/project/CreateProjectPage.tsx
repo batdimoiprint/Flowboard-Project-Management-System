@@ -43,8 +43,22 @@ export default function CreateProjectPage() {
     };
 
     return (
-        <Card className={mergeClasses(s.flexColFill, s.layoutPadding, s.gap)}>
-            <h1 className={mergeClasses(s.brand)}>Create Project</h1>
+        <Card className={mergeClasses(s.flexColFill, s.layoutPadding)}>
+            {/* Title and Actions Row - aligned like MyProfile */}
+            <div className={mergeClasses(s.flexRowFill, s.spaceBetween)}>
+                <div className={mergeClasses(s.flexRowFit, s.alignCenter)}>
+                    <h1 className={mergeClasses(s.brand)}>Create Project</h1>
+                </div>
+                <div className={mergeClasses(s.flexColFit, s.alignCenter)}>
+                    <Button appearance="outline" onClick={() => navigate('/home')} type="button">
+                        Cancel
+                    </Button>
+                    <Button appearance="primary" type="submit" disabled={loading} style={{ marginTop: '8px' }}>
+                        {loading ? 'Creating...' : 'Create Project'}
+                    </Button>
+                </div>
+            </div>
+
             <form className={mergeClasses(s.formSection)} onSubmit={handleSubmit(onSubmit)}>
                 <div className={mergeClasses(s.formField)}>
                     <Label htmlFor="projectName">Enter your project name</Label>
@@ -78,7 +92,7 @@ export default function CreateProjectPage() {
                             />
                             <div>
                                 <Text weight="semibold">{`${user.firstName} ${user.lastName}`}</Text>
-                                <Text>Project Manager</Text>
+
                             </div>
                         </div>
                     )}
@@ -86,7 +100,7 @@ export default function CreateProjectPage() {
 
                 <div className={mergeClasses(s.section)}>
                     <h2 className={mergeClasses(s.sectionTitle)}>Members</h2>
-                    <div className={mergeClasses(s.inviteRow)}>
+                    <div className={mergeClasses(s.personaRow)}>
                         <AddRegular />
                         <Text>Invite Member</Text>
                     </div>
@@ -96,14 +110,7 @@ export default function CreateProjectPage() {
                         {formError}
                     </Text>
                 )}
-                <div className={mergeClasses(s.actionsRight)}>
-                    <Button appearance="outline" onClick={() => navigate('/home')} type="button">
-                        Cancel
-                    </Button>
-                    <Button appearance="primary" type="submit" disabled={loading}>
-                        {loading ? 'Creating...' : 'Create Project'}
-                    </Button>
-                </div>
+
             </form>
         </Card>
     );

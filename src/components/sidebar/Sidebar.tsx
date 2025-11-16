@@ -49,7 +49,7 @@ export default function Sidebar() {
             multiple={isMultiple}
             onNavCategoryItemToggle={handleCategoryToggle}
             openCategories={openCategories}
-            className={mergeClasses(s.flexColFill, s.artifCard, s.layoutPadding, s.spaceBetween, s.gap, s.sidebar)}
+            className={mergeClasses(s.flexColFill, s.artifCard, s.layoutPadding, s.spaceBetween, s.gap, s.sidebar, s.componentBorder)}
         >
             <NavDrawerHeader >
                 <BrandHeader navigateTo="/home" />
@@ -57,12 +57,13 @@ export default function Sidebar() {
 
             <NavDrawerBody
 
-                className={mergeClasses(s.flexColFit)}>
-                <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson24Regular />} className={s.navMainItem}>
-                    My Tasks
-                </NavItem>
+                className={mergeClasses(s.flexColFit, s.hFull, s.spaceBetweenCol)}>
+
 
                 <div className={mergeClasses(s.flexColFit)}>
+                    <NavItem as="button" value="myTasks" onClick={() => { navigate('/home') }} icon={<TaskListSquarePerson24Regular />} className={s.navMainItem}>
+                        My Tasks
+                    </NavItem>
 
                     {/* Project List Section */}
                     <ProjectList openCategories={openCategories} onNavigateToProjects={handleProjectsNav} />

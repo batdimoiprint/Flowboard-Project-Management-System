@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { Button, Input, Label, tokens, Card, Text } from '@fluentui/react-components';
+import { Button, Input, Label, tokens, Card, Text, mergeClasses } from '@fluentui/react-components';
 import { useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
-import { useLoginForm } from '../styles/Styles';
+import { mainLayoutStyles } from '../styles/Styles';
 import { authApi } from '../apis/auth';
 import { useUser } from '../../hooks/useUser';
 import type { LoginRequest } from '../apis/auth';
 
 export default function Login() {
-    const styles = useLoginForm();
+    const styles = mainLayoutStyles();
     const navigate = useNavigate();
     const { refreshUser } = useUser();
     const { register, handleSubmit, formState: { errors } } = useForm<LoginRequest>();
@@ -37,13 +37,13 @@ export default function Login() {
     };
 
     return (
-        <Card className={styles.root}>
-            <h2 className={styles.title}>Sign in</h2>
-            <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
-                <div className={styles.field}>
+        <Card className={mergeClasses(styles.layoutPadding, styles.flexColFit)} style={{ width: '55%' }}>
+            <h2 className={styles.brand}>Sign in</h2>
+            <form className={styles.formSection} onSubmit={handleSubmit(onSubmit)}>
+                <div className={styles.formField}>
                     <Label htmlFor="userNameOrEmail">Username or Email</Label>
                     <Input
-                        className={styles.field}
+                        className={styles.formField}
                         id="userNameOrEmail"
                         type="text"
                         placeholder="username or you@email.com"
@@ -51,13 +51,13 @@ export default function Login() {
                         {...register('userNameOrEmail', { required: 'Username or Email is required' })}
                     />
                     {errors.userNameOrEmail && (
-                        <Text as="span" style={{ color: tokens.colorPaletteRedForeground1 }}>{errors.userNameOrEmail.message}</Text>
+                        <Text as="span" className={styles.errorText}>{errors.userNameOrEmail.message}</Text>
                     )}
                 </div>
-                <div className={styles.field}>
+                <div className={styles.formField}>
                     <Label htmlFor="password">Password</Label>
                     <Input
-                        className={styles.field}
+                        className={styles.formField}
                         id="password"
                         type="password"
                         placeholder="Password"
@@ -65,19 +65,19 @@ export default function Login() {
                         {...register('password', { required: 'Password is required' })}
                     />
                     {errors.password && (
-                        <Text as="span" style={{ color: tokens.colorPaletteRedForeground1 }}>{errors.password.message}</Text>
+                        <Text as="span" className={styles.errorText}>{errors.password.message}</Text>
                     )}
                 </div>
                 {formError && (
-                    <Text as="span" style={{ color: tokens.colorPaletteRedForeground1, marginTop: tokens.spacingVerticalXS }}>
+                    <Text as="span" className={styles.errorText} style={{ marginTop: tokens.spacingVerticalXS }}>
                         {formError}
                     </Text>
                 )}
-                <div className={styles.actions}>
-                    <Button className={styles.field} appearance="primary" type="submit" size="large" disabled={loading}>
+                <div className={styles.formSection}>
+                    <Button className={styles.formField} appearance="primary" type="submit" size="large" disabled={loading}>
                         {loading ? 'Signing In...' : 'Sign In'}
                     </Button>
-                    <Button className={styles.field} appearance="outline" size="large" onClick={() => { navigate("/register") }} type="button">
+                    <Button className={styles.formField} appearance="outline" size="large" onClick={() => { navigate("/register") }} type="button">
                         Create Account
                     </Button>
                 </div>

@@ -82,12 +82,12 @@ export default function MyProfile() {
         <div className={mergeClasses(s.flexRowFit, s.alignCenter, s.gap)}>
           <Avatar
             name={fullName}
-            size={72}
+            size={64}
             image={userCtx?.user?.userIMG ? { src: userCtx.user.userIMG } : undefined}
           />
           <div className={mergeClasses(s.flexColFill, s.alignCenter)}>
-            <Text className={mergeClasses(s.userName)}>{fullName}</Text>
-            <Text className={mergeClasses(s.userSecondary)}>@{username}</Text>
+            <Text weight='bold' >{fullName}</Text>
+            <Text >@{username}</Text>
           </div>
         </div>
         <div className={mergeClasses(s.flexColFit, s.alignCenter)}>
