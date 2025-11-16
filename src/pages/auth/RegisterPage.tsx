@@ -17,7 +17,9 @@ export default function RegisterPage() {
                     <Label size='large'>Why guess project tasks if you can see</Label>
                     <Label className={styles.brandTitle}>Flow of the Board</Label>
                 </div>
+
                 <img
+                    className={styles.flexColFill}
                     src={registerImg}
                     alt="Flowboard Logo"
                 />

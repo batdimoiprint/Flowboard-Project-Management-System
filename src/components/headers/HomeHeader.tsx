@@ -7,22 +7,24 @@ import { Card, Label, mergeClasses } from "@fluentui/react-components";
 // } from "@fluentui/react-icons";
 import { useState, useEffect } from "react";
 import { mainLayoutStyles } from "../styles/Styles";
-import StatsHeader from "./StatsHeader";
+// import StatsHeader from "./StatsHeader";
 import { useUser } from "../../hooks/useUser";
 
-interface HomeHeaderProps {
-    firstName: string;
-    totalTasks: number;
-    pending: number;
-    ongoing: number;
-    completed: number;
-    today: string;
-    time: string;
-    todayCompleted: number;
-    todayTotal: number;
-}
+// interface HomeHeaderProps {
+//     firstName: string;
+//     totalTasks: number;
+//     pending: number;
+//     ongoing: number;
+//     completed: number;
+//     today: string;
+//     time: string;
+//     todayCompleted: number;
+//     todayTotal: number;
+// }
 
-export default function HomeHeader({ totalTasks = 0, pending = 0, ongoing = 0, completed = 0, }: Partial<HomeHeaderProps> = {}) {
+export default function HomeHeader(
+    // { totalTasks = 0, pending = 0, ongoing = 0, completed = 0, }: Partial<HomeHeaderProps> = {}
+) {
     const s = mainLayoutStyles();
     const userCtx = useUser();
     const firstName = userCtx?.user?.firstName || "";
@@ -65,13 +67,13 @@ export default function HomeHeader({ totalTasks = 0, pending = 0, ongoing = 0, c
 
             </div>
             {/* Stats Row */}
-            <StatsHeader
+            {/* <StatsHeader
                 totalTasks={totalTasks}
                 pending={pending}
                 ongoing={ongoing}
                 completed={completed}
                 className={mergeClasses(s.flexRowFit, s.largeGap)}
-            />
+            /> */}
             {/* 
             <div className={mergeClasses(s.flexRowFit)}>
 

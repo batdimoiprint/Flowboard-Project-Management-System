@@ -4,7 +4,7 @@ import {
     // AvatarGroup, AvatarGroupItem, AvatarGroupPopover, 
 
 
-    Button, Dialog, DialogSurface, DialogTitle, Divider, Dropdown, Field, Input, Option, Persona, Select, tokens, Tooltip
+    Button, Dialog, DialogSurface, DialogTitle, Divider, Dropdown, Field, Input, mergeClasses, Option, Persona, Select, tokens, Tooltip
 } from '@fluentui/react-components';
 import {
     //  AddCircle32Filled,
@@ -15,7 +15,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { usersApi } from '../apis/users';
 import type { User } from '../apis/auth';
 import { tasksApi } from '../apis/tasks';
-import { useCommentFieldStyles } from '../styles/Styles';
+import { mainLayoutStyles } from '../styles/Styles';
 
 
 export interface TaskDialogProps {
@@ -66,7 +66,7 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
     const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
     const [isLoadingAssignableUsers, setIsLoadingAssignableUsers] = useState(false);
     const [assignableUsersError, setAssignableUsersError] = useState<string | null>(null);
-    const styles = useCommentFieldStyles();
+    const styles = mainLayoutStyles();
     const commentContainerStyle: CSSProperties = {
         border: `1px solid ${tokens.colorNeutralStroke1}`,
         borderRadius: tokens.borderRadiusMedium,
@@ -414,6 +414,8 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                             {/* Existing Comments */}
                             {comments && comments.length > 0 && (
                                 <div style={commentContainerStyle}>
+
+
                                     {comments.map((comment, index) => {
                                         const commentText = comment.text || comment.content || '';
                                         const commentDate = comment.createdAt ? new Date(comment.createdAt) : null;
@@ -453,24 +455,18 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                                             </div>
                                         );
                                     })}
-                                </div>
-                            )}
+                                    <Divider className={styles.layoutPadding} />
+                                    {/* Add New Comment */}
+                                    <div className={mergeClasses(styles.flexRowFill, styles.spaceBetween, styles.layoutPadding)}>
 
-                            {/* Add New Comment */}
-                            <div className={styles.root}>
-                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                                    <Avatar
-                                        name={user ? `${user.firstName} ${user.lastName}` : 'User'}
-                                        size={32}
-                                        color="colorful"
-                                        image={user?.userIMG ? { src: user.userIMG } : undefined}
-                                    />
-                                    <div style={{ flex: 1 }}>
+
+
                                         <Input
                                             placeholder="Add a comment..."
                                             value={newComment}
                                             onChange={(e) => setNewComment(e.target.value)}
-                                            style={{ marginBottom: 8 }}
+
+
                                         />
                                         {commentError && (
                                             <div style={{ color: 'red', fontSize: 12, marginBottom: 8 }}>
@@ -487,9 +483,15 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                                                 {isAddingComment ? 'Adding...' : 'Add Comment'}
                                             </Button>
                                         </div>
+
                                     </div>
+
                                 </div>
-                            </div>
+                            )}
+
+
+
+
                         </Field>
                     )}
                     {/* Error message */}

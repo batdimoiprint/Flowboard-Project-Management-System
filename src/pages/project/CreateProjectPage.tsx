@@ -3,13 +3,14 @@ import { Button, Input, Label, Text, Avatar, Textarea, Card } from '@fluentui/re
 import { AddRegular } from '@fluentui/react-icons';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
-import { useCreateProjectStyles } from '../../components/styles/Styles';
+import { mainLayoutStyles } from '../../components/styles/Styles';
+import { mergeClasses } from '@fluentui/react-components';
 import { projectsApi } from '../../components/apis/projects';
 import { useUser } from '../../hooks/useUser';
 import type { CreateProjectRequest } from '../../components/apis/projects';
 
 export default function CreateProjectPage() {
-    const styles = useCreateProjectStyles();
+    const s = mainLayoutStyles();
     const navigate = useNavigate();
     const { user } = useUser();
     const { register, handleSubmit, formState: { errors } } = useForm<CreateProjectRequest>();
@@ -42,33 +43,34 @@ export default function CreateProjectPage() {
     };
 
     return (
-        <Card className={styles.root}>
-            <h1 className={styles.title}>Create Project</h1>
-            <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
-                <div className={styles.field}>
+        <Card className={mergeClasses(s.flexColFill, s.layoutPadding, s.gap)}>
+            <h1 className={mergeClasses(s.brand)}>Create Project</h1>
+            <form className={mergeClasses(s.formSection)} onSubmit={handleSubmit(onSubmit)}>
+                <div className={mergeClasses(s.formField)}>
                     <Label htmlFor="projectName">Enter your project name</Label>
                     <Input
                         id="projectName"
                         type="text"
                         placeholder="Project Name"
                         {...register('projectName', { required: 'Project name is required' })}
+                        className={mergeClasses(s.fullWidth)}
                     />
                     {errors.projectName && (
-                        <Text style={{ color: 'red' }}>{errors.projectName.message}</Text>
+                        <Text className={mergeClasses(s.errorText)}>{errors.projectName.message}</Text>
                     )}
                 </div>
-                <div className={styles.field}>
+                <div className={mergeClasses(s.formField)}>
                     <Textarea
                         id="description"
                         placeholder="Project Description"
                         {...register('description')}
-                        className={styles.textarea}
+                        className={mergeClasses(s.fullWidth, s.textareaMinHeight)}
                     />
                 </div>
-                <div className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Project Manager</h2>
+                <div className={mergeClasses(s.section)}>
+                    <h2 className={mergeClasses(s.sectionTitle)}>Project Manager</h2>
                     {user && (
-                        <div className={styles.personaRow}>
+                        <div className={mergeClasses(s.personaRow)}>
                             <Avatar
                                 name={`${user.firstName} ${user.lastName}`}
                                 image={{ src: user.userIMG || undefined }}
@@ -82,9 +84,9 @@ export default function CreateProjectPage() {
                     )}
                 </div>
 
-                <div className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Members</h2>
-                    <div className={styles.inviteRow}>
+                <div className={mergeClasses(s.section)}>
+                    <h2 className={mergeClasses(s.sectionTitle)}>Members</h2>
+                    <div className={mergeClasses(s.inviteRow)}>
                         <AddRegular />
                         <Text>Invite Member</Text>
                     </div>
@@ -94,7 +96,7 @@ export default function CreateProjectPage() {
                         {formError}
                     </Text>
                 )}
-                <div className={styles.actions}>
+                <div className={mergeClasses(s.actionsRight)}>
                     <Button appearance="outline" onClick={() => navigate('/home')} type="button">
                         Cancel
                     </Button>

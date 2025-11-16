@@ -49,13 +49,11 @@ export const mainLayoutStyles = makeStyles({
 		borderRadius: tokens.borderRadiusMedium
 	},
 
-
-
+	// Helpers
 	flexColFill: {
 		boxSizing: "border-box",
 		display: "flex",
 		flexDirection: "column",
-
 		height: "100%",
 		flex: 1,
 	},
@@ -72,7 +70,6 @@ export const mainLayoutStyles = makeStyles({
 		display: "flex",
 		flexDirection: "row",
 		width: "100%",
-
 		flex: 1,
 	},
 	flexRowFit: {
@@ -175,35 +172,83 @@ export const mainLayoutStyles = makeStyles({
 		margin: 0,
 	},
 
-
-});
-
-
-
-//////////////////
-// PAGES STYLES //
-//////////////////
-
-
-
-// Comment field styles
-export const useCommentFieldStyles = makeStyles({
-	root: {
-
-		border: `1px solid ${tokens.colorNeutralStroke2}`,
-		borderRadius: tokens.borderRadiusMedium,
-		backgroundColor: tokens.colorNeutralBackground2,
-		padding: tokens.spacingVerticalL,
-		marginBottom: tokens.spacingVerticalM,
+	// Layout helpers and component-specific global styles
+	// Reusable user text styles
+	userName: {
+		...typographyStyles.subtitle1,
+		fontWeight: tokens.fontWeightSemibold,
 	},
+	userSecondary: {
+		...typographyStyles.body1,
+		color: tokens.colorNeutralForeground2,
+	},
+	// Generic form helpers
+	formSection: {
+		display: "flex",
+		flexDirection: "column",
+		gap: tokens.spacingVerticalL,
+	},
+	formRow: {
+		display: "flex",
+		flexDirection: "row",
+		gap: tokens.spacingHorizontalM,
+		"@media (max-width: 768px)": {
+			flexDirection: "column",
+		},
+	},
+	formField: {
+		display: "flex",
+		flexDirection: "column",
+		flex: 1,
+		gap: tokens.spacingVerticalXS,
+	},
+	errorText: {
+		color: tokens.colorPaletteRedForeground1,
+		fontSize: tokens.fontSizeBase200,
+	},
+	// Generic page/section helpers
+	section: {
+		display: "flex",
+		flexDirection: "column",
+		gap: tokens.spacingVerticalS,
+	},
+	sectionTitle: {
+		...typographyStyles.subtitle1,
+		fontWeight: tokens.fontWeightSemibold,
+		margin: 0,
+	},
+	pageTitle: {
+		...typographyStyles.title1,
+		margin: 0,
+	},
+	fullWidth: {
+		width: "100%",
+	},
+	textareaMinHeight: {
+		minHeight: "100px",
+	},
+	personaRow: {
+		display: "flex",
+		alignItems: "center",
+		gap: tokens.spacingHorizontalM,
+	},
+	inviteRow: {
+		display: "flex",
+		alignItems: "center",
+		gap: tokens.spacingHorizontalS,
+		cursor: "pointer",
+	},
+	actionsRight: {
+		display: "flex",
+		justifyContent: "flex-end",
+		gap: tokens.spacingHorizontalM,
+		marginTop: tokens.spacingVerticalL,
+	},
+
 });
 
 
-//////////////////////
-// COMPONENT STYLES //
-/////////////////////
-
-// Login styles
+// Login styles - Used
 export const useLoginForm = makeStyles({
 	root: {
 		display: "flex",
@@ -236,7 +281,7 @@ export const useLoginForm = makeStyles({
 	},
 });
 
-// Register styles
+// Register styles - Used
 export const useRegisterForm = makeStyles({
 	root: {
 		display: "flex",
@@ -297,30 +342,7 @@ export const useRegisterForm = makeStyles({
 	},
 });
 
-// Task-related styles
-export const useMyTasksCardStyles = makeStyles({
-	root: {
-		boxSizing: "content-box",
-		display: "flex",
-		flexDirection: "column",
-		height: "100vh",
-		padding: tokens.spacingVerticalXXL,
-	},
-});
-
-export const useMyTasksDataGridStyles = makeStyles({
-	root: {},
-	headerRow: {
-		display: "flex",
-		alignItems: "center",
-		justifyContent: "space-between",
-	},
-	title: {
-		margin: 0,
-	},
-});
-
-// Home styles
+// Home styles - Used
 export const useHomeHeroStyles = makeStyles({
 	root: {
 		position: "relative",
@@ -379,204 +401,7 @@ export const useHomeHeroStyles = makeStyles({
 	},
 });
 
-
-export const useSidebarProfileActionsStyles = makeStyles({
-	root: {
-		display: "flex",
-		flexDirection: "column",
-		width: "auto",
-		height: "auto",
-		alignItems: "center",
-		justifyContent: "space-between",
-		gap: tokens.spacingVerticalL,
-	},
-	actionsContainer: {
-		width: "100%",
-		display: "flex",
-		flexDirection: "column",
-		gap: tokens.spacingVerticalL,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	button: {
-		width: "100%",
-	},
-	navItem: {
-		background: tokens.colorNeutralBackground2,
-	},
-});
-
-export const useRegisterFormStyles = makeStyles({
-	root: {
-		height: "100vh",
-		maxWidth: "400px",
-		maxHeight: "1000px",
-		display: "flex",
-		flexDirection: "column",
-		margin: "0 auto",
-		padding: tokens.spacingHorizontalXXL,
-	},
-	title: {
-		...typographyStyles.title2,
-		textAlign: "left",
-		marginBottom: tokens.spacingVerticalL,
-	},
-	field: {
-		display: "flex",
-		flexDirection: "column",
-	},
-	form: {
-		display: "flex",
-		flexDirection: "column",
-	},
-	section: {
-		display: "flex",
-		flexDirection: "column",
-		gap: tokens.spacingVerticalL,
-		marginBottom: tokens.spacingVerticalXXL,
-		padding: `${tokens.spacingVerticalL} 0`,
-	},
-	sectionTitle: {
-		...typographyStyles.subtitle1,
-		color: tokens.colorNeutralForeground2,
-		marginBottom: tokens.spacingVerticalM,
-	},
-	actions: {
-		marginTop: tokens.spacingVerticalL,
-		display: "flex",
-		flexDirection: "column",
-		gap: tokens.spacingVerticalS,
-	},
-});
-
-// My Profile
-export const useProfileStyles = makeStyles({
-	card: {
-		display: "flex",
-		flexDirection: "column",
-		gap: tokens.spacingVerticalXL,
-		padding: tokens.spacingVerticalXXL,
-		width: "100%",
-		height: "100%",
-	},
-	titleRow: {
-		display: "flex",
-		alignItems: "center",
-		gap: tokens.spacingHorizontalM,
-	},
-	title: {
-		...typographyStyles.title2,
-		margin: 0,
-	},
-	userRow: {
-		display: "flex",
-		alignItems: "center",
-		justifyContent: "space-between",
-		gap: tokens.spacingHorizontalL,
-	},
-	userInfo: {
-		display: "flex",
-		alignItems: "center",
-		gap: tokens.spacingHorizontalL,
-	},
-	userText: {
-		display: "flex",
-		flexDirection: "column",
-		gap: tokens.spacingVerticalXS,
-	},
-	userName: {
-		...typographyStyles.subtitle1,
-		fontWeight: tokens.fontWeightSemibold,
-	},
-	userSecondary: {
-		...typographyStyles.body1,
-		color: tokens.colorNeutralForeground2,
-	},
-	formSection: {
-		display: "flex",
-		flexDirection: "column",
-		gap: tokens.spacingVerticalL,
-	},
-	row: {
-		display: "flex",
-		flexDirection: "row",
-		gap: tokens.spacingHorizontalM,
-		"@media (max-width: 768px)": {
-			flexDirection: "column",
-		},
-	},
-	field: {
-		display: "flex",
-		flexDirection: "column",
-		flex: 1,
-		gap: tokens.spacingVerticalXS,
-	},
-	errorText: {
-		color: tokens.colorPaletteRedForeground1,
-		fontSize: tokens.fontSizeBase200,
-	},
-});
-
-// Create Project styles
-export const useCreateProjectStyles = makeStyles({
-	root: {
-		display: "flex",
-		flexDirection: "column",
-		width: "100%",
-		padding: tokens.spacingVerticalXXL,
-		gap: tokens.spacingVerticalL,
-	},
-	title: {
-		...typographyStyles.title1,
-		margin: 0,
-	},
-	form: {
-		display: "flex",
-		flexDirection: "column",
-		gap: tokens.spacingVerticalL,
-	},
-	field: {
-		display: "flex",
-		flexDirection: "column",
-		gap: tokens.spacingVerticalXS,
-	},
-	input: {
-		width: "100%",
-	},
-	textarea: {
-		width: "100%",
-		minHeight: "100px",
-	},
-	section: {
-		display: "flex",
-		flexDirection: "column",
-		gap: tokens.spacingVerticalS,
-	},
-	sectionTitle: {
-		...typographyStyles.subtitle1,
-		fontWeight: tokens.fontWeightSemibold,
-		margin: 0,
-	},
-	personaRow: {
-		display: "flex",
-		alignItems: "center",
-		gap: tokens.spacingHorizontalM,
-	},
-	inviteRow: {
-		display: "flex",
-		alignItems: "center",
-		gap: tokens.spacingHorizontalS,
-		cursor: "pointer",
-	},
-	actions: {
-		display: "flex",
-		justifyContent: "flex-end",
-		gap: tokens.spacingHorizontalM,
-		marginTop: tokens.spacingVerticalL,
-	},
-});
-
-// Stats header styles (shared)
+// Stats header styles Todo: Maybe a new kwan for dashboard nalang
 export const useStatsStyles = makeStyles({
 	statsRow: {
 		display: "flex",

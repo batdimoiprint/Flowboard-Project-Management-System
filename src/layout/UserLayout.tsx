@@ -2,7 +2,7 @@ import { Outlet } from "react-router";
 
 import NavigationHeader from "../components/headers/NavigationHeader";
 import Sidebar from "../components/sidebar/Sidebar";
-import StatsHeader from "../components/headers/StatsHeader";
+// import StatsHeader from "../components/headers/StatsHeader";
 import HomeHeader from "../components/headers/HomeHeader";
 import { mainLayoutStyles } from "../components/styles/Styles";
 import { useLocation } from "react-router-dom";
@@ -36,12 +36,12 @@ export default function UserLayout() {
                         ) : isProjectWithName ? (
                             <Card  >
                                 <NavigationHeader />
-                                <StatsHeader />
+                                {/* <StatsHeader /> */}
                             </Card>
                         ) : (
                             <>
                                 <NavigationHeader />
-                                <StatsHeader />
+                                {/* <StatsHeader /> */}
                             </>
                         )}
 
