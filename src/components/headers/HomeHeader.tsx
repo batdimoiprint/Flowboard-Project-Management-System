@@ -57,7 +57,7 @@ export default function HomeHeader(
     return (
 
 
-        <Card className={mergeClasses(s.flexRowFill, s.spaceBetween)}>
+        <Card className={mergeClasses(s.flexRowFill, s.spaceBetween, s.componentBorder)}>
             {/* Greeting */}
             <div className={mergeClasses(s.flexColFit)}>
                 <Label className={s.brand}>

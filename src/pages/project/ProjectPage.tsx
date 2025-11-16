@@ -12,10 +12,11 @@ import {
   TableRow,
   tokens,
 } from '@fluentui/react-components';
-import { AddCircle20Regular, ChevronDown12Regular, Edit16Regular } from '@fluentui/react-icons';
+import { AddCircle20Regular, ChevronDown12Regular } from '@fluentui/react-icons';
 import { useParams } from 'react-router-dom';
 import { projectsApi, type Project } from '../../components/apis/projects';
 import { usersApi } from '../../components/apis/users';
+import { mainLayoutStyles } from '../../components/styles/Styles';
 import type { User } from '../../components/apis/auth';
 
 type MemberDetail = {
@@ -26,7 +27,7 @@ type MemberDetail = {
   role: string;
 };
 
-type PermissionLabel = 'Create' | 'Update' | 'Delete';
+// Permission label types are no longer used in the UI, but kept for reference if needed
 
 const toSlug = (value: string) => value.toLowerCase().replace(/\s+/g, '-');
 
@@ -44,19 +45,7 @@ const resolveDisplayName = (user: User | null, fallbackId: string) => {
   return `Member ${fallbackId.slice(-4)}`;
 };
 
-const getPermissionLabels = (role: string): PermissionLabel[] => {
-  const normalized = role?.toLowerCase();
-  if (normalized === 'owner') {
-    return ['Create', 'Update', 'Delete'];
-  }
-  if (normalized === 'editor') {
-    return ['Update', 'Delete'];
-  }
-  if (normalized === 'member') {
-    return ['Update'];
-  }
-  return ['Update'];
-};
+// Permissions are no longer shown in the members table
 
 const formatDate = (iso?: string) => {
   if (!iso) {
@@ -73,23 +62,7 @@ const formatDate = (iso?: string) => {
   });
 };
 
-const permissionVisuals: Record<PermissionLabel, { background: string; color: string; border: string }> = {
-  Create: {
-    background: tokens.colorPaletteRedBackground1,
-    color: tokens.colorPaletteRedForeground1,
-    border: tokens.colorPaletteRedBorderActive,
-  },
-  Update: {
-    background: tokens.colorPaletteGreenBackground1,
-    color: tokens.colorPaletteGreenForeground1,
-    border: tokens.colorPaletteGreenBorderActive,
-  },
-  Delete: {
-    background: tokens.colorPaletteRedBackground2,
-    color: tokens.colorPaletteRedForeground2,
-    border: tokens.colorPaletteRedBorderActive,
-  },
-};
+// Visual badges removed - not displayed in the members table
 
 function ProjectGlyph() {
   const tileStyle = {
@@ -121,6 +94,7 @@ function ProjectGlyph() {
 }
 
 export default function ProjectPage() {
+  const styles = mainLayoutStyles();
   const { projectName } = useParams<{ projectName: string }>();
   const decodedParam = projectName ? decodeURIComponent(projectName) : '';
   const normalizedSlug = decodedParam ? toSlug(decodedParam) : '';
@@ -190,7 +164,8 @@ export default function ProjectPage() {
         }
         setManager(managerUser);
 
-        const uniqueMemberIds = Array.from(new Set(matched.teamMembers ?? []));
+        // Exclude the project owner (createdBy) from the members list
+        const uniqueMemberIds = Array.from(new Set((matched.teamMembers ?? []).filter((id) => id !== matched.createdBy)));
         if (!uniqueMemberIds.length) {
           setMembers([]);
         } else {
@@ -206,7 +181,7 @@ export default function ProjectPage() {
               displayName: resolveDisplayName(user, id),
               email: user?.email ?? 'Unavailable',
               joinedAt: user?.createdAt ?? matched.createdAt,
-              role: matched.permissions?.[id] ?? (id === matched.createdBy ? 'Owner' : 'Member'),
+              role: matched.permissions?.[id] ?? 'Member',
             }))
           );
         }
@@ -242,72 +217,30 @@ export default function ProjectPage() {
 
   const subtitle = project?.description || 'For the IPT Project';
 
-  const renderPermissionBadges = (labels: PermissionLabel[]) => (
-    <div style={{ display: 'flex', gap: tokens.spacingHorizontalXS, flexWrap: 'wrap' }}>
-      {labels.map((label) => (
-        <span
-          key={label}
-          style={{
-            padding: '2px 8px',
-            borderRadius: tokens.borderRadiusMedium,
-            fontSize: tokens.fontSizeBase100,
-            fontWeight: 600,
-            border: `1px solid ${permissionVisuals[label].border}`,
-            backgroundColor: permissionVisuals[label].background,
-            color: permissionVisuals[label].color,
-          }}
-        >
-          {label}
-        </span>
-      ))}
-    </div>
-  );
+  // Permissions badges removed - no longer rendered in table
 
   return (
     <Card
-      style={{
-        padding: tokens.spacingVerticalXXXL,
-        width: '100%',
-        boxSizing: 'border-box',
-        borderRadius: tokens.borderRadiusXLarge,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: tokens.spacingVerticalXL,
-        minHeight: 'calc(100vh - 160px)',
-      }}
+      className={`${styles.artifCard} ${styles.layoutPadding} ${styles.wFull}`}
+      style={{ minHeight: 'calc(100vh - 160px)' }}
     >
       {loading && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: tokens.spacingVerticalXXXL }}>
+        <div className={styles.alignCenter} style={{ padding: tokens.spacingVerticalXXXL }}>
           <Spinner label="Loading project details" />
         </div>
       )}
 
       {!loading && error && (
-        <div style={{ color: tokens.colorPaletteRedForeground1 }}>{error}</div>
+        <div className={styles.errorText}>{error}</div>
       )}
 
       {!loading && !error && (
         <>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              gap: tokens.spacingHorizontalXXL,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div style={{ display: 'flex', gap: tokens.spacingHorizontalL, alignItems: 'center', flex: 1 }}>
+          <div className={`${styles.spaceBetweenRow} ${styles.wFull}`} style={{ gap: tokens.spacingHorizontalXXL, flexWrap: 'wrap' }}>
+            <div className={`${styles.personaRow}`} style={{ flex: 1, gap: tokens.spacingHorizontalL }}>
               <ProjectGlyph />
               <div>
-                <h1
-                  style={{
-                    margin: 0,
-                    fontSize: tokens.fontSizeHero700,
-                    lineHeight: '40px',
-                    fontWeight: 600,
-                  }}
-                >
+                <h1 className={styles.pageTitle}>
                   {heading}
                 </h1>
                 <p
@@ -320,9 +253,17 @@ export default function ProjectPage() {
                 >
                   {subtitle}
                 </p>
+                {manager && (
+                  <div style={{ marginTop: tokens.spacingVerticalS }}>
+                    <div className={styles.personaRow} style={{ gap: tokens.spacingHorizontalS }}>
+                      <Avatar size={24} name={(manager.firstName ?? '') + ' ' + (manager.lastName ?? '')} image={{ src: manager.userIMG || undefined }} />
+                      <div style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>Project Manager • {manager.userName ?? resolveDisplayName(manager, project?.createdBy ?? '')}</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: tokens.spacingHorizontalS }}>
+            <div className={styles.personaRow} style={{ gap: tokens.spacingHorizontalS }}>
               <Button appearance="secondary" size="large">
                 Edit Team
               </Button>
@@ -332,38 +273,16 @@ export default function ProjectPage() {
             </div>
           </div>
 
-          <section style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalS }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXXS }}>
-              <span style={{ fontWeight: 600, fontSize: tokens.fontSizeBase300 }}>Project Manager</span>
-              <Button icon={<Edit16Regular />} appearance="subtle" size="small" aria-label="Edit project manager" />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalM }}>
-              <Avatar
-                size={64}
-                name={manager ? `${manager.firstName} ${manager.lastName}` : heading}
-                color="colorful"
-              />
-              <div>
-                <div style={{ fontSize: tokens.fontSizeBase500, fontWeight: 600 }}>{
-                  manager ? `${manager.firstName} ${manager.lastName}`.trim() || manager.userName : heading
-                }</div>
-                <div style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
-                  {manager?.email || ''}
-                </div>
-              </div>
-            </div>
-          </section>
 
-          <section style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalS }}>
-            <span style={{ fontWeight: 600, fontSize: tokens.fontSizeBase300 }}>Members</span>
+          <section className={styles.section}>
+            <span className={styles.sectionTitle}>Members</span>
             {members.length === 0 ? (
               <div style={{ color: tokens.colorNeutralForeground3 }}>No team members have been added yet.</div>
             ) : (
-              <Table aria-label="Project members" style={{ width: '100%' }}>
+              <Table aria-label="Project members" className={styles.wFull}>
                 <TableHeader>
                   <TableRow>
                     <TableHeaderCell>Member Name</TableHeaderCell>
-                    <TableHeaderCell>Permission Access</TableHeaderCell>
                     <TableHeaderCell>Joined At</TableHeaderCell>
                     <TableHeaderCell>Email</TableHeaderCell>
                     <TableHeaderCell>Actions</TableHeaderCell>
@@ -373,7 +292,7 @@ export default function ProjectPage() {
                   {members.map((member) => (
                     <TableRow key={member.id}>
                       <TableCell>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
+                        <div className={styles.personaRow}>
                           <Avatar size={32} name={member.displayName} color="colorful" />
                           <div>
                             <div style={{ fontWeight: 600 }}>{member.displayName}</div>
@@ -381,11 +300,9 @@ export default function ProjectPage() {
                           </div>
                         </div>
                       </TableCell>
+                      {/* Permission access not shown */}
                       <TableCell>
-                        {renderPermissionBadges(getPermissionLabels(member.role))}
-                      </TableCell>
-                      <TableCell>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXXS }}>
+                        <div className={styles.personaRow} style={{ gap: tokens.spacingHorizontalXXS }}>
                           <ChevronDown12Regular />
                           <span>{formatDate(member.joinedAt)}</span>
                         </div>

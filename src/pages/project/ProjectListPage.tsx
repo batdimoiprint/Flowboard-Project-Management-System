@@ -1,32 +1,50 @@
 import { useEffect, useState } from 'react';
 import { Avatar, Button, Input, Label, Spinner, Table, TableBody, TableCell, TableHeader, TableHeaderCell, TableRow, tokens, Card } from '@fluentui/react-components';
+import { usersApi } from '../../components/apis/users';
+import type { User } from '../../components/apis/auth';
+import { useUser } from '../../hooks/useUser';
 import { useNavigate } from 'react-router';
 import { projectsApi, type Project } from '../../components/apis/projects';
+import { mainLayoutStyles } from '../../components/styles/Styles';
 
 export default function ProjectListPage() {
+    const styles = mainLayoutStyles();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [usersMap, setUsersMap] = useState<Record<string, User>>({});
     const navigate = useNavigate();
+    const { user } = useUser();
 
     useEffect(() => {
-        const fetchProjects = async () => {
+        const fetch = async () => {
+            setLoading(true);
+            setError('');
             try {
-                const data = await projectsApi.getAllProjects();
-                setProjects(data);
-            } catch (err) {
-                if (err instanceof Error) {
-                    setError(err.message);
+                // Fetch users map for avatar lookup
+                const users = await usersApi.getAllUsers();
+                const map: Record<string, User> = {};
+                users.forEach((u) => { map[u.id] = u; });
+                setUsersMap(map);
+
+                // If user not available, fetch all projects as fallback
+                if (!user || !user.id) {
+                    const allProjects = await projectsApi.getAllProjects();
+                    setProjects(allProjects);
                 } else {
-                    setError('Failed to load projects');
+                    const userProjects = await projectsApi.getProjectsByUser(user.id);
+                    // The backend returns either a single project (when id is a project id) or a list of projects for the user
+                    // Our method expects an array, so keep as-is
+                    setProjects(userProjects);
                 }
-            } finally {
-                setLoading(false);
-            }
+            } catch (err) {
+                if (err instanceof Error) setError(err.message);
+                else setError('Failed to load projects');
+            } finally { setLoading(false); }
         };
 
-        fetchProjects();
-    }, []);
+        fetch();
+    }, [user]);
 
     const formatDate = (iso?: string) => {
         if (!iso) return '';
@@ -39,12 +57,12 @@ export default function ProjectListPage() {
     };
 
     return (
-        <Card style={{ padding: tokens.spacingVerticalL, width: '100%', height: '100%', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: tokens.spacingVerticalM }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
+        <Card className={`${styles.artifCard} ${styles.wFull} ${styles.hFull} ${styles.layoutPadding}`}>
+            <div className={`${styles.spaceBetweenRow} ${styles.alignCenter}`} style={{ marginBottom: tokens.spacingVerticalM }}>
+                <div className={`${styles.personaRow}`}>
                     <Label>Projects List</Label>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalM }}>
+                <div className={`${styles.actionsRight} ${styles.alignCenter}`}>
                     <Button appearance="primary" onClick={() => navigate('/home/project/create')}>
                         Create Project
                     </Button>
@@ -54,13 +72,13 @@ export default function ProjectListPage() {
             </div>
 
             {loading && (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: tokens.spacingVerticalL }}>
+                <div className={styles.alignCenter} style={{ padding: tokens.spacingVerticalL }}>
                     <Spinner label="Loading projects" />
                 </div>
             )}
 
             {!loading && error && (
-                <div style={{ color: tokens.colorPaletteRedForeground1 }}>{error}</div>
+                <div className={styles.errorText}>{error}</div>
             )}
 
             {!loading && !error && (
@@ -77,25 +95,39 @@ export default function ProjectListPage() {
                     <TableBody>
                         {projects.map((project) => {
                             const slug = encodeURIComponent(project.projectName.toLowerCase().replace(/\s+/g, '-'));
+                            let ownerId: string | undefined;
+                            if (project.permissions) {
+                                for (const [uid, role] of Object.entries(project.permissions)) {
+                                    if (role === 'Owner') { ownerId = uid; break; }
+                                }
+                            }
+                            if (!ownerId) ownerId = project.createdBy;
+                            const owner = ownerId ? usersMap[ownerId] : undefined;
+                            const memberIds = (project.teamMembers ?? []).filter((memberId) => memberId !== ownerId);
                             return (
-                                <TableRow key={project.id} onClick={() => navigate(`/home/project/${slug}/team`)} style={{ cursor: 'pointer' }}>
+                                <TableRow key={project.id} onClick={() => navigate(`/home/project/${slug}`)} className={styles.pointer}>
                                     <TableCell>{project.projectName}</TableCell>
                                     <TableCell>{project.description}</TableCell>
                                     <TableCell>
-                                        {/* Placeholder avatar until you map real user data */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
-                                            <Avatar name="Project Owner" size={32} />
-                                            <span style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2 }}>Owner</span>
+                                        {/* Project Manager / Owner */}
+                                        <div className={styles.personaRow}>
+                                            <>
+                                                <Avatar name={owner ? `${owner.firstName} ${owner.lastName}` : (ownerId ?? 'Unknown')} size={32} image={{ src: owner?.userIMG || undefined }} />
+                                                <span style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2 }}>{owner ? owner.userName || 'Owner' : 'Owner'}</span>
+                                            </>
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS }}>
-                                            {project.teamMembers.slice(0, 2).map((memberId) => (
-                                                <Avatar key={memberId} name={memberId} size={16} />
-                                            ))}
-                                            {project.teamMembers.length > 2 && (
+                                        <div className={styles.personaRow}>
+                                            {memberIds.slice(0, 3).map((memberId) => {
+                                                const member = usersMap[memberId];
+                                                return (
+                                                    <Avatar key={memberId} name={member ? `${member.firstName} ${member.lastName}` : memberId} size={16} image={{ src: member?.userIMG || undefined }} />
+                                                );
+                                            })}
+                                            {memberIds.length > 3 && (
                                                 <span style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2 }}>
-                                                    +{project.teamMembers.length - 2}
+                                                    +{memberIds.length - 3}
                                                 </span>
                                             )}
                                         </div>

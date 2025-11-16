@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, Button, Input, Label, Text, Avatar } from '@fluentui/react-components';
 import { useForm, Controller } from 'react-hook-form';
 import { useUser } from '../../hooks/useUser';
+import { usersApi } from '../../components/apis/users';
+import type { UserUpdateRequest } from '../../components/apis/users';
 import { mainLayoutStyles } from '../../components/styles/Styles';
 import { mergeClasses } from '@fluentui/react-components';
 
@@ -14,7 +16,13 @@ type ProfileFormInputs = {
   birthDate: string;
   email: string;
   userIMG?: string | null;
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 };
+
+type PasswordFieldKeys = 'currentPassword' | 'newPassword' | 'confirmPassword';
+type EditableProfileFields = Omit<ProfileFormInputs, PasswordFieldKeys>;
 
 
 
@@ -24,7 +32,7 @@ export default function MyProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<ProfileFormInputs>({
+  const { control, handleSubmit, reset, formState: { errors }, watch, setError, clearErrors } = useForm<ProfileFormInputs>({
     defaultValues: {
       userName: userCtx?.user?.userName || '',
       firstName: userCtx?.user?.firstName || '',
@@ -34,9 +42,16 @@ export default function MyProfile() {
       birthDate: userCtx?.user?.birthDate ? new Date(userCtx.user.birthDate).toISOString().split('T')[0] : '',
       email: userCtx?.user?.email || '',
       userIMG: userCtx?.user?.userIMG || null,
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
     },
     mode: 'onBlur',
   });
+
+  const currentPasswordValue = watch('currentPassword');
+  const newPasswordValue = watch('newPassword');
+  const confirmPasswordValue = watch('confirmPassword');
 
   // Update form when user data loads
   useEffect(() => {
@@ -50,6 +65,9 @@ export default function MyProfile() {
         birthDate: userCtx.user.birthDate ? new Date(userCtx.user.birthDate).toISOString().split('T')[0] : '',
         email: userCtx.user.email || '',
         userIMG: userCtx.user.userIMG || null,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
       });
     }
   }, [userCtx?.user, reset]);
@@ -57,8 +75,121 @@ export default function MyProfile() {
   const onSubmit = async (data: ProfileFormInputs) => {
     setLoading(true);
     try {
-      // TODO: Call API to update user profile
-      console.log('Profile update:', data);
+      // Prepare minimal payload with only changed/valid fields
+      const userId = userCtx?.user?.id;
+      if (!userId) throw new Error('No user is logged in.');
+
+      const { currentPassword, newPassword, confirmPassword, ...profileFields } = data;
+      const editableFields = profileFields as EditableProfileFields;
+      const payload: UserUpdateRequest = {};
+
+      const currentUserSnapshot: Record<keyof EditableProfileFields, string | null | undefined> = {
+        userName: userCtx?.user?.userName ?? '',
+        firstName: userCtx?.user?.firstName ?? '',
+        lastName: userCtx?.user?.lastName ?? '',
+        middleName: userCtx?.user?.middleName ?? '',
+        contactNumber: userCtx?.user?.contactNumber ?? '',
+        birthDate: userCtx?.user?.birthDate ?? '',
+        email: userCtx?.user?.email ?? '',
+        userIMG: userCtx?.user?.userIMG ?? null,
+      };
+
+      const editableKeys: Array<keyof EditableProfileFields> = [
+        'userName',
+        'firstName',
+        'lastName',
+        'middleName',
+        'contactNumber',
+        'birthDate',
+        'email',
+        'userIMG',
+      ];
+
+      editableKeys.forEach((key) => {
+        const val = editableFields[key];
+        const currentVal = currentUserSnapshot[key];
+
+        if (val === undefined) return;
+
+        if (key === 'userIMG') {
+          if (val === null && currentVal !== null) {
+            payload.userIMG = null;
+          } else if (typeof val === 'string' && val.trim() !== '' && val !== currentVal) {
+            payload.userIMG = val;
+          }
+          return;
+        }
+
+        if (key === 'birthDate') {
+          if (val) {
+            const isoDate = new Date(val).toISOString();
+            const currentDatePart = currentVal ? new Date(currentVal).toISOString().split('T')[0] : '';
+            if (isoDate.split('T')[0] !== currentDatePart) {
+              payload.birthDate = isoDate;
+            }
+          }
+          return;
+        }
+
+        if (typeof val === 'string' && val.trim() === '') return;
+        if (val !== currentVal) {
+          (payload as Record<string, string | null | undefined>)[key as string] = val;
+        }
+      });
+
+      clearErrors(['currentPassword', 'newPassword', 'confirmPassword']);
+      const wantsPasswordChange = currentPassword || newPassword || confirmPassword;
+      if (wantsPasswordChange) {
+        let passwordValidationFailed = false;
+        if (!currentPassword) {
+          setError('currentPassword', { type: 'manual', message: 'Current password is required to change your password.' });
+          passwordValidationFailed = true;
+        }
+        if (!newPassword) {
+          setError('newPassword', { type: 'manual', message: 'Please provide a new password.' });
+          passwordValidationFailed = true;
+        } else if (newPassword.length < 8) {
+          setError('newPassword', { type: 'manual', message: 'New password must be at least 8 characters.' });
+          passwordValidationFailed = true;
+        }
+        if (newPassword && confirmPassword && newPassword !== confirmPassword) {
+          setError('confirmPassword', { type: 'manual', message: 'Passwords do not match.' });
+          passwordValidationFailed = true;
+        }
+
+        if (passwordValidationFailed) {
+          setLoading(false);
+          return;
+        }
+
+        payload.password = newPassword;
+      }
+
+      // Call update API only if payload contains something
+      if (Object.keys(payload).length === 0) {
+
+        setIsEditing(false);
+        return;
+      }
+
+      const updatedUser = await usersApi.updateUser(userId, payload as UserUpdateRequest);
+
+      // Update context and local storage
+      userCtx?.setUser(updatedUser);
+      // Refresh form values to updated user's values
+      reset({
+        userName: updatedUser.userName || '',
+        firstName: updatedUser.firstName || '',
+        lastName: updatedUser.lastName || '',
+        middleName: updatedUser.middleName || '',
+        contactNumber: updatedUser.contactNumber || '',
+        birthDate: updatedUser.birthDate ? new Date(updatedUser.birthDate).toISOString().split('T')[0] : '',
+        email: updatedUser.email || '',
+        userIMG: updatedUser.userIMG ?? null,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
       setIsEditing(false);
     } catch (err) {
       console.error('Failed to update profile:', err);
@@ -82,12 +213,12 @@ export default function MyProfile() {
         <div className={mergeClasses(s.flexRowFit, s.alignCenter, s.gap)}>
           <Avatar
             name={fullName}
-            size={72}
+            size={64}
             image={userCtx?.user?.userIMG ? { src: userCtx.user.userIMG } : undefined}
           />
           <div className={mergeClasses(s.flexColFill, s.alignCenter)}>
-            <Text className={mergeClasses(s.userName)}>{fullName}</Text>
-            <Text className={mergeClasses(s.userSecondary)}>@{username}</Text>
+            <Text weight='bold' >{fullName}</Text>
+            <Text >@{username}</Text>
           </div>
         </div>
         <div className={mergeClasses(s.flexColFit, s.alignCenter)}>
@@ -253,6 +384,82 @@ export default function MyProfile() {
             />
             {errors.email && (
               <Text className={mergeClasses(s.errorText)}>{errors.email.message}</Text>
+            )}
+          </div>
+        </div>
+
+        {/* Password Update */}
+        <div className={mergeClasses(s.formRow)}>
+          <div className={mergeClasses(s.formField)}>
+            <Label htmlFor="currentPassword">Current Password</Label>
+            <Controller
+              control={control}
+              name="currentPassword"
+              rules={{
+                validate: (value) => {
+                  const needsValidation = !!newPasswordValue || !!confirmPasswordValue;
+                  if (needsValidation && !value) {
+                    return 'Current password is required to change your password';
+                  }
+                  return true;
+                }
+              }}
+              render={({ field }) => (
+                <Input id="currentPassword" type="password" disabled={!isEditing} {...field} />
+              )}
+            />
+            {errors.currentPassword && (
+              <Text className={mergeClasses(s.errorText)}>{errors.currentPassword.message}</Text>
+            )}
+          </div>
+          <div className={mergeClasses(s.formField)}>
+            <Label htmlFor="newPassword">New Password</Label>
+            <Controller
+              control={control}
+              name="newPassword"
+              rules={{
+                validate: (value) => {
+                  const needsValidation = !!currentPasswordValue || !!confirmPasswordValue;
+                  if (needsValidation && !value) {
+                    return 'New password is required';
+                  }
+                  if (value && value.length < 8) {
+                    return 'Password must be at least 8 characters';
+                  }
+                  return true;
+                }
+              }}
+              render={({ field }) => (
+                <Input id="newPassword" type="password" disabled={!isEditing} {...field} />
+              )}
+            />
+            {errors.newPassword && (
+              <Text className={mergeClasses(s.errorText)}>{errors.newPassword.message}</Text>
+            )}
+          </div>
+          <div className={mergeClasses(s.formField)}>
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Controller
+              control={control}
+              name="confirmPassword"
+              rules={{
+                validate: (value) => {
+                  const needsValidation = !!currentPasswordValue || !!newPasswordValue;
+                  if (needsValidation && !value) {
+                    return 'Please confirm your new password';
+                  }
+                  if (value && value !== newPasswordValue) {
+                    return 'Passwords do not match';
+                  }
+                  return true;
+                }
+              }}
+              render={({ field }) => (
+                <Input id="confirmPassword" type="password" disabled={!isEditing} {...field} />
+              )}
+            />
+            {errors.confirmPassword && (
+              <Text className={mergeClasses(s.errorText)}>{errors.confirmPassword.message}</Text>
             )}
           </div>
         </div>

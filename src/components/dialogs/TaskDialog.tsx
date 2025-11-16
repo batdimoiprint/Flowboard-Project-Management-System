@@ -10,11 +10,8 @@ import {
     //  AddCircle32Filled,
     Delete24Regular, Dismiss24Regular
 } from '@fluentui/react-icons';
-import { useUser } from '../../hooks/useUser';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { usersApi } from '../apis/users';
 import type { User } from '../apis/auth';
-import { tasksApi } from '../apis/tasks';
 import { mainLayoutStyles } from '../styles/Styles';
 
 
@@ -37,12 +34,19 @@ export interface TaskDialogProps {
     onSubmit: (e: React.FormEvent) => void;
     avatars?: Array<{ name: string; image?: string }>;
     onAssignClick?: () => void;
+    assignableUsers?: User[];
+    isLoadingAssignableUsers?: boolean;
+    assignableUsersError?: string | null;
+    currentUser?: User | null;
+    onAddComment?: (text: string) => Promise<void> | void;
+    isAddingComment?: boolean;
+    commentError?: string | null;
     onDeleteClick?: () => void;
     isSubmitting?: boolean;
     submitError?: string | null;
     dialogMode?: 'add' | 'edit';
     createdByUser?: User | null;
-    assignedToUser?: User | null;
+    // assignedToUser removed; use form.assignedTo with assignableUsers for display if needed
     comments?: Array<{
         authorId?: string;
         user?: string;
@@ -52,20 +56,12 @@ export interface TaskDialogProps {
         createdAt?: string;
     }>;
     taskId?: string;
-    onCommentAdded?: () => void;
 }
 export default function TaskDialog({ open, onOpenChange, form, onInputChange, onSubmit,
-    onAssignClick, onDeleteClick, isSubmitting = false, submitError, dialogMode = 'add', createdByUser, assignedToUser, comments = [], taskId, onCommentAdded }: TaskDialogProps) {
-    const { user } = useUser();
+    onAssignClick, onDeleteClick, isSubmitting = false, submitError, dialogMode = 'add', createdByUser, comments = [], taskId, onAddComment, isAddingComment = false, commentError = null, assignableUsers = [], isLoadingAssignableUsers = false, assignableUsersError = null, currentUser = null }: TaskDialogProps) {
     const [editingTitle, setEditingTitle] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
-    const [userInfo, setUserInfo] = useState(createdByUser || user || null);
     const [newComment, setNewComment] = useState('');
-    const [isAddingComment, setIsAddingComment] = useState(false);
-    const [commentError, setCommentError] = useState<string | null>(null);
-    const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
-    const [isLoadingAssignableUsers, setIsLoadingAssignableUsers] = useState(false);
-    const [assignableUsersError, setAssignableUsersError] = useState<string | null>(null);
     const styles = mainLayoutStyles();
     const commentContainerStyle: CSSProperties = {
         border: `1px solid ${tokens.colorNeutralStroke1}`,
@@ -93,84 +89,14 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
         }
     }, [editingTitle]);
 
-    useEffect(() => {
-        async function fetchUserInfo() {
-            try {
-                // In edit mode, use createdByUser if provided, otherwise fetch based on form.createdBy
-                if (dialogMode === 'edit' && createdByUser) {
-                    setUserInfo(createdByUser);
-                } else if (dialogMode === 'edit' && form.createdBy) {
-                    const fetched = await usersApi.getUserById(form.createdBy);
-                    setUserInfo(fetched);
-                } else if (user?.id) {
-                    // In add mode, show current user
-                    const fetched = await usersApi.getUserById(user.id);
-                    setUserInfo(fetched);
-                }
-            } catch {
-                setUserInfo(createdByUser || user || null);
-            }
-        }
-        fetchUserInfo();
-    }, [user, user?.id, form.createdBy, dialogMode, createdByUser]);
+    // Determine which user info to show for avatar - prefer createdByUser, fallback to currentUser
+    const userInfo = createdByUser ?? currentUser ?? null;
 
-    useEffect(() => {
-        if (!open) {
-            return;
-        }
+    // Assignable users, loading state and errors will be handled by parent and passed in via props.
 
-        let isSubscribed = true;
-        async function loadAssignableUsers() {
-            setIsLoadingAssignableUsers(true);
-            setAssignableUsersError(null);
-            try {
-                const fetchedUsers = await usersApi.getAllUsers();
-                if (isSubscribed) {
-                    setAssignableUsers(fetchedUsers);
-                }
-            } catch (error: unknown) {
-                console.error('Failed to load assignable users:', error);
-                if (isSubscribed) {
-                    const errorMessage = error instanceof Error && 'message' in error
-                        ? error.message
-                        : 'Unable to load users.';
-                    setAssignableUsersError(errorMessage);
-                }
-            } finally {
-                if (isSubscribed) {
-                    setIsLoadingAssignableUsers(false);
-                }
-            }
-        }
+    // parent should include currentUser in assignableUsers if desired
 
-        loadAssignableUsers();
-
-        return () => {
-            isSubscribed = false;
-        };
-    }, [open]);
-
-    useEffect(() => {
-        if (!user?.id) {
-            return;
-        }
-
-        setAssignableUsers(prev => {
-            const exists = prev.some(existing => existing.id === user.id);
-            return exists ? prev : [...prev, user];
-        });
-    }, [user]);
-
-    useEffect(() => {
-        if (!assignedToUser?.id) {
-            return;
-        }
-
-        setAssignableUsers(prev => {
-            const exists = prev.some(existing => existing.id === assignedToUser.id);
-            return exists ? prev : [...prev, assignedToUser];
-        });
-    }, [assignedToUser]);
+    // parent should include assignedToUser in assignableUsers if desired
 
     function handleAssignedUserSelect(_: unknown, data: { optionValue?: string | number }) {
         const selectedId = typeof data.optionValue === 'string' ? data.optionValue : null;
@@ -200,29 +126,15 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
         }
     }
 
-    async function handleAddComment() {
-        if (!newComment.trim() || !taskId || !user?.id) return;
-
-        setIsAddingComment(true);
-        setCommentError(null);
-
+    async function handleAddCommentLocal() {
+        if (!newComment.trim() || !taskId) return;
+        if (!onAddComment) return;
         try {
-            await tasksApi.addComment(taskId, {
-                authorId: user.id,
-                text: newComment.trim(),
-            });
+            await Promise.resolve(onAddComment(newComment.trim()));
             setNewComment('');
-            if (onCommentAdded) {
-                onCommentAdded();
-            }
         } catch (error: unknown) {
-            console.error('Failed to add comment:', error);
-            const errorMessage = error instanceof Error && 'response' in error
-                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || error.message || 'Failed to add comment'
-                : 'Failed to add comment';
-            setCommentError(errorMessage);
-        } finally {
-            setIsAddingComment(false);
+            console.error('Failed to add comment via parent handler:', error);
+            // parent is responsible for passing commentError if needed
         }
     }
 
@@ -477,7 +389,7 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                                             <Button
                                                 appearance="primary"
                                                 size="small"
-                                                onClick={handleAddComment}
+                                                onClick={handleAddCommentLocal}
                                                 disabled={!newComment.trim() || isAddingComment}
                                             >
                                                 {isAddingComment ? 'Adding...' : 'Add Comment'}

@@ -1,5 +1,5 @@
-import { Button, Text, Card } from '@fluentui/react-components';
-import { useHomeHeroStyles } from '../styles/Styles';
+import { Button, Text, Card, mergeClasses } from '@fluentui/react-components';
+import { mainLayoutStyles } from '../styles/Styles';
 import kanban from '../../assets/kanban.webp';
 import { useNavigate } from 'react-router';
 
@@ -7,17 +7,17 @@ import { useNavigate } from 'react-router';
 
 
 export default function HomeHero() {
-    const styles = useHomeHeroStyles();
+    const styles = mainLayoutStyles();
     const navigate = useNavigate();
 
     return (
-        <Card className={styles.root}>
-            <img src={kanban} alt="Kanban preview" className={styles.bgImage} />
-            <div className={styles.content}>
-                <Text className={styles.eyebrow}>Why guess project tasks if you can see</Text>
-                <h1 className={styles.title}>Flow of the Board</h1>
+        <Card className={mergeClasses(styles.alignCenter, styles.flexRowFill, styles.componentBorder)}>
+            <img src={kanban} alt="Kanban preview" className={styles.homeBgImage} />
+            <div className={mergeClasses(styles.homeContent, styles.flexColFit, styles.alignCenter)}>
+                <Text className={styles.homeEyebrow}>Why guess project tasks if you can see</Text>
+                <h1 className={styles.homeTitle}>Flow of the Board</h1>
 
-                <div className={styles.actions}>
+                <div className={mergeClasses(styles.homeActions, styles.flexRowFit, styles.alignCenter)}>
                     <Button appearance="primary" onClick={() => navigate('/register')}>Sign Up</Button>
                 </div>
             </div>

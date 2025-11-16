@@ -12,7 +12,7 @@ export default function BrandHeader({ navigateTo }: { navigateTo: string }) {
 
             <img src={logo} className={s.logoIcon} alt="FlowBoard" />
 
-            <a className={s.brand}>FlowBoard</a>
+            <span className={s.brand}>FlowBoard</span>
         </a>
     )
 }

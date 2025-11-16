@@ -12,7 +12,7 @@ export default function RegisterPage() {
             <Register />
 
 
-            <Card className={mergeClasses(styles.noPadding, styles.spaceBetween)}>
+            <Card className={mergeClasses(styles.spaceBetween)}>
                 <div className={mergeClasses(styles.flexColFit, styles.layoutPadding)}>
                     <Label size='large'>Why guess project tasks if you can see</Label>
                     <Label className={styles.brandTitle}>Flow of the Board</Label>
