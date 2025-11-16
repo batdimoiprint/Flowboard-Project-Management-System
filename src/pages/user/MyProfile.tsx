@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Card, Button, Input, Label, Text, Avatar } from '@fluentui/react-components';
-import { Person24Regular } from '@fluentui/react-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { useUser } from '../../hooks/useUser';
-import { useProfileStyles } from '../../components/styles/Styles';
+import { mainLayoutStyles } from '../../components/styles/Styles';
+import { mergeClasses } from '@fluentui/react-components';
 
 type ProfileFormInputs = {
   userName: string;
@@ -19,7 +19,7 @@ type ProfileFormInputs = {
 
 
 export default function MyProfile() {
-  const styles = useProfileStyles();
+  const s = mainLayoutStyles();
   const userCtx = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -71,42 +71,43 @@ export default function MyProfile() {
   const username = userCtx?.user?.userName || 'User';
 
   return (
-    <Card className={styles.card}>
+    <Card className={mergeClasses(s.flexColFill, s.layoutPadding, s.gap)}>
       {/* Title Row */}
-      <div className={styles.titleRow}>
-        <Person24Regular />
-        <h1 className={styles.title}>My Profile</h1>
-      </div>
+
+      <h1 className={mergeClasses(s.brand)}>My Profile</h1>
+
 
       {/* User Info Row */}
-      <div className={styles.userRow}>
-        <div className={styles.userInfo}>
+      <div className={mergeClasses(s.flexRowFit, s.spaceBetween)}>
+        <div className={mergeClasses(s.flexRowFit, s.alignCenter, s.gap)}>
           <Avatar
             name={fullName}
             size={72}
             image={userCtx?.user?.userIMG ? { src: userCtx.user.userIMG } : undefined}
           />
-          <div className={styles.userText}>
-            <div className={styles.userName}>{fullName}</div>
-            <div className={styles.userSecondary}>@{username}</div>
+          <div className={mergeClasses(s.flexColFill, s.alignCenter)}>
+            <Text className={mergeClasses(s.userName)}>{fullName}</Text>
+            <Text className={mergeClasses(s.userSecondary)}>@{username}</Text>
           </div>
         </div>
-        {!isEditing ? (
-          <Button appearance="primary" onClick={() => setIsEditing(true)}>
-            Edit Profile
-          </Button>
-        ) : (
-          <Button appearance="primary" onClick={handleSubmit(onSubmit)} disabled={loading}>
-            {loading ? 'Saving...' : 'Save Profile'}
-          </Button>
-        )}
+        <div className={mergeClasses(s.flexColFit, s.alignCenter)}>
+          {!isEditing ? (
+            <Button appearance="primary" onClick={() => setIsEditing(true)}>
+              Edit Profile
+            </Button>
+          ) : (
+            <Button appearance="primary" onClick={handleSubmit(onSubmit)} disabled={loading}>
+              {loading ? 'Saving...' : 'Save Profile'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Profile Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className={styles.formSection}>
+      <form onSubmit={handleSubmit(onSubmit)} className={mergeClasses(s.formSection)}>
         {/* Personal Information */}
-        <div className={styles.row}>
-          <div className={styles.field}>
+        <div className={mergeClasses(s.formRow)}>
+          <div className={mergeClasses(s.formField)}>
             <Label htmlFor="firstName">First Name</Label>
             <Controller
               control={control}
@@ -125,10 +126,10 @@ export default function MyProfile() {
               )}
             />
             {errors.firstName && (
-              <Text className={styles.errorText}>{errors.firstName.message}</Text>
+              <Text className={mergeClasses(s.errorText)}>{errors.firstName.message}</Text>
             )}
           </div>
-          <div className={styles.field}>
+          <div className={mergeClasses(s.formField)}>
             <Label htmlFor="middleName">Middle Name</Label>
             <Controller
               control={control}
@@ -146,10 +147,10 @@ export default function MyProfile() {
               )}
             />
             {errors.middleName && (
-              <Text className={styles.errorText}>{errors.middleName.message}</Text>
+              <Text className={mergeClasses(s.errorText)}>{errors.middleName.message}</Text>
             )}
           </div>
-          <div className={styles.field}>
+          <div className={mergeClasses(s.formField)}>
             <Label htmlFor="lastName">Last Name</Label>
             <Controller
               control={control}
@@ -168,13 +169,13 @@ export default function MyProfile() {
               )}
             />
             {errors.lastName && (
-              <Text className={styles.errorText}>{errors.lastName.message}</Text>
+              <Text className={mergeClasses(s.errorText)}>{errors.lastName.message}</Text>
             )}
           </div>
         </div>
 
-        <div className={styles.row}>
-          <div className={styles.field}>
+        <div className={mergeClasses(s.formRow)}>
+          <div className={mergeClasses(s.formField)}>
             <Label htmlFor="contactNumber">Contact Number</Label>
             <Controller
               control={control}
@@ -191,10 +192,10 @@ export default function MyProfile() {
               )}
             />
             {errors.contactNumber && (
-              <Text className={styles.errorText}>{errors.contactNumber.message}</Text>
+              <Text className={mergeClasses(s.errorText)}>{errors.contactNumber.message}</Text>
             )}
           </div>
-          <div className={styles.field}>
+          <div className={mergeClasses(s.formField)}>
             <Label htmlFor="birthDate">Birth Date</Label>
             <Controller
               control={control}
@@ -205,14 +206,14 @@ export default function MyProfile() {
               )}
             />
             {errors.birthDate && (
-              <Text className={styles.errorText}>{errors.birthDate.message}</Text>
+              <Text className={mergeClasses(s.errorText)}>{errors.birthDate.message}</Text>
             )}
           </div>
         </div>
 
         {/* Account Information */}
-        <div className={styles.row}>
-          <div className={styles.field}>
+        <div className={mergeClasses(s.formRow)}>
+          <div className={mergeClasses(s.formField)}>
             <Label htmlFor="userName">Username</Label>
             <Controller
               control={control}
@@ -231,10 +232,10 @@ export default function MyProfile() {
               )}
             />
             {errors.userName && (
-              <Text className={styles.errorText}>{errors.userName.message}</Text>
+              <Text className={mergeClasses(s.errorText)}>{errors.userName.message}</Text>
             )}
           </div>
-          <div className={styles.field}>
+          <div className={mergeClasses(s.formField)}>
             <Label htmlFor="email">Email</Label>
             <Controller
               control={control}
@@ -251,7 +252,7 @@ export default function MyProfile() {
               )}
             />
             {errors.email && (
-              <Text className={styles.errorText}>{errors.email.message}</Text>
+              <Text className={mergeClasses(s.errorText)}>{errors.email.message}</Text>
             )}
           </div>
         </div>

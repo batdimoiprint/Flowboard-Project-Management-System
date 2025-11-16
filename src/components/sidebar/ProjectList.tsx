@@ -1,17 +1,16 @@
+import { Label, mergeClasses, NavCategory, NavCategoryItem, NavSectionHeader, NavSubItem, NavSubItemGroup, Text, tokens } from "@fluentui/react-components";
+import { AddCircle24Regular, Folder20Regular } from "@fluentui/react-icons";
 import { useEffect, useMemo, useState } from "react";
-import { NavCategory, NavCategoryItem, NavSubItemGroup, NavSubItem, NavSectionHeader, Button, Text, tokens } from "@fluentui/react-components";
-import { Folder20Regular } from "@fluentui/react-icons";
-import { useSidebarStyles } from '../styles/Styles';
-import { useNavigate } from "react-router";
+import { useNavigate } from 'react-router';
 import { projectsApi, type Project } from "../apis/projects";
+import { mainLayoutStyles } from '../styles/Styles';
 
 interface ProjectListProps {
     openCategories: string[];
-    styles: ReturnType<typeof useSidebarStyles>;
     onNavigateToProjects: () => void;
 }
 
-const RECENT_LIMIT = 5;
+const RECENT_LIMIT = 4;
 
 const buildSlug = (name: string) =>
     encodeURIComponent(
@@ -22,11 +21,12 @@ const buildSlug = (name: string) =>
             .replace(/\s+/g, "-")
     );
 
-export default function ProjectList({ openCategories, styles, onNavigateToProjects }: ProjectListProps) {
+export default function ProjectList({ openCategories, onNavigateToProjects }: ProjectListProps) {
     const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const s = mainLayoutStyles();
 
     useEffect(() => {
         let active = true;
@@ -67,27 +67,25 @@ export default function ProjectList({ openCategories, styles, onNavigateToProjec
 
     const handleProjectClick = (projectName: string) => {
         const slug = buildSlug(projectName);
-        navigate(`/home/project/${slug}/team`);
+        navigate(`/home/project/${slug}`);
     };
 
     return (
         <>
-            <NavSectionHeader>Projects</NavSectionHeader>
+
             <NavCategory value="projects">
-                {/* category is a toggle-only control; children are links */}
+
+                <NavSectionHeader>Projects</NavSectionHeader>
                 <NavCategoryItem
                     value="projects"
                     icon={<Folder20Regular />}
                     aria-expanded={openCategories.includes('projects')}
-                    className={styles.navMainItem}
+                    className={mergeClasses(s.navMainItem)}
                     onClick={onNavigateToProjects}
                 >
                     Projects List
-                    <Button size="small" onClick={(event) => { event.stopPropagation(); navigate("/home/project/create"); }} appearance="secondary">
-                        Create Project
-                    </Button>
-                </NavCategoryItem>
 
+                </NavCategoryItem>
                 <NavSubItemGroup>
                     {loading && (
                         <Text size={200} style={{ paddingInline: tokens.spacingHorizontalS }}>
@@ -109,14 +107,23 @@ export default function ProjectList({ openCategories, styles, onNavigateToProjec
                             as="button"
                             key={project.id}
                             value={project.id}
-                            className={styles.navSubItem}
+                            className={mergeClasses(s.navSubItem)}
                             onClick={() => handleProjectClick(project.projectName)}
                         >
                             {project.projectName}
                         </NavSubItem>
+
                     ))}
+                    <NavSubItem as="button" className={s.navSubItem} value="createProject"
+                        onClick={(event) => { event.stopPropagation(); navigate("/home/project/create"); }}>
+                        <AddCircle24Regular />
+                        <Label>Create Project</Label>
+
+                    </NavSubItem>
+
+
                 </NavSubItemGroup>
-            </NavCategory>
+            </NavCategory >
         </>
     );
 }

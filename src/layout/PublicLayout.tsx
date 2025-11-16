@@ -1,18 +1,20 @@
 
 import PublicHeader from '../components/headers/PublicHeader';
 import { Outlet } from 'react-router';
-import { publicLayoutStyles } from '../components/styles/Styles';
+import { mainLayoutStyles } from '../components/styles/Styles';
+import { mergeClasses } from '@fluentui/react-components';
 
 export default function PublicLayout() {
-    const styles = publicLayoutStyles();
+    const s = mainLayoutStyles();
     return (
-        <div className={styles.layoutContainer}>
-            <div className={styles.header}>
-                <PublicHeader />
-            </div>
-            <div className={styles.mainContent}>
-                <Outlet />
-            </div>
-        </div>
+        <main className={mergeClasses(s.publicLayout, s.layoutPadding, s.mainBackground, s.gap
+        )}>
+
+            <PublicHeader />
+
+
+            <Outlet />
+
+        </main >
     );
 }

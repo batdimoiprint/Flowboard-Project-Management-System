@@ -10,7 +10,7 @@ import ProjectPage from "../pages/project/ProjectPage";
 import TaskListPage from "../pages/project/TaskListPage";
 
 import NotFound from "../components/home/NotFound";
-import MyTasks from "../components/tables/MyTasks";
+import MyTasks from "../pages/user/MyTasks";
 import UserLayout from "../layout/UserLayout";
 import LoginPage from "../pages/auth/LoginPage";
 import RegisterPage from "../pages/auth/RegisterPage";
@@ -74,7 +74,7 @@ export default function AppRoutes() {
                     <Route path=":projectName">
                         {/* Default sub-view for a project: team page */}
                         <Route index element={<ProjectPage />} />
-                        <Route path="team" element={<ProjectPage />} />
+
                         <Route path="kanban" element={<KanbanPage />} />
                         <Route path="tasks" element={<TaskListPage />} />
                     </Route>

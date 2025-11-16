@@ -1,62 +1,50 @@
-import { Button, Card, TabList, Tab } from '@fluentui/react-components';
-import { usePublicHeaderStyles } from '../styles/Styles';
-import { Home24Regular, Sparkle24Regular, People24Regular, Mail24Regular } from '@fluentui/react-icons';
+import { Button, Card, TabList, Tab, mergeClasses } from '@fluentui/react-components';
+import { mainLayoutStyles } from '../styles/Styles';
+import { Sparkle24Regular, People24Regular, Mail24Regular } from '@fluentui/react-icons';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../assets/logo.webp';
 import ThemeToggle from '../styles/ThemeToggle';
+import BrandHeader from './BrandHeader';
 
 
 export default function PublicHeader() {
-    const styles = usePublicHeaderStyles();
+    const s = mainLayoutStyles();
     const navigate = useNavigate();
     const pathname = location.pathname;
 
     return (
         <Card >
-            <header className={styles.header} role="banner">
-                <div className={styles.left}>
-                    <div className={styles.logoIcon} aria-hidden>
-                        <img src={logo} alt="FlowBoard" style={{ width: '48px', height: '48px' }} />
-                    </div>
-                    <div className={styles.brand}>FlowBoard</div>
-                </div>
+            <header className={mergeClasses(s.header)} role="banner">
+                <BrandHeader navigateTo="/" />
 
-                <TabList selectedValue={pathname} className={styles.nav} onTabSelect={(_, data) => navigate(data.value as string)}>
-                    <Tab
-                        value="/"
-                        aria-current={pathname === '/' ? 'page' : undefined}
-                    >
-                        <Home24Regular />
-                        <div className={styles.navLabel}>Home</div>
-                    </Tab>
+                <TabList selectedValue={pathname} className={mergeClasses(s.flexRowFit, s.largeGap)} onTabSelect={(_, data) => navigate(data.value as string)}>
                     <Tab
                         value="/features"
                         aria-current={pathname === '/features' ? 'page' : undefined}
                     >
                         <Sparkle24Regular />
-                        <div className={styles.navLabel}>Features</div>
+                        <a className={s.flexColFit}>Features</a>
                     </Tab>
                     <Tab
                         value="/team"
                         aria-current={pathname === '/team' ? 'page' : undefined}
                     >
                         <People24Regular />
-                        <div className={styles.navLabel}>Our Team</div>
+                        <a className={s.flexColFit}>Our Team</a>
                     </Tab>
                     <Tab
                         value="/contact"
                         aria-current={pathname === '/contact' ? 'page' : undefined}
                     >
                         <Mail24Regular />
-                        <div className={styles.navLabel}>Contact Us</div>
+                        <a className={s.flexColFit}>Contact Us</a>
                     </Tab>
                 </TabList>
 
-                <div className={styles.right}>
+                <a className={mergeClasses(s.flexRowFit, s.alignCenter, s.gap, s.pointer)}>
                     <ThemeToggle />
                     <Button appearance="primary" onClick={() => navigate("/login")}>Log In</Button>
-                </div>
+                </a>
             </header>
-        </Card>
+        </Card >
     );
 }

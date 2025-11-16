@@ -9,9 +9,12 @@ import {
     DataGridBody,
     DataGridCell,
     createTableColumn,
+    mergeClasses,
+    Label,
+    Spinner,
 } from '@fluentui/react-components';
 import type { TableColumnDefinition } from '@fluentui/react-components';
-import { useMyTasksDataGridStyles } from '../styles/Styles';
+import { mainLayoutStyles } from '../styles/Styles';
 import { Button, Input, Avatar, Badge } from '@fluentui/react-components';
 import TaskDialog from '../dialogs/TaskDialog';
 import type { Task } from '../../types/MyTasksTypes';
@@ -138,7 +141,7 @@ const columns: TableColumnDefinition<Task>[] = [
 
 function MyTasksDataGrid() {
     const { user } = useUser();
-    const styles = useMyTasksDataGridStyles();
+    const styles = mainLayoutStyles();
     const [tasks, setTasks] = React.useState<Task[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [open, setOpen] = React.useState(false);
@@ -495,12 +498,12 @@ function MyTasksDataGrid() {
 
     return (
         <>
-            <div className={styles.headerRow}>
-                <div style={{ display: 'flex', gap: 16 }}>
+            <div className={mergeClasses(styles.flexRowFill, styles.spaceBetween)}>
+                <div className={mergeClasses(styles.flexRowFit, styles.alignCenter, styles.gap)}>
                     <TaskListSquarePerson24Regular />
-                    <h2 className={styles.title}>My Tasks</h2>
+                    <Label>My Tasks</Label>
                 </div>
-                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <div className={mergeClasses(styles.flexRowFit, styles.alignCenter, styles.gap)}>
                     <Button appearance="primary" onClick={() => {
                         setDialogMode('add');
                         setForm({
@@ -554,6 +557,7 @@ function MyTasksDataGrid() {
             />
             {loading ? (
                 <div style={{ textAlign: 'center', padding: 24 }}>
+                    <Spinner/>
                     Loading tasks...
                 </div>
             ) : (
