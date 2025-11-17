@@ -23,7 +23,8 @@ import { authApi } from '../apis';
 
 // Login
 const response = await authApi.login({ email, password });
-// Token and user are automatically stored in localStorage
+// The backend will set an HttpOnly auth cookie. We persist only the user object
+// in localStorage for UI state; tokens are not stored in JS-accessible storage.
 
 // Register
 await authApi.register(userData);
@@ -31,14 +32,14 @@ await authApi.register(userData);
 // Logout
 authApi.logout();
 
-// Check authentication status
+// Check authentication status (based on locally stored user)
 const isAuth = authApi.isAuthenticated();
 
 // Get current user from localStorage
 const user = authApi.getCurrentUser();
 
-// Get token from localStorage
-const token = authApi.getToken();
+// Note: Token is stored in an HttpOnly cookie and is not exposed to JavaScript.
+// Do not try to access the token via `authApi.getToken()`; it returns null for security.
 ```
 
 ### Tasks
@@ -100,14 +101,14 @@ const user = await usersApi.getUserById(userId);
 
 ## Key Features
 
-### Automatic JWT Token Handling
+### Authentication via HttpOnly cookie
 
-All API requests automatically include the JWT token in the `Authorization` header via an axios interceptor. No need to manually add tokens to requests.
+The backend issues an HttpOnly cookie that contains the auth token after login. The `axiosInstance` is configured to send credentials (cookies) automatically so you don't need to manually add `Authorization` headers. Avoid storing or reading tokens in JavaScript.
 
 ```typescript
-// Token is automatically added
+// Cookies are automatically included in API calls with axiosInstance
 const tasks = await tasksApi.getTasks();
-// Header: Authorization: Bearer <token>
+// Auth handled by server cookie
 ```
 
 ### Centralized Error Handling

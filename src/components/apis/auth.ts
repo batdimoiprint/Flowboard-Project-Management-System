@@ -1,4 +1,5 @@
 import axiosInstance from './axiosInstance';
+import { usersApi } from './users';
 
 export interface User {
     id: string;
@@ -46,10 +47,9 @@ export const authApi = {
         try {
             const response = await axiosInstance.post<LoginResponse>('/api/auth/login', credentials);
 
-            // Store token and user in localStorage
-            if (response.data.token) {
-                localStorage.setItem('flowboard_token', response.data.token);
-            }
+            // The server will return an HttpOnly cookie containing the token.
+            // Do not store tokens in JavaScript-accessible storage. We still persist
+            // the user object locally for UI state.
             if (response.data.user) {
                 localStorage.setItem('flowboard_user', JSON.stringify(response.data.user));
             }
@@ -77,10 +77,16 @@ export const authApi = {
         }
     },
 
-    logout: (): void => {
-        localStorage.removeItem('flowboard_token');
-        localStorage.removeItem('flowboard_user');
-        localStorage.removeItem('token'); // Backwards compatibility
+    logout: async (): Promise<void> => {
+        try {
+            // Tell the backend to clear the auth cookie if such an endpoint exists
+            await axiosInstance.post('/api/auth/logout');
+        } catch (error) {
+            // Even if the backend call fails, clear local UI state
+            console.warn('Logout backend call failed', error);
+        } finally {
+            localStorage.removeItem('flowboard_user');
+        }
     },
 
     getCurrentUser: (): User | null => {
@@ -93,13 +99,31 @@ export const authApi = {
         }
     },
 
+    // We no longer expose token via JavaScript; return null for compatibility.
     getToken: (): string | null => {
-        return localStorage.getItem('flowboard_token') || localStorage.getItem('token');
+        return null;
     },
 
+    // Authentication is determined by the presence of a persisted user and the
+    // HttpOnly cookie on the server side. For client-side checks, we rely on
+    // the stored user object; more robust checks should call a protected
+    // endpoint (usersApi.getCurrentUser) to validate the session.
     isAuthenticated: (): boolean => {
-        const token = authApi.getToken();
         const user = authApi.getCurrentUser();
-        return !!token && !!user;
+        return !!user;
+    },
+    /**
+     * Refreshes the currently-known user from the server using the HttpOnly cookie.
+     * Returns the refreshed user or null.
+     */
+    refreshUserFromServer: async (): Promise<User | null> => {
+        try {
+            const user = await usersApi.getCurrentUser();
+            localStorage.setItem('flowboard_user', JSON.stringify(user));
+            return user;
+        } catch {
+            // On failure, do not clear existing locally stored user.
+            return null;
+        }
     },
 };

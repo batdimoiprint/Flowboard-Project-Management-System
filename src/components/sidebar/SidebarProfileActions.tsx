@@ -9,8 +9,8 @@ export default function SidebarProfileActions() {
     const { user, logout } = useUser();
     const navigate = useNavigate();
 
-    const handleSignOut = () => {
-        logout();
+    const handleSignOut = async () => {
+        await logout();
         navigate('/login');
     };
 

@@ -5,15 +5,13 @@ export const API_BASE_URL = "http://localhost:5158/";
 
 const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
+    // Include credentials to allow sending/receiving HttpOnly cookies set by the backend (for auth)
+    withCredentials: true,
 });
 
-// Add auth token if available
-axiosInstance.interceptors.request.use((config) => {
-    const token = localStorage.getItem('flowboard_token') || localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
+// We now rely on an HttpOnly cookie for authentication token, so the client should not
+// manually attach an Authorization header. The backend should issue a cookie and verify it.
+// If the application still needs to attach a header for a specific reason, do so explicitly
+// in that caller instead of here.
 
 export default axiosInstance;
