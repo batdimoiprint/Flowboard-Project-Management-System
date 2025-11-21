@@ -12,6 +12,7 @@ import {
 } from '@fluentui/react-icons';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { User } from '../apis/auth';
+import type { Project } from '../apis/projects';
 import { mainLayoutStyles } from '../styles/Styles';
 
 
@@ -28,6 +29,7 @@ export interface TaskDialogProps {
         assignedTo: string;
         createdBy: string;
         category: string; // Changed from categoryId to match API
+        projectId?: string | null;
         comments?: string;
     };
     onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
@@ -35,6 +37,9 @@ export interface TaskDialogProps {
     avatars?: Array<{ name: string; image?: string }>;
     onAssignClick?: () => void;
     assignableUsers?: User[];
+    projects?: Project[];
+    isLoadingProjects?: boolean;
+    projectsError?: string | null;
     isLoadingAssignableUsers?: boolean;
     assignableUsersError?: string | null;
     currentUser?: User | null;
@@ -58,7 +63,7 @@ export interface TaskDialogProps {
     taskId?: string;
 }
 export default function TaskDialog({ open, onOpenChange, form, onInputChange, onSubmit,
-    onAssignClick, onDeleteClick, isSubmitting = false, submitError, dialogMode = 'add', createdByUser, comments = [], taskId, onAddComment, isAddingComment = false, commentError = null, assignableUsers = [], isLoadingAssignableUsers = false, assignableUsersError = null, currentUser = null }: TaskDialogProps) {
+    onAssignClick, onDeleteClick, isSubmitting = false, submitError, dialogMode = 'add', createdByUser, comments = [], taskId, onAddComment, isAddingComment = false, commentError = null, assignableUsers = [], isLoadingAssignableUsers = false, assignableUsersError = null, projects = [], isLoadingProjects = false, projectsError = null, currentUser = null }: TaskDialogProps) {
     const [editingTitle, setEditingTitle] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const [newComment, setNewComment] = useState('');
@@ -288,6 +293,19 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                     </Field>
                     {/* Row 4: Category, Status, Priority */}
                     <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+                        <Field label="Project" style={{ flex: 1 }}>
+                            <Select name="projectId" value={form.projectId || ''} onChange={onInputChange} disabled={isLoadingProjects || projects.length === 0}>
+                                <option value="">{isLoadingProjects ? 'Loading projects…' : 'Select project'}</option>
+                                {!isLoadingProjects && projects.map(p => (
+                                    <option key={p.id} value={p.id}>{p.projectName}</option>
+                                ))}
+                            </Select>
+                            {projectsError && (
+                                <span style={{ color: tokens.colorPaletteRedForeground3, fontSize: tokens.fontSizeBase100 }}>
+                                    {projectsError}
+                                </span>
+                            )}
+                        </Field>
                         <Field label="Category" style={{ flex: 1 }}>
                             <Select name="category" value={form.category} onChange={onInputChange}>
                                 <option value="">Select category</option>

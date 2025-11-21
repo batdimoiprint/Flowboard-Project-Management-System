@@ -3,6 +3,7 @@ import axiosInstance from './axiosInstance';
 export interface CreateTaskData {
     category?: string; // API uses 'category'
     categoryId?: string; // Keep for backward compatibility
+    projectId?: string; // Add projectId for tasks
     assignedTo: string;
     title: string;
     description: string;
@@ -16,6 +17,7 @@ export interface CreateTaskData {
 
 export interface TaskResponse {
     _id: string;
+    projectId?: string;
     category?: string; // API uses 'category' instead of 'categoryId'
     categoryId?: string; // Keep for backward compatibility
     assignedTo: string;
@@ -40,6 +42,7 @@ export const tasksApi = {
         // Transform the data to match API expectations
         const payload = {
             ...taskData,
+            projectId: taskData.projectId || undefined,
             // Use 'category' for API, fallback to categoryId
             category: taskData.category || taskData.categoryId,
             categoryId: undefined, // Remove categoryId from payload
@@ -72,6 +75,7 @@ export const tasksApi = {
     updateTask: async (taskId: string, taskData: Partial<CreateTaskData>): Promise<TaskResponse> => {
         const payload = {
             ...taskData,
+            projectId: taskData.projectId || undefined,
             // Use 'category' for API, fallback to categoryId
             category: taskData.category || taskData.categoryId,
             categoryId: undefined, // Remove categoryId from payload
@@ -89,6 +93,8 @@ export const tasksApi = {
             priority: string;
             status: string;
             category: string;
+            categoryId: string;
+            projectId: string;
             startDate: string;
             endDate: string;
             assignedTo: string;
@@ -97,9 +103,17 @@ export const tasksApi = {
         // Only include fields that are provided
         if (updates.title !== undefined) payload.title = updates.title;
         if (updates.description !== undefined) payload.description = updates.description;
-        if (updates.priority !== undefined) payload.priority = updates.priority;
-        if (updates.status !== undefined) payload.status = updates.status.toLowerCase();
-        if (updates.category !== undefined) payload.category = updates.category;
+        if (updates.priority !== undefined && updates.priority !== '') payload.priority = updates.priority;
+        if (updates.status !== undefined && updates.status !== '') payload.status = updates.status.toLowerCase();
+        if (updates.categoryId !== undefined && updates.categoryId !== '') {
+            (payload as any).categoryId = updates.categoryId;
+            payload.category = updates.categoryId; // include non-ID alias too
+        } else if (updates.category !== undefined && updates.category !== '') {
+            payload.category = updates.category;
+            // Include categoryId alias in case backend expects categoryId for partial updates
+            (payload as any).categoryId = updates.category;
+        }
+        if (updates.projectId !== undefined && updates.projectId !== '') payload.projectId = updates.projectId;
         if (updates.startDate !== undefined) payload.startDate = updates.startDate;
         if (updates.endDate !== undefined) payload.endDate = updates.endDate;
         if (updates.assignedTo !== undefined) payload.assignedTo = updates.assignedTo;

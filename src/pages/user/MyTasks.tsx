@@ -4,11 +4,12 @@ import { mainLayoutStyles } from '../../components/styles/Styles'
 import TaskDialog from '../../components/dialogs/TaskDialog'
 import { useUser } from '../../hooks/useUser'
 import { tasksApi } from '../../components/apis/tasks'
+import { projectsApi, type Project } from '../../components/apis/projects'
 import { usersApi } from '../../components/apis/users'
 import type { User } from '../../components/apis/auth'
 import type { Task } from '../../types/MyTasksTypes'
 import type { CreateTaskData } from '../../components/apis/tasks'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 
 
@@ -34,8 +35,12 @@ export default function MyTasks() {
         assignedTo: user?.id || '',
         createdBy: user?.id || '',
         category: '',
+        projectId: '',
         comments: '',
     });
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+    const [projectsError, setProjectsError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
@@ -57,11 +62,13 @@ export default function MyTasks() {
             assignedTo: user?.id || '',
             createdBy: user?.id || '',
             category: '',
+            projectId: '',
             comments: '',
         });
         setOpen(true);
         setSelectedTask(null);
         fetchAssignableUsers(undefined);
+        fetchProjects();
     }
 
     // Called when DataGrid row is clicked
@@ -79,10 +86,12 @@ export default function MyTasks() {
             assignedTo: task.assignedTo || '',
             createdBy: task.createdBy || '',
             category: task.category || task.categoryId || '',
+            projectId: (task as any).projectId || '',
             comments: '',
         });
         setOpen(true);
         fetchAssignableUsers(task.assignedTo);
+        fetchProjects();
     }
 
     async function fetchAssignableUsers(assignedToId?: string) {
@@ -109,6 +118,9 @@ export default function MyTasks() {
 
     async function handleFieldUpdate(fieldName: string, value: string) {
         if (!editingTaskId) return;
+
+        // If the new value is empty, skip calling the backend to avoid 'No valid updatable fields provided.'
+        if (value === '') return;
 
         try {
             await tasksApi.patchTask(editingTaskId, { [fieldName]: value } as Partial<CreateTaskData>);
@@ -144,6 +156,7 @@ export default function MyTasks() {
         try {
             const taskData = {
                 category: form.category,
+                projectId: form.projectId,
                 assignedTo: form.assignedTo || user?.id || '',
                 title: form.title,
                 description: form.description,
@@ -172,6 +185,7 @@ export default function MyTasks() {
         try {
             await tasksApi.updateTask(editingTaskId, {
                 category: form.category,
+                projectId: form.projectId,
                 assignedTo: form.assignedTo,
                 title: form.title,
                 description: form.description,
@@ -192,6 +206,25 @@ export default function MyTasks() {
             setIsSubmitting(false);
         }
     }
+
+    async function fetchProjects() {
+        setIsLoadingProjects(true);
+        setProjectsError(null);
+        try {
+            const fetched = await projectsApi.getProjectsForSelect();
+            const normalized = fetched.map(p => ({ ...(p as any), id: (p as any).id || (p as any)._id }));
+            setProjects(normalized as Project[]);
+        } catch (err: unknown) {
+            setProjectsError(err instanceof Error ? err.message : 'Unable to load projects.');
+        } finally {
+            setIsLoadingProjects(false);
+        }
+    }
+
+    // Preload projects on mount for faster dropdown display
+    useEffect(() => {
+        fetchProjects();
+    }, [user?.id]);
 
     async function handleDeleteTask() {
         if (!editingTaskId) return;
@@ -263,6 +296,9 @@ export default function MyTasks() {
                 isLoadingAssignableUsers={isLoadingAssignableUsers}
                 assignableUsersError={assignableUsersError}
                 currentUser={user}
+                projects={projects}
+                isLoadingProjects={isLoadingProjects}
+                projectsError={projectsError}
             />
         </>
     )

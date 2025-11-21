@@ -37,6 +37,12 @@ export const projectsApi = {
         return response.data;
     },
 
+    // Dedicated endpoint for UI selects; ensures we always hit the production host
+    getProjectsForSelect: async (): Promise<Project[]> => {
+        const response = await axiosInstance.get<Project[]>('https://flowboard-backend.azurewebsites.net/api/projects');
+        return response.data;
+    },
+
     getProjectById: async (projectId: string): Promise<Project> => {
         const response = await axiosInstance.get<Project>(`/api/projects/${projectId}`);
         return response.data;

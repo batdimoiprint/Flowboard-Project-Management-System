@@ -2,6 +2,7 @@ import type { User } from '../components/apis/auth';
 
 export type Task = {
     _id: string;
+    projectId?: string;
     category?: string; // API uses 'category' instead of 'categoryId'
     categoryId?: string; // Keep for backward compatibility
     assignedTo: string;
