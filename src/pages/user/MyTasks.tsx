@@ -86,7 +86,7 @@ export default function MyTasks() {
             assignedTo: task.assignedTo || '',
             createdBy: task.createdBy || '',
             category: task.category || task.categoryId || '',
-            projectId: (task as any).projectId || '',
+            projectId: (task as Task & { projectId?: string }).projectId || '',
             comments: '',
         });
         setOpen(true);
@@ -212,8 +212,8 @@ export default function MyTasks() {
         setProjectsError(null);
         try {
             const fetched = await projectsApi.getProjectsForSelect();
-            const normalized = fetched.map(p => ({ ...(p as any), id: (p as any).id || (p as any)._id }));
-            setProjects(normalized as Project[]);
+            const normalized = fetched.map(p => ({ ...p, id: p.id || (p as Project & { _id?: string })._id || p.id }));
+            setProjects(normalized);
         } catch (err: unknown) {
             setProjectsError(err instanceof Error ? err.message : 'Unable to load projects.');
         } finally {

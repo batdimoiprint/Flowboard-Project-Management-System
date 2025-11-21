@@ -106,12 +106,12 @@ export const tasksApi = {
         if (updates.priority !== undefined && updates.priority !== '') payload.priority = updates.priority;
         if (updates.status !== undefined && updates.status !== '') payload.status = updates.status.toLowerCase();
         if (updates.categoryId !== undefined && updates.categoryId !== '') {
-            (payload as any).categoryId = updates.categoryId;
+            (payload as Record<string, string>).categoryId = updates.categoryId;
             payload.category = updates.categoryId; // include non-ID alias too
         } else if (updates.category !== undefined && updates.category !== '') {
             payload.category = updates.category;
             // Include categoryId alias in case backend expects categoryId for partial updates
-            (payload as any).categoryId = updates.category;
+            (payload as Record<string, string>).categoryId = updates.category;
         }
         if (updates.projectId !== undefined && updates.projectId !== '') payload.projectId = updates.projectId;
         if (updates.startDate !== undefined) payload.startDate = updates.startDate;
