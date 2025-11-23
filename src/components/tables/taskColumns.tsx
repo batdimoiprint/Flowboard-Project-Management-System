@@ -63,17 +63,24 @@ export const taskColumns: TableColumnDefinition<Task>[] = [
     createTableColumn<Task>({
         columnId: 'assignedTo',
         renderHeaderCell: () => 'Assigned To',
-        renderCell: (item) => item.assignedToUser ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Avatar
-                    name={`${item.assignedToUser.firstName} ${item.assignedToUser.lastName}`}
-                    size={32}
-                    color='blue'
-                    image={{ src: item.assignedToUser.userIMG || undefined }}
-                />
-                {`${item.assignedToUser.firstName} ${item.assignedToUser.lastName}`}
+        renderCell: (item) => (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                {item.assignedToUsers && item.assignedToUsers.length > 0 ? (
+                    item.assignedToUsers.map((user) => (
+                        <Avatar
+                            key={user.id}
+                            name={`${user.firstName} ${user.lastName}`}
+                            size={32}
+                            color='colorful'
+                            image={{ src: user.userIMG || undefined }}
+                            title={`${user.firstName} ${user.lastName}`}
+                        />
+                    ))
+                ) : (
+                    <span>{item.assignedTo?.join(', ') || 'Unassigned'}</span>
+                )}
             </div>
-        ) : item.assignedTo,
+        ),
     }),
     createTableColumn<Task>({
         columnId: 'createdAt',

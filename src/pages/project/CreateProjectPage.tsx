@@ -15,7 +15,7 @@ import {
 } from '@fluentui/react-components';
 import { AddRegular } from '@fluentui/react-icons';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router';
+import { useNavigate, useOutletContext } from 'react-router';
 import { mainLayoutStyles } from '../../components/styles/Styles';
 import { mergeClasses } from '@fluentui/react-components';
 import { projectsApi } from '../../components/apis/projects';
@@ -89,6 +89,8 @@ export default function CreateProjectPage() {
         }
     };
 
+    const outlet = useOutletContext<{ bumpProjects?: () => void } | undefined>();
+
     const onSubmit = async (values: CreateProjectForm) => {
         setFormError('');
         setLoading(true);
@@ -110,7 +112,8 @@ export default function CreateProjectPage() {
                 }
             }
 
-            // Redirect to projects list or home
+            // Signal refresh for other components and redirect
+            outlet?.bumpProjects?.();
             navigate('/home/project/');
         } catch (error: unknown) {
             if (error instanceof Error) {
@@ -125,16 +128,14 @@ export default function CreateProjectPage() {
 
     return (
         <Card className={mergeClasses(s.flexColFill, s.layoutPadding)}>
-            {/* Title and Actions Row - aligned like MyProfile */}
-            <div className={mergeClasses(s.flexRowFit, s.wFull, s.spaceBetween, s.debugBG)}>
-                <div className={mergeClasses(s.flexRowFit, s.alignCenter)}>
-                    <h1 className={mergeClasses(s.brand)}>Create Project</h1>
-                </div>
+            {/* Title and Actions Row - flex row space-between */}
+            <div className={mergeClasses(s.flexRowFit, s.wFull, s.spaceBetween)}>
+                <h1 className={mergeClasses(s.brand, s.pageTitle)}>Create Project</h1>
                 <div className={mergeClasses(s.flexRowFit, s.gap)}>
                     <Button appearance="outline" onClick={() => navigate('/home')} type='button'>
                         Cancel
                     </Button>
-                    <Button appearance="primary" type="button" onClick={handleSubmit(onSubmit)} disabled={loading} style={{ marginTop: '8px' }}>
+                    <Button appearance="primary" type="button" onClick={handleSubmit(onSubmit)} disabled={loading}>
                         {loading ? 'Creating...' : 'Create Project'}
                     </Button>
                 </div>

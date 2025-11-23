@@ -130,6 +130,99 @@ export const mainLayoutStyles = makeStyles({
 		gap: "4rem",
 	},
 
+	///////////////////////////
+	// Kanban Board Styles
+	///////////////////////////
+	kanbanBoard: {
+		boxSizing: 'border-box',
+		display: 'flex',
+		flexDirection: 'row',
+		alignItems: 'flex-start',
+		gap: tokens.spacingHorizontalL,
+		width: '100%',
+		overflowX: 'auto',
+		paddingBottom: tokens.spacingVerticalL,
+	},
+	kanbanColumn: {
+		boxSizing: 'border-box',
+		display: 'flex',
+		flexDirection: 'column',
+		flex: '0 0 280px',
+		maxWidth: '300px',
+		backgroundColor: tokens.colorNeutralBackground2,
+		borderRadius: tokens.borderRadiusMedium,
+		padding: tokens.spacingHorizontalM,
+		gap: tokens.spacingVerticalS,
+		boxShadow: tokens.shadow2,
+	},
+	kanbanColumnHeader: {
+		display: 'flex',
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		marginBottom: tokens.spacingVerticalXS,
+	},
+	kanbanColumnTitle: {
+		...typographyStyles.subtitle2,
+		fontWeight: tokens.fontWeightSemibold,
+		margin: 0,
+	},
+	kanbanTaskList: {
+		display: 'flex',
+		flexDirection: 'column',
+		gap: tokens.spacingVerticalS,
+		overflowY: 'auto',
+		maxHeight: 'calc(100vh - 260px)',
+		paddingRight: tokens.spacingHorizontalXS,
+	},
+	kanbanAddColumn: {
+		flex: '0 0 240px',
+		display: 'flex',
+		flexDirection: 'column',
+		alignItems: 'stretch',
+		padding: tokens.spacingHorizontalM,
+		gap: tokens.spacingVerticalS,
+		backgroundColor: tokens.colorNeutralBackground2Hover,
+		borderRadius: tokens.borderRadiusMedium,
+		boxShadow: tokens.shadow2,
+		maxHeight: 'fit-content',
+	},
+	kanbanDragOver: {
+		outline: `2px dashed ${tokens.colorBrandStroke1}`,
+		outlineOffset: '2px',
+	},
+	kanbanTaskCard: {
+		boxSizing: 'border-box',
+		backgroundColor: tokens.colorNeutralBackground1,
+		border: `1px solid ${tokens.colorNeutralStroke2}`,
+		borderRadius: tokens.borderRadiusMedium,
+		padding: tokens.spacingHorizontalM,
+		boxShadow: tokens.shadow2,
+		cursor: 'grab',
+		display: 'flex',
+		flexDirection: 'column',
+		gap: tokens.spacingVerticalXS,
+		':active': { cursor: 'grabbing' },
+	},
+	kanbanTaskTitle: {
+		...typographyStyles.body1Strong,
+		margin: 0,
+	},
+	kanbanTaskMetaRow: {
+		display: 'flex',
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		gap: tokens.spacingHorizontalS,
+		flexWrap: 'wrap',
+	},
+	kanbanSmallBadge: {
+		backgroundColor: tokens.colorNeutralBackground3,
+		borderRadius: tokens.borderRadiusSmall,
+		padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalS}`,
+		fontSize: tokens.fontSizeBase100,
+	},
+
 	pointer: {
 		cursor: "pointer",
 	},
@@ -247,6 +340,30 @@ export const mainLayoutStyles = makeStyles({
 		display: "flex",
 		flexDirection: "column",
 		gap: tokens.spacingVerticalS,
+	},
+
+	// Common headers / rows inside cards and sections
+	sectionHeader: {
+		display: 'flex',
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		marginBottom: tokens.spacingVerticalM,
+	},
+
+	// Standard input width helpers used across the app
+	inputSearch: {
+		minWidth: '280px',
+	},
+
+	inputSort: {
+		minWidth: '175px',
+	},
+
+	centerPaddingL: {
+		padding: tokens.spacingVerticalL,
+		display: 'flex',
+		justifyContent: 'center',
 	},
 
 	sectionTitle: {

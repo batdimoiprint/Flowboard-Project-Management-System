@@ -5,8 +5,8 @@ export type Task = {
     projectId?: string;
     category?: string; // API uses 'category' instead of 'categoryId'
     categoryId?: string; // Keep for backward compatibility
-    assignedTo: string;
-    assignedToUser?: User; // Resolved user object for assignedTo ID
+    assignedTo: string[];
+    assignedToUsers?: User[]; // Resolved user objects for assignedTo IDs
     title: string;
     description: string;
     priority: string;

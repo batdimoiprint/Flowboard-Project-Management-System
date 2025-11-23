@@ -1,9 +1,6 @@
 import {
     Avatar,
-
-    // AvatarGroup, AvatarGroupItem, AvatarGroupPopover, 
-
-
+    AvatarGroup, AvatarGroupItem,
     Button, Dialog, DialogSurface, DialogTitle, Divider, Dropdown, Field, Input, mergeClasses, Option, Persona, Select, tokens, Tooltip
 } from '@fluentui/react-components';
 import {
@@ -13,6 +10,7 @@ import {
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { User } from '../apis/auth';
 import type { Project } from '../apis/projects';
+import type { Category } from '../apis/categories';
 import { mainLayoutStyles } from '../styles/Styles';
 
 
@@ -26,7 +24,7 @@ export interface TaskDialogProps {
         status: string;
         startDate: string;
         endDate: string;
-        assignedTo: string;
+        assignedTo: string[];
         createdBy: string;
         category: string; // Changed from categoryId to match API
         projectId?: string | null;
@@ -40,6 +38,10 @@ export interface TaskDialogProps {
     projects?: Project[];
     isLoadingProjects?: boolean;
     projectsError?: string | null;
+    categories?: Category[];
+    isLoadingCategories?: boolean;
+    categoriesError?: string | null;
+    hideProjectField?: boolean;
     isLoadingAssignableUsers?: boolean;
     assignableUsersError?: string | null;
     currentUser?: User | null;
@@ -63,7 +65,7 @@ export interface TaskDialogProps {
     taskId?: string;
 }
 export default function TaskDialog({ open, onOpenChange, form, onInputChange, onSubmit,
-    onAssignClick, onDeleteClick, isSubmitting = false, submitError, dialogMode = 'add', createdByUser, comments = [], taskId, onAddComment, isAddingComment = false, commentError = null, assignableUsers = [], isLoadingAssignableUsers = false, assignableUsersError = null, projects = [], isLoadingProjects = false, projectsError = null, currentUser = null }: TaskDialogProps) {
+    onDeleteClick, isSubmitting = false, submitError, dialogMode = 'add', createdByUser, comments = [], taskId, onAddComment, isAddingComment = false, commentError = null, assignableUsers = [], isLoadingAssignableUsers = false, assignableUsersError = null, projects = [], isLoadingProjects = false, projectsError = null, categories = [], isLoadingCategories = false, categoriesError = null, hideProjectField = false, currentUser = null }: TaskDialogProps) {
     const [editingTitle, setEditingTitle] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const [newComment, setNewComment] = useState('');
@@ -103,18 +105,15 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
 
     // parent should include assignedToUser in assignableUsers if desired
 
-    function handleAssignedUserSelect(_: unknown, data: { optionValue?: string | number }) {
-        const selectedId = typeof data.optionValue === 'string' ? data.optionValue : null;
-        if (!selectedId) {
-            return;
-        }
+    function handleAssignedUserSelect(_: unknown, data: { optionValue?: string | number; selectedOptions: string[] }) {
+        const selectedIds = data.selectedOptions;
 
         const syntheticEvent = {
             target: {
                 name: 'assignedTo',
-                value: selectedId,
+                value: selectedIds,
                 tagName: 'SELECT',
-                type: 'select-one',
+                type: 'select-multiple',
             },
         } as unknown as React.ChangeEvent<HTMLSelectElement>;
 
@@ -195,65 +194,44 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                         </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: "left", gap: 16, marginBottom: 16 }}>
-                        <Avatar
-                            name={userInfo ? `${userInfo.firstName} ${userInfo.lastName}` : 'User'}
-                            size={32}
-                            color="colorful"
-                            image={userInfo?.userIMG ? { src: userInfo.userIMG } : undefined}
-                        />
-                        <span style={{ fontWeight: 500 }}>{userInfo ? `${userInfo.firstName} ${userInfo.lastName}` : 'User'}</span>
+                        <Tooltip content={`Created by ${userInfo ? `${userInfo.firstName} ${userInfo.lastName}` : 'User'}`} relationship="label">
+                            <Avatar
+                                name={userInfo ? `${userInfo.firstName} ${userInfo.lastName}` : 'User'}
+                                size={32}
+                                color="colorful"
+                                image={userInfo?.userIMG ? { src: userInfo.userIMG } : undefined}
+                            />
+                        </Tooltip>
                         <Divider vertical style={{ height: "100%" }} />
-                        {/* 
-                        <AvatarGroup layout="stack">
-                            {inlineItems.map((a, i) => (
-                                <AvatarGroupItem key={a.name || i}>
-                                    <Avatar
-                                        name={a.name}
-                                        image={('image' in a && typeof a.image === 'string') ? { src: a.image } : undefined}
-                                        size={32}
-                                    />
-                                </AvatarGroupItem>
-                            ))}
-                            {overflowItems.length > 0 && (
-                                <AvatarGroupPopover>
-                                    {overflowItems.map((a, i) => (
-                                        <AvatarGroupItem key={a.name || i}>
-                                            <Avatar
-                                                name={a.name}
-                                                image={('image' in a && typeof a.image === 'string') ? { src: a.image } : undefined}
-                                                size={32}
-                                            />
-                                        </AvatarGroupItem>
-                                    ))}
-                                </AvatarGroupPopover>
-                            )}
-                        </AvatarGroup>
-                        <Divider vertical style={{ height: "100%" }} /> */}
-                        <Button
-                            appearance="transparent"
-                            aria-label="Add member"
-                            style={{
-                                width: 40,
-                                height: 40,
-                                minWidth: 40,
-                                minHeight: 40,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: 0,
-                                borderRadius: '50%',
-                            }}
-                            onClick={onAssignClick}
-                        >
-                            {/* <AddCircle32Filled /> */}
-                        </Button>
+
+                        {form.assignedTo && form.assignedTo.length > 0 && (
+                            <>
+                                <AvatarGroup layout="stack">
+                                    {form.assignedTo.map((userId) => {
+                                        const user = assignableUsers.find(u => u.id === userId);
+                                        return (
+                                            <AvatarGroupItem key={userId} name={user ? `${user.firstName} ${user.lastName}` : 'Unknown'}>
+                                                <Avatar
+                                                    name={user ? `${user.firstName} ${user.lastName}` : 'Unknown'}
+                                                    image={user?.userIMG ? { src: user.userIMG } : undefined}
+                                                    size={32}
+                                                    color="colorful"
+                                                />
+                                            </AvatarGroupItem>
+                                        );
+                                    })}
+                                </AvatarGroup>
+                                <Divider vertical style={{ height: "100%" }} />
+                            </>
+                        )}
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <Dropdown
                                 id="assign-member-dropdown"
-                                placeholder={isLoadingAssignableUsers ? 'Loading users…' : 'Select a member'}
+                                placeholder={isLoadingAssignableUsers ? 'Loading users…' : 'Select members'}
                                 style={{ minWidth: 220 }}
-                                selectedOptions={form.assignedTo ? [form.assignedTo] : []}
+                                multiselect={true}
+                                selectedOptions={form.assignedTo}
                                 onOptionSelect={handleAssignedUserSelect}
                                 disabled={isLoadingAssignableUsers || assignableUsers.length === 0}
                             >
@@ -291,28 +269,38 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                     <Field label="Description" style={{ marginBottom: 16 }}>
                         <Input name="description" value={form.description} onChange={onInputChange} placeholder="Build low-fidelity wireframes for the dashboard layout and task management screens." />
                     </Field>
-                    {/* Row 4: Category, Status, Priority */}
+                    {/* Row 4: Project (conditional), Category, Status, Priority */}
                     <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-                        <Field label="Project" style={{ flex: 1 }}>
-                            <Select name="projectId" value={form.projectId || ''} onChange={onInputChange} disabled={isLoadingProjects || projects.length === 0}>
-                                <option value="">{isLoadingProjects ? 'Loading projects…' : 'Select project'}</option>
-                                {!isLoadingProjects && projects.map(p => (
-                                    <option key={p.id} value={p.id}>{p.projectName}</option>
+                        {!hideProjectField && (
+                            <Field label="Project" style={{ flex: 1 }}>
+                                <Select name="projectId" value={form.projectId || ''} onChange={onInputChange} disabled={isLoadingProjects || projects.length === 0}>
+                                    <option value="">{isLoadingProjects ? 'Loading projects…' : 'Select project'}</option>
+                                    {!isLoadingProjects && projects.map(p => (
+                                        <option key={p.id} value={p.id}>{p.projectName}</option>
+                                    ))}
+                                </Select>
+                                {projectsError && (
+                                    <span style={{ color: tokens.colorPaletteRedForeground3, fontSize: tokens.fontSizeBase100 }}>
+                                        {projectsError}
+                                    </span>
+                                )}
+                            </Field>
+                        )}
+                        <Field label="Category" style={{ flex: 1 }}>
+                            <Select name="category" value={form.category} onChange={onInputChange} disabled={isLoadingCategories || (categories.length === 0 && !hideProjectField && !form.projectId)}>
+                                <option value="">{isLoadingCategories ? 'Loading categories…' : 'Select category'}</option>
+                                {!isLoadingCategories && categories.length === 0 && (
+                                    <option value="" disabled>No categories available</option>
+                                )}
+                                {!isLoadingCategories && categories.map(cat => (
+                                    <option key={cat.id} value={cat.categoryName}>{cat.categoryName}</option>
                                 ))}
                             </Select>
-                            {projectsError && (
+                            {categoriesError && (
                                 <span style={{ color: tokens.colorPaletteRedForeground3, fontSize: tokens.fontSizeBase100 }}>
-                                    {projectsError}
+                                    {categoriesError}
                                 </span>
                             )}
-                        </Field>
-                        <Field label="Category" style={{ flex: 1 }}>
-                            <Select name="category" value={form.category} onChange={onInputChange}>
-                                <option value="">Select category</option>
-                                <option value="design">Design</option>
-                                <option value="development">Development</option>
-                                <option value="testing">Testing</option>
-                            </Select>
                         </Field>
                         <Field label="Status" style={{ flex: 1 }}>
                             <Select name="status" value={form.status} onChange={onInputChange}>
@@ -329,12 +317,12 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                             </Select>
                         </Field>
                     </div>
-                    {/* Row 5: Start Date, End Date */}
+                    {/* Row 5: Start Date, End Date (Optional) */}
                     <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-                        <Field label="Start Date" style={{ flex: 1 }}>
+                        <Field label="Start Date (Optional)" style={{ flex: 1 }}>
                             <Input name="startDate" type="date" value={form.startDate} onChange={onInputChange} />
                         </Field>
-                        <Field label="Due Date" style={{ flex: 1 }}>
+                        <Field label="Due Date (Optional)" style={{ flex: 1 }}>
                             <Input name="endDate" type="date" value={form.endDate} onChange={onInputChange} />
                         </Field>
                     </div>

@@ -5,6 +5,7 @@ import TaskDialog from '../../components/dialogs/TaskDialog'
 import { useUser } from '../../hooks/useUser'
 import { tasksApi } from '../../components/apis/tasks'
 import { projectsApi, type Project } from '../../components/apis/projects'
+import { categoriesApi, type Category } from '../../components/apis/categories'
 import { usersApi } from '../../components/apis/users'
 import type { User } from '../../components/apis/auth'
 import type { Task } from '../../types/MyTasksTypes'
@@ -32,7 +33,7 @@ export default function MyTasks() {
         status: 'To Do',
         startDate: '',
         endDate: '',
-        assignedTo: user?.id || '',
+        assignedTo: user?.id ? [user.id] : [] as string[],
         createdBy: user?.id || '',
         category: '',
         projectId: '',
@@ -48,6 +49,8 @@ export default function MyTasks() {
     const [assignableUsersError, setAssignableUsersError] = useState<string | null>(null);
     const [isAddingComment, setIsAddingComment] = useState(false);
     const [commentError, setCommentError] = useState<string | null>(null);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
     // Called by DataGrid when adding button clicked
     function handleAddClick() {
@@ -59,7 +62,7 @@ export default function MyTasks() {
             status: 'To Do',
             startDate: '',
             endDate: '',
-            assignedTo: user?.id || '',
+            assignedTo: user?.id ? [user.id] : [],
             createdBy: user?.id || '',
             category: '',
             projectId: '',
@@ -83,7 +86,7 @@ export default function MyTasks() {
             status: task.status || 'To Do',
             startDate: task.startDate || '',
             endDate: task.endDate || '',
-            assignedTo: task.assignedTo || '',
+            assignedTo: task.assignedTo || [],
             createdBy: task.createdBy || '',
             category: task.category || task.categoryId || '',
             projectId: (task as Task & { projectId?: string }).projectId || '',
@@ -94,19 +97,41 @@ export default function MyTasks() {
         fetchProjects();
     }
 
-    async function fetchAssignableUsers(assignedToId?: string) {
+    async function fetchAssignableUsers(assignedToIds?: string[]) {
         setIsLoadingAssignableUsers(true);
         setAssignableUsersError(null);
         try {
-            const fetched = await usersApi.getAllUsers();
-            // Ensure current user and assignedTo user are included
-            const unique = fetched.slice();
-            if (user && !unique.some(u => u.id === user.id)) unique.push(user);
-            const assignedTo = assignedToId || (selectedTask && selectedTask.assignedTo);
-            if (assignedTo && !unique.some(u => u.id === assignedTo)) {
-                const assigned = await usersApi.getUserById(assignedTo).catch(() => null);
-                if (assigned) unique.push(assigned);
+            let unique: User[] = [];
+
+            // If a project is selected, fetch only project members
+            if (form.projectId || (selectedTask && (selectedTask as Task & { projectId?: string }).projectId)) {
+                const projectId = form.projectId || (selectedTask && (selectedTask as Task & { projectId?: string }).projectId);
+                if (projectId) {
+                    const projectDetails = await projectsApi.getProjectById(projectId);
+                    const teamMemberIds = projectDetails.teamMembers || [];
+
+                    // Fetch all team member details
+                    const memberPromises = teamMemberIds.map(id =>
+                        usersApi.getUserById(id).catch(() => null)
+                    );
+                    const members = await Promise.all(memberPromises);
+                    unique = members.filter((m): m is User => m !== null);
+                }
             }
+
+            // Ensure current user is included
+            if (user && !unique.some(u => u.id === user.id)) unique.push(user);
+
+            // Add any assigned users that might not be in the current member list (for existing tasks)
+            const assignedTo = assignedToIds || (selectedTask && selectedTask.assignedTo);
+            if (assignedTo && assignedTo.length > 0) {
+                const missingIds = assignedTo.filter(id => !unique.some(u => u.id === id));
+                if (missingIds.length > 0) {
+                    const missingUsers = await Promise.all(missingIds.map(id => usersApi.getUserById(id).catch(() => null)));
+                    missingUsers.forEach(u => { if (u) unique.push(u); });
+                }
+            }
+
             setAssignableUsers(unique);
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Unable to load users.';
@@ -114,16 +139,28 @@ export default function MyTasks() {
         } finally {
             setIsLoadingAssignableUsers(false);
         }
-    }
-
-    async function handleFieldUpdate(fieldName: string, value: string) {
+    } async function handleFieldUpdate(fieldName: string, value: unknown) {
         if (!editingTaskId) return;
 
         // If the new value is empty, skip calling the backend to avoid 'No valid updatable fields provided.'
-        if (value === '') return;
+        if (value === '' || (Array.isArray(value) && value.length === 0)) return;
 
         try {
-            await tasksApi.patchTask(editingTaskId, { [fieldName]: value } as Partial<CreateTaskData>);
+                // Build a safe typed payload for the patch API
+                // Build a typed payload object safely (avoid using `any`)
+                const payloadRec: Record<string, unknown> = {};
+                if (typeof value === 'string') {
+                    payloadRec[fieldName] = value;
+                } else if (Array.isArray(value)) {
+                    payloadRec[fieldName] = value as string[];
+                } else if (typeof value === 'number' || typeof value === 'boolean') {
+                    payloadRec[fieldName] = value;
+                } else {
+                    // unknown or unsupported type — skip
+                    return;
+                }
+
+                await tasksApi.patchTask(editingTaskId, payloadRec as Partial<CreateTaskData>);
             // refresh data grid
             setRefreshKey(k => k + 1);
         } catch (err) {
@@ -132,12 +169,19 @@ export default function MyTasks() {
     }
 
     function handleInputChange(e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
-        const { name, value } = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
-        setForm((prev) => ({ ...prev, [name]: value }));
+        const { name, value } = e.target as unknown as { name: string; value: unknown };
+        setForm((prev) => {
+            // Clear category when project changes
+            if (name === 'projectId') {
+                return { ...prev, projectId: typeof value === 'string' ? value : '', category: '' };
+            }
+            return { ...prev, [name]: value };
+        });
 
         if (dialogMode === 'edit' && editingTaskId) {
-            const isSelect = e.target.tagName === 'SELECT';
-            const isDate = (e.target as HTMLInputElement).type === 'date';
+            const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+            const isSelect = (target.tagName ?? '').toUpperCase() === 'SELECT';
+            const isDate = 'type' in target && (target as HTMLInputElement).type === 'date';
             if (isSelect || isDate) {
                 handleFieldUpdate(name, value);
             } else {
@@ -157,7 +201,7 @@ export default function MyTasks() {
             const taskData = {
                 category: form.category,
                 projectId: form.projectId,
-                assignedTo: form.assignedTo || user?.id || '',
+                assignedTo: form.assignedTo.length > 0 ? form.assignedTo : (user?.id ? [user.id] : []),
                 title: form.title,
                 description: form.description,
                 priority: form.priority,
@@ -225,6 +269,27 @@ export default function MyTasks() {
     useEffect(() => {
         fetchProjects();
     }, [user?.id]);
+
+    // Load categories when projectId changes
+    useEffect(() => {
+        if (form.projectId) {
+            setIsLoadingCategories(true);
+            categoriesApi.getCategoriesByProject(form.projectId)
+                .then(cats => setCategories(cats))
+                .catch(err => console.error('Failed to load categories:', err))
+                .finally(() => setIsLoadingCategories(false));
+        } else {
+            setCategories([]);
+        }
+    }, [form.projectId]);
+
+    // Reload assignable users when project changes (only when dialog is open)
+    useEffect(() => {
+        if (open && dialogMode === 'add' && form.projectId) {
+            fetchAssignableUsers(undefined);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.projectId, open, dialogMode]);
 
     async function handleDeleteTask() {
         if (!editingTaskId) return;
@@ -299,6 +364,10 @@ export default function MyTasks() {
                 projects={projects}
                 isLoadingProjects={isLoadingProjects}
                 projectsError={projectsError}
+                categories={categories}
+                isLoadingCategories={isLoadingCategories}
+                categoriesError={null}
+                hideProjectField={false}
             />
         </>
     )

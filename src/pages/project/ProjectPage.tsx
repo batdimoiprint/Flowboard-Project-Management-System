@@ -11,13 +11,22 @@ import {
   TableHeaderCell,
   TableRow,
   tokens,
+  Dialog,
+  DialogSurface,
+  DialogTitle,
+  DialogBody,
+  DialogActions,
+  DialogContent,
+  Dropdown,
+  Option,
 } from '@fluentui/react-components';
 import { AddCircle20Regular, ChevronDown12Regular } from '@fluentui/react-icons';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { projectsApi, type Project } from '../../components/apis/projects';
 import { usersApi } from '../../components/apis/users';
 import { mainLayoutStyles } from '../../components/styles/Styles';
 import type { User } from '../../components/apis/auth';
+import { useUser } from '../../hooks/useUser';
 
 type MemberDetail = {
   id: string;
@@ -98,12 +107,20 @@ export default function ProjectPage() {
   const { projectName } = useParams<{ projectName: string }>();
   const decodedParam = projectName ? decodeURIComponent(projectName) : '';
   const normalizedSlug = decodedParam ? toSlug(decodedParam) : '';
+  const navigate = useNavigate();
+  const { user: currentUser } = useUser();
+  const outlet = useOutletContext<{ bumpProjects?: () => void } | undefined>();
 
   const [project, setProject] = useState<Project | null>(null);
   const [manager, setManager] = useState<User | null>(null);
   const [members, setMembers] = useState<MemberDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -217,6 +234,94 @@ export default function ProjectPage() {
 
   const subtitle = project?.description || 'For the IPT Project';
 
+  const isOwner = useMemo(() => {
+    if (!currentUser || !project) return false;
+    // Owner can be the creator OR a user explicitly set with Owner role in permissions
+    const role = project.permissions?.[currentUser.id];
+    return project.createdBy === currentUser.id || role === 'Owner';
+  }, [currentUser, project]);
+
+  const handleInviteMember = async () => {
+    if (!selectedUserId || !project?.id) return;
+    setActionLoading(true);
+    try {
+      await projectsApi.addProjectMembers(project.id, [selectedUserId]);
+      setInviteDialogOpen(false);
+      setSelectedUserId('');
+      // Refetch project data
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to invite member:', err);
+      alert('Failed to invite member');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!project?.id) return;
+    if (!confirm('Remove this member from the project?')) return;
+    setActionLoading(true);
+    try {
+      await projectsApi.removeProjectMembers(project.id, memberId);
+      // Refetch project data
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to remove member:', err);
+      alert('Failed to remove member');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!project?.id) return;
+    setActionLoading(true);
+    try {
+      await projectsApi.deleteProject(project.id);
+      setDeleteDialogOpen(false);
+      // Notify parent (Sidebar / ProjectList) to refresh
+      outlet?.bumpProjects?.();
+      navigate('/home/project');
+    } catch (err) {
+      console.error('Failed to delete project:', err);
+      alert('Failed to delete project');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleLeaveProject = async () => {
+    if (!project?.id) return;
+    if (!confirm('Are you sure you want to leave this project?')) return;
+    setActionLoading(true);
+    try {
+      await projectsApi.leaveProject(project.id);
+      // notify parent sidebar/list to refresh
+      outlet?.bumpProjects?.();
+      navigate('/home/project');
+    } catch (err) {
+      console.error('Failed to leave project:', err);
+      alert('Failed to leave project');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openInviteDialog = async () => {
+    try {
+      const users = await usersApi.getAllUsers();
+      // Filter out current members and manager
+      const memberIds = new Set([...(project?.teamMembers ?? []), project?.createdBy]);
+      const availableUsers = users.filter((u) => !memberIds.has(u.id));
+      setAllUsers(availableUsers);
+      setInviteDialogOpen(true);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+      alert('Failed to load users');
+    }
+  };
+
   // Permissions badges removed - no longer rendered in table
 
   return (
@@ -264,12 +369,15 @@ export default function ProjectPage() {
               </div>
             </div>
             <div className={styles.personaRow} style={{ gap: tokens.spacingHorizontalS }}>
-              <Button appearance="secondary" size="large">
-                Edit Team
-              </Button>
-              <Button appearance="primary" size="large">
-                Leave Team
-              </Button>
+              {isOwner ? (
+                <Button appearance="primary" size="large" onClick={() => setDeleteDialogOpen(true)}>
+                  Delete Project
+                </Button>
+              ) : (
+                <Button appearance="primary" size="large" onClick={handleLeaveProject} disabled={actionLoading}>
+                  {actionLoading ? 'Leaving...' : 'Leave Team'}
+                </Button>
+              )}
             </div>
           </div>
 
@@ -309,23 +417,82 @@ export default function ProjectPage() {
                       </TableCell>
                       <TableCell>{member.email}</TableCell>
                       <TableCell>
-                        <Button appearance="secondary" size="small">
-                          Remove Member
-                        </Button>
+                        {isOwner && (
+                          <Button
+                            appearance="secondary"
+                            size="small"
+                            onClick={() => handleRemoveMember(member.id)}
+                            disabled={actionLoading}
+                          >
+                            Remove Member
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             )}
-            <div>
-              <Button appearance="secondary" icon={<AddCircle20Regular />}>
-                Invite Member
-              </Button>
-            </div>
+            {isOwner && (
+              <div>
+                <Button appearance="secondary" icon={<AddCircle20Regular />} onClick={openInviteDialog}>
+                  Invite Member
+                </Button>
+              </div>
+            )}
           </section>
         </>
       )}
+
+      {/* Invite Member Dialog */}
+      <Dialog open={inviteDialogOpen} onOpenChange={(_, data) => setInviteDialogOpen(data.open)}>
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>Invite Member to Project</DialogTitle>
+            <DialogContent>
+              <Dropdown
+                placeholder="Select a user"
+                value={allUsers.find((u) => u.id === selectedUserId)?.userName || ''}
+                onOptionSelect={(_, data) => setSelectedUserId(data.optionValue || '')}
+              >
+                {allUsers.map((user) => (
+                  <Option key={user.id} value={user.id} text={`${user.userName} (${user.email})`}>
+                    {user.userName} ({user.email})
+                  </Option>
+                ))}
+              </Dropdown>
+            </DialogContent>
+            <DialogActions>
+              <Button appearance="secondary" onClick={() => setInviteDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button appearance="primary" onClick={handleInviteMember} disabled={!selectedUserId || actionLoading}>
+                {actionLoading ? 'Inviting...' : 'Invite'}
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
+
+      {/* Delete Project Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={(_, data) => setDeleteDialogOpen(data.open)}>
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>Delete Project</DialogTitle>
+            <DialogContent>
+              Are you sure you want to delete this project? This action cannot be undone.
+            </DialogContent>
+            <DialogActions>
+              <Button appearance="secondary" onClick={() => setDeleteDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button appearance="primary" onClick={handleDeleteProject} disabled={actionLoading}>
+                {actionLoading ? 'Deleting...' : 'Delete'}
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
     </Card>
   );
 }

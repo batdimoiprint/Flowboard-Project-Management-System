@@ -4,7 +4,7 @@ export interface CreateTaskData {
     category?: string; // API uses 'category'
     categoryId?: string; // Keep for backward compatibility
     projectId?: string; // Add projectId for tasks
-    assignedTo: string;
+    assignedTo: string[];
     title: string;
     description: string;
     priority: string;
@@ -20,7 +20,7 @@ export interface TaskResponse {
     projectId?: string;
     category?: string; // API uses 'category' instead of 'categoryId'
     categoryId?: string; // Keep for backward compatibility
-    assignedTo: string;
+    assignedTo: string[];
     title: string;
     description: string;
     priority: string;
@@ -67,6 +67,33 @@ export const tasksApi = {
         return response.data;
     },
 
+    /**
+     * Fetch all tasks for a project using query param projectId
+     * Backend path: GET /api/tasks?projectId={projectId}
+     */
+    getTasksByProject: async (projectId: string): Promise<TaskResponse[]> => {
+        const response = await axiosInstance.get<TaskResponse[]>('/api/tasks', { params: { projectId } });
+        return response.data;
+    },
+
+    /**
+     * Fetch tasks for the currently authenticated user (shortcut)
+     * Backend path: GET /api/tasks/me
+     */
+    getMyTasks: async (): Promise<TaskResponse[]> => {
+        const response = await axiosInstance.get<TaskResponse[]>('/api/tasks/me');
+        return response.data;
+    },
+
+    /**
+     * Fetch tasks for a specific user (createdBy OR assignedTo)
+     * Backend path: GET /api/tasks/user/{userId}
+     */
+    getTasksByUser: async (userId: string): Promise<TaskResponse[]> => {
+        const response = await axiosInstance.get<TaskResponse[]>(`/api/tasks/user/${userId}`);
+        return response.data;
+    },
+
     getTaskById: async (taskId: string): Promise<TaskResponse> => {
         const response = await axiosInstance.get<TaskResponse>(`/api/tasks/${taskId}`);
         return response.data;
@@ -97,7 +124,7 @@ export const tasksApi = {
             projectId: string;
             startDate: string;
             endDate: string;
-            assignedTo: string;
+            assignedTo: string[];
         }> = {};
 
         // Only include fields that are provided

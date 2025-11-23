@@ -1,4 +1,5 @@
 import {
+
     mergeClasses,
     NavDrawer,
     NavDrawerBody,
@@ -15,7 +16,11 @@ import BrandHeader from "../headers/BrandHeader";
 // import NotificationList from "./NotificationList";
 import ProjectList from './ProjectList';
 
-export default function Sidebar() {
+interface SidebarProps {
+    refreshSignal?: number;
+}
+
+export default function Sidebar({ refreshSignal }: SidebarProps) {
 
     const [openCategories, setOpenCategories] = useState<string[]>(['projects']);
     const s = mainLayoutStyles();
@@ -66,11 +71,16 @@ export default function Sidebar() {
                     </NavItem>
 
                     {/* Project List Section */}
-                    <ProjectList openCategories={openCategories} onNavigateToProjects={handleProjectsNav} />
+                    <ProjectList openCategories={openCategories} onNavigateToProjects={handleProjectsNav} refreshSignal={refreshSignal} />
+
+                    {/* moved create button into Projects header (icon-only) */}
 
                     {/* <NotificationList openCategories={openCategories} /> */}
                 </div>
+
+
                 <SidebarProfileActions />
+
             </NavDrawerBody>
 
         </NavDrawer >

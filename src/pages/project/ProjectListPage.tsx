@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Avatar, Button, Input, Label, Spinner, Table, TableBody, TableCell, TableHeader, TableHeaderCell, TableRow, tokens, Card } from '@fluentui/react-components';
+import {
+    Avatar, Button, mergeClasses,
+    // Input,
+
+    Label, Spinner, Table, TableBody, TableCell, TableHeader, TableHeaderCell, TableRow, tokens, Card
+} from '@fluentui/react-components';
 import { usersApi } from '../../components/apis/users';
 import type { User } from '../../components/apis/auth';
 import { useUser } from '../../hooks/useUser';
@@ -57,8 +62,8 @@ export default function ProjectListPage() {
     };
 
     return (
-        <Card className={`${styles.artifCard} ${styles.wFull} ${styles.hFull} ${styles.layoutPadding}`}>
-            <div className={`${styles.spaceBetweenRow} ${styles.alignCenter}`} style={{ marginBottom: tokens.spacingVerticalM }}>
+        <Card className={mergeClasses(styles.artifCard, styles.componentBorder, styles.wFull, styles.hFull, styles.layoutPadding)}>
+            <div className={styles.sectionHeader}>
                 <div className={`${styles.personaRow}`}>
                     <Label>Projects List</Label>
                 </div>
@@ -66,13 +71,13 @@ export default function ProjectListPage() {
                     <Button appearance="primary" onClick={() => navigate('/home/project/create')}>
                         Create Project
                     </Button>
-                    <Input placeholder="Search Task" style={{ width: 280 }} />
-                    <Input readOnly value="Newest - Oldest" style={{ width: 175 }} />
+
+
                 </div>
             </div>
 
             {loading && (
-                <div className={styles.alignCenter} style={{ padding: tokens.spacingVerticalL }}>
+                <div className={styles.centerPaddingL}>
                     <Spinner label="Loading projects" />
                 </div>
             )}
@@ -93,7 +98,13 @@ export default function ProjectListPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {projects.map((project) => {
+                        {projects.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={5} style={{ textAlign: 'center', color: tokens.colorNeutralForeground3 }}>
+                                    No projects yet
+                                </TableCell>
+                            </TableRow>
+                        ) : projects.map((project) => {
                             const slug = encodeURIComponent(project.projectName.toLowerCase().replace(/\s+/g, '-'));
                             let ownerId: string | undefined;
                             if (project.permissions) {

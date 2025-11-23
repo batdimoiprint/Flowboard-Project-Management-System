@@ -78,4 +78,9 @@ export const projectsApi = {
         const response = await axiosInstance.delete<Project>(`/api/projects/${projectId}/member`, { data: payload });
         return response.data;
     },
+
+    leaveProject: async (projectId: string): Promise<Project> => {
+        const response = await axiosInstance.delete<Project>(`/api/projects/${projectId}/leave`);
+        return response.data;
+    },
 };

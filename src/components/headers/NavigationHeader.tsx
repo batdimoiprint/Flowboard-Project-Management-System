@@ -1,6 +1,6 @@
-import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem } from "@fluentui/react-components";
+import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Button, Tooltip } from "@fluentui/react-components";
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Folder20Regular } from '@fluentui/react-icons';
+import { Folder20Regular, Board20Regular, TaskListSquareLtr20Regular, Settings20Regular } from '@fluentui/react-icons';
 import React from 'react';
 
 function titleCase(segment: string) {
@@ -32,25 +32,78 @@ export default function NavigationHeader() {
         return { label: titleCase(seg), path };
     });
 
+    // Check if we're in a project context to show Kanban, Tasks, and Settings buttons
+    const isInProject = segments.length >= 2 && segments[0] === 'project';
+    const projectName = isInProject ? segments[1] : null;
+
+    // Construct navigation paths
+    const kanbanPath = projectName ? `/home/project/${projectName}/kanban` : null;
+    const tasksPath = projectName ? `/home/project/${projectName}/tasks` : null;
+    const settingsPath = projectName ? `/home/project/${projectName}` : null;
+
+    // Check if current page is kanban, tasks, or settings
+    const lastSegment = segments[segments.length - 1];
+    const isKanbanPage = lastSegment === 'kanban';
+    const isTasksPage = lastSegment === 'tasks';
+    const isSettingsPage = segments.length === 2 && segments[0] === 'project' && lastSegment !== 'kanban' && lastSegment !== 'tasks';
+
     return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Breadcrumb aria-label="Breadcrumb">
+                {crumbs.map((c, idx) => (
+                    <React.Fragment key={c.path}>
+                        <BreadcrumbItem>
+                            <BreadcrumbButton
+                                onClick={() => navigate(c.path)}
+                                current={idx === crumbs.length - 1}
+                            >
+                                {idx === 0 && segments[0] === 'project' ? <Folder20Regular style={{ marginRight: 8 }} /> : null}
+                                {c.label}
+                            </BreadcrumbButton>
+                        </BreadcrumbItem>
+                        {idx < crumbs.length - 1 && <BreadcrumbDivider />}
+                    </React.Fragment>
+                ))}
+            </Breadcrumb>
 
-        <Breadcrumb aria-label="Breadcrumb">
-            {crumbs.map((c, idx) => (
-                <React.Fragment key={c.path}>
-                    <BreadcrumbItem>
-                        <BreadcrumbButton
-                            onClick={() => navigate(c.path)}
-                            current={idx === crumbs.length - 1}
-                        >
-                            {idx === 0 && segments[0] === 'project' ? <Folder20Regular style={{ marginRight: 8 }} /> : null}
-                            {c.label}
-                        </BreadcrumbButton>
-                    </BreadcrumbItem>
-                    {idx < crumbs.length - 1 && <BreadcrumbDivider />}
-                </React.Fragment>
-            ))}
-        </Breadcrumb>
-
-
+            {/* Show Kanban, Tasks, and Settings buttons when in a project context */}
+            {isInProject && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+                    {kanbanPath && (
+                        <Tooltip content="Kanban Board" relationship="label">
+                            <Button
+                                appearance={isKanbanPage ? 'primary' : 'subtle'}
+                                icon={<Board20Regular />}
+                                onClick={() => navigate(kanbanPath)}
+                            >
+                                Kanban
+                            </Button>
+                        </Tooltip>
+                    )}
+                    {tasksPath && (
+                        <Tooltip content="Task List" relationship="label">
+                            <Button
+                                appearance={isTasksPage ? 'primary' : 'subtle'}
+                                icon={<TaskListSquareLtr20Regular />}
+                                onClick={() => navigate(tasksPath)}
+                            >
+                                Tasks
+                            </Button>
+                        </Tooltip>
+                    )}
+                    {settingsPath && (
+                        <Tooltip content="Project Settings" relationship="label">
+                            <Button
+                                appearance={isSettingsPage ? 'primary' : 'subtle'}
+                                icon={<Settings20Regular />}
+                                onClick={() => navigate(settingsPath)}
+                            >
+                                Settings
+                            </Button>
+                        </Tooltip>
+                    )}
+                </div>
+            )}
+        </div>
     );
 }

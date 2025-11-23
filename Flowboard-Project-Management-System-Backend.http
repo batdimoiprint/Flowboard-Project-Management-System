@@ -4,7 +4,7 @@
 ### Public - Auth - Done
 ### ===============================
 
-### Auth - Register - Frontend Backend
+### Auth - Register
 # @name register
 POST {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/auth/register
 Content-Type: application/json
@@ -21,33 +21,27 @@ Content-Type: application/json
   "password": "Hatdog21!"
 }
 
-### Auth - Login - Frontend Backend
+### Auth - Login
 # @name login
 POST {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
-  "UserNameOrEmail": "johnkennyreyes21@gmail.com",
-  "password": "Sanagumana21!"
+  "UserNameOrEmail": "johnkennyreyes21gmail.com",
+  "password": "Hatdog21!"
 }
 
 ### ===============================
 ### Users
 ### ===============================
 
-
-### Users - Get ALL Users (Protected) - Frontend Backend
-GET {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/users/
-Authorization: Bearer {{login.response.body.token}}
-Accept: application/json
-
-### Users - Get by ID (Protected) - Frontend Backend
+### Users - Get by ID (Protected)
 GET {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/users/{{login.response.body.user.id}}
 Authorization: Bearer {{login.response.body.token}}
 Accept: application/json
 
 
-### Users - Update (Replace) - UPDATE - Frontend Backend
+### Users - Update (Replace) - UPDATE - Works
 PATCH  {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/users/{{login.response.body.user.id}}
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
@@ -57,7 +51,7 @@ Authorization: Bearer {{login.response.body.token}}
 }
 
 
-### Patch - Update Password (server must hash before save) - Frontend Backend
+### Patch - Update Password (server must hash before save) - Works
 PATCH {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/users/{{login.response.body.user.id}}
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
@@ -71,7 +65,7 @@ Authorization: Bearer {{login.response.body.token}}
 ### Projects
 ### ===============================
 
-### Projects - Create (Protected) - Works - Frontend - Backend
+### Projects - Create (Protected) - Works
 # @name createProject
 POST {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/projects
 Content-Type: application/json
@@ -79,11 +73,7 @@ Authorization: Bearer {{login.response.body.token}}
 
 {
   "projectName": "IPT102",
-  "description": "Project Management System",
-    "teamMembers": [
-    "691989a863538927dd65315c",
-    "690d04b90943671dbf22f65e"
-  ]
+  "description": "Project Management System"
 }
 
 
@@ -94,12 +84,12 @@ Accept: application/json
 
 ### Projects - Get by ID (Protected) - Works
 # @name getProject
-GET {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/projects/{{createProject.response.body.id}}
+GET {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/projects/6919d3b0a66df6db05f2567b
 Authorization: Bearer {{login.response.body.token}}
 Accept: application/json
 
 ### Projects - Update (Protected) - Works
-PATCH {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/projects/{{createProject.response.body.id}}
+PATCH {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/projects/6919d3b0a66df6db05f2567b
 Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
 
@@ -129,7 +119,11 @@ Authorization: Bearer {{login.response.body.token}}
   "teamMembers": [
     "691989a863538927dd65315c",
     "690d04b90943671dbf22f65e"
-  ]
+  ],
+  "permissions": {
+    "691989a863538927dd65315c": "Editor",
+    "690d04b90943671dbf22f65e": "Team Member"
+  }
 }
 
 ### Projects - Remove Single Member (Protected) - Work
@@ -142,7 +136,12 @@ Authorization: Bearer {{login.response.body.token}}
 }
 
 ### Projects - Delete (Protected)
-DELETE {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/projects/{{createProject.response.body.id}}
+DELETE {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/projects/6919c7caba3bf16fa679bc92
+Authorization: Bearer {{login.response.body.token}}
+
+### Projects - Leave Project (Protected) - Self removal
+DELETE {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/projects/{{createProject.response.body.id}}/leave
+Content-Type: application/json
 Authorization: Bearer {{login.response.body.token}}
 
 ### ===============================
@@ -173,6 +172,16 @@ Authorization: Bearer {{login.response.body.token}}
     }
   ]
 }
+
+### Tasks - Get Task from logged in user and assigned by other (Protected)
+GET {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/tasks/user/{{login.response.body.user.id}}
+Authorization: Bearer {{login.response.body.token}}
+Accept: application/json
+
+### Tasks - Get tasks for current authenticated user (shortcut)
+GET {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/tasks/me
+Authorization: Bearer {{login.response.body.token}}
+Accept: application/json
 
 ### Tasks - Get All (Protected) - Works
 GET {{Flowboard_Project_Management_System_Backend_HostAddress}}/api/tasks

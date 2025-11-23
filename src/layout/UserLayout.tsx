@@ -1,4 +1,5 @@
 import { Outlet } from "react-router";
+import { useState } from 'react';
 
 import NavigationHeader from "../components/headers/NavigationHeader";
 import Sidebar from "../components/sidebar/Sidebar";
@@ -12,6 +13,7 @@ import { Card, mergeClasses } from "@fluentui/react-components";
 
 export default function UserLayout() {
     const s = mainLayoutStyles();
+    const [projectsRefreshCounter, setProjectsRefreshCounter] = useState<number>(0);
     const location = useLocation();
     const normalizedPath = location.pathname.replace(/\/+$/, "");
     const isHome = normalizedPath === "/home";
@@ -24,7 +26,7 @@ export default function UserLayout() {
             s.layoutPadding,
             s.mainBackground, s.gap)}>
 
-            <Sidebar />
+            <Sidebar refreshSignal={projectsRefreshCounter} />
 
 
             <section className={mergeClasses(s.contentsLayout)}>
@@ -47,7 +49,7 @@ export default function UserLayout() {
 
                     </div>
                 )}
-                <Outlet />
+                <Outlet context={{ bumpProjects: () => setProjectsRefreshCounter((c: number) => c + 1), projectsRefreshCounter }} />
             </section >
         </main >
     );

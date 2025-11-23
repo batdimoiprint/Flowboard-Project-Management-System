@@ -1,13 +1,15 @@
-import { Label, mergeClasses, NavCategory, NavCategoryItem, NavSectionHeader, NavSubItem, NavSubItemGroup, Text, tokens } from "@fluentui/react-components";
-import { AddCircle24Regular, Folder20Regular } from "@fluentui/react-icons";
+import { mergeClasses, NavCategory, NavCategoryItem, NavSectionHeader, NavSubItem, NavSubItemGroup, Text, tokens, Button } from "@fluentui/react-components";
+import { Folder20Regular, AddCircle24Regular } from "@fluentui/react-icons";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from 'react-router';
+import { useUser } from "../../hooks/useUser";
 import { projectsApi, type Project } from "../apis/projects";
 import { mainLayoutStyles } from '../styles/Styles';
 
 interface ProjectListProps {
     openCategories: string[];
     onNavigateToProjects: () => void;
+    refreshSignal?: number;
 }
 
 const RECENT_LIMIT = 4;
@@ -21,11 +23,12 @@ const buildSlug = (name: string) =>
             .replace(/\s+/g, "-")
     );
 
-export default function ProjectList({ openCategories, onNavigateToProjects }: ProjectListProps) {
+export default function ProjectList({ openCategories, onNavigateToProjects, refreshSignal }: ProjectListProps) {
     const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const { user: currentUser } = useUser();
     const s = mainLayoutStyles();
 
     useEffect(() => {
@@ -35,9 +38,17 @@ export default function ProjectList({ openCategories, onNavigateToProjects }: Pr
             setLoading(true);
             setError("");
             try {
-                const data = await projectsApi.getAllProjects();
+                // If a user is logged in, fetch projects for that user; otherwise fall back to all projects
+                let data: Project[] = [];
+                if (currentUser?.id) {
+                    data = await projectsApi.getProjectsByUser(currentUser.id);
+                } else {
+                    data = await projectsApi.getAllProjects();
+                }
                 if (!active) return;
-                setProjects(data);
+                // backend may return a single project for certain ids; normalize to array
+                if (!data) setProjects([]);
+                else setProjects(Array.isArray(data) ? data : [data as Project]);
             } catch (err) {
                 if (!active) return;
                 setError(err instanceof Error ? err.message : "Unable to load projects");
@@ -53,7 +64,7 @@ export default function ProjectList({ openCategories, onNavigateToProjects }: Pr
         return () => {
             active = false;
         };
-    }, []);
+    }, [currentUser?.id, refreshSignal]);
 
     const recentProjects = useMemo(() => {
         return [...projects]
@@ -67,7 +78,7 @@ export default function ProjectList({ openCategories, onNavigateToProjects }: Pr
 
     const handleProjectClick = (projectName: string) => {
         const slug = buildSlug(projectName);
-        navigate(`/home/project/${slug}`);
+        navigate(`/home/project/${slug}/kanban`);
     };
 
     return (
@@ -75,7 +86,14 @@ export default function ProjectList({ openCategories, onNavigateToProjects }: Pr
 
             <NavCategory value="projects">
 
-                <NavSectionHeader>Projects</NavSectionHeader>
+                <NavSectionHeader>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <span>Projects</span>
+                        <Button aria-label="Create project" appearance="subtle" onClick={(e) => { e.stopPropagation(); navigate('/home/project/create'); }}>
+                            <AddCircle24Regular />
+                        </Button>
+                    </div>
+                </NavSectionHeader>
                 <NavCategoryItem
                     value="projects"
                     icon={<Folder20Regular />}
@@ -84,25 +102,29 @@ export default function ProjectList({ openCategories, onNavigateToProjects }: Pr
                     onClick={onNavigateToProjects}
                 >
                     Projects List
-
                 </NavCategoryItem>
+
+                {/* Render subitems group always (status messages will appear as subitems) */}
                 <NavSubItemGroup>
                     {loading && (
                         <Text size={200} style={{ paddingInline: tokens.spacingHorizontalS }}>
                             Loading projects...
                         </Text>
                     )}
+
                     {!loading && error && (
                         <Text size={200} style={{ paddingInline: tokens.spacingHorizontalS, color: tokens.colorPaletteRedForeground1 }}>
                             {error}
                         </Text>
                     )}
+
                     {!loading && !error && recentProjects.length === 0 && (
                         <Text size={200} style={{ paddingInline: tokens.spacingHorizontalS }}>
                             No projects yet
                         </Text>
                     )}
-                    {!loading && !error && recentProjects.map((project) => (
+
+                    {recentProjects.map((project) => (
                         <NavSubItem
                             as="button"
                             key={project.id}
@@ -112,18 +134,10 @@ export default function ProjectList({ openCategories, onNavigateToProjects }: Pr
                         >
                             {project.projectName}
                         </NavSubItem>
-
                     ))}
-                    <NavSubItem as="button" className={s.navSubItem} value="createProject"
-                        onClick={(event) => { event.stopPropagation(); navigate("/home/project/create"); }}>
-                        <AddCircle24Regular />
-                        <Label>Create Project</Label>
-
-                    </NavSubItem>
-
-
                 </NavSubItemGroup>
-            </NavCategory >
+
+            </NavCategory>
         </>
     );
 }
