@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Card, Button, Input, Label, Text, Avatar } from '@fluentui/react-components';
+import { useState, useEffect, useRef } from 'react';
+import { Card, Button, Input, Label, Text, Avatar, tokens } from '@fluentui/react-components';
+import { Camera24Regular, Delete24Regular } from '@fluentui/react-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { useUser } from '../../hooks/useUser';
 import { usersApi } from '../../components/apis/users';
@@ -31,8 +32,11 @@ export default function MyProfile() {
   const userCtx = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { control, handleSubmit, reset, formState: { errors }, watch, setError, clearErrors } = useForm<ProfileFormInputs>({
+  const { control, handleSubmit, reset, formState: { errors }, watch, setError, clearErrors, setValue } = useForm<ProfileFormInputs>({
     defaultValues: {
       userName: userCtx?.user?.userName || '',
       firstName: userCtx?.user?.firstName || '',
@@ -69,8 +73,60 @@ export default function MyProfile() {
         newPassword: '',
         confirmPassword: '',
       });
+      setImagePreview(userCtx.user.userIMG || null);
     }
   }, [userCtx?.user, reset]);
+
+  // Handle image file selection
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    setImageError(null);
+
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setImageError('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    const maxSizeBytes = 5 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      setImageError('Image size must be less than 5MB');
+      return;
+    }
+
+    // Read and convert to base64
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      setImagePreview(base64);
+      setValue('userIMG', base64);
+    };
+    reader.onerror = () => {
+      setImageError('Failed to read image file');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle image removal
+  const handleImageRemove = () => {
+    setImagePreview(null);
+    setValue('userIMG', null);
+    setImageError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Trigger file input click
+  const handleImageClick = () => {
+    if (isEditing && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
 
   const onSubmit = async (data: ProfileFormInputs) => {
     setLoading(true);
@@ -176,6 +232,8 @@ export default function MyProfile() {
 
       // Update context and local storage
       userCtx?.setUser(updatedUser);
+      // Update image preview
+      setImagePreview(updatedUser.userIMG ?? null);
       // Refresh form values to updated user's values
       reset({
         userName: updatedUser.userName || '',
@@ -211,14 +269,68 @@ export default function MyProfile() {
       {/* User Info Row */}
       <div className={mergeClasses(s.flexRowFit, s.spaceBetween)}>
         <div className={mergeClasses(s.flexRowFit, s.alignCenter, s.gap)}>
-          <Avatar
-            name={fullName}
-            size={64}
-            image={userCtx?.user?.userIMG ? { src: userCtx.user.userIMG } : undefined}
-          />
+          {/* Profile Picture with Upload */}
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <Avatar
+              name={fullName}
+              size={72}
+              image={imagePreview ? { src: imagePreview } : undefined}
+              style={{ cursor: isEditing ? 'pointer' : 'default' }}
+              onClick={handleImageClick}
+            />
+            {isEditing && (
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                display: 'flex',
+                gap: '2px',
+              }}>
+                <Button
+                  appearance="primary"
+                  size="small"
+                  icon={<Camera24Regular />}
+                  onClick={handleImageClick}
+                  style={{
+                    minWidth: 'auto',
+                    padding: '4px',
+                    borderRadius: '50%',
+                  }}
+                  title="Upload photo"
+                />
+                {imagePreview && (
+                  <Button
+                    appearance="secondary"
+                    size="small"
+                    icon={<Delete24Regular />}
+                    onClick={handleImageRemove}
+                    style={{
+                      minWidth: 'auto',
+                      padding: '4px',
+                      borderRadius: '50%',
+                    }}
+                    title="Remove photo"
+                  />
+                )}
+              </div>
+            )}
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleImageSelect}
+              style={{ display: 'none' }}
+            />
+          </div>
           <div className={mergeClasses(s.flexColFill, s.alignCenter)}>
             <Text weight='bold' >{fullName}</Text>
             <Text >@{username}</Text>
+            {imageError && (
+              <Text style={{ color: tokens.colorPaletteRedForeground1, fontSize: tokens.fontSizeBase200 }}>
+                {imageError}
+              </Text>
+            )}
           </div>
         </div>
         <div className={mergeClasses(s.flexColFit, s.alignCenter)}>
