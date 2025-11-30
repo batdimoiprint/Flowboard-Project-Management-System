@@ -31,9 +31,25 @@ export interface ProjectMemberRemovalRequest {
     teamMembers: string | string[];
 }
 
+export interface ProjectMember {
+    id: string;
+    userName: string;
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    email: string;
+    userIMG?: string;
+    role: string;
+}
+
 export const projectsApi = {
     getAllProjects: async (): Promise<Project[]> => {
         const response = await axiosInstance.get<Project[]>('/api/projects');
+        return response.data;
+    },
+
+    getProjectMembers: async (projectId: string): Promise<ProjectMember[]> => {
+        const response = await axiosInstance.get<ProjectMember[]>(`/api/projects/${projectId}/members`);
         return response.data;
     },
 

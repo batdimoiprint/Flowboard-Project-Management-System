@@ -1,4 +1,5 @@
-import { tokens } from '@fluentui/react-components';
+import { tokens, Button } from '@fluentui/react-components';
+import { Delete24Regular } from '@fluentui/react-icons';
 import TaskCard from './TaskCard';
 import { mainLayoutStyles } from '../styles/Styles';
 import type { TaskResponse } from '../apis/tasks';
@@ -10,10 +11,15 @@ export interface KanbanColumnProps {
   usersById: Record<string, User>;
   onTaskClick?: (task: TaskResponse) => void;
   onDropTask?: (taskId: string, newStatus: string) => void;
+  onDeleteColumn?: (columnTitle: string) => void;
+  onAddTask?: (categoryTitle: string) => void;
+  categoryId?: string;
 }
 
-export default function KanbanColumn({ title, tasks, usersById, onTaskClick, onDropTask }: KanbanColumnProps) {
+export default function KanbanColumn({ title, tasks, usersById, onTaskClick, onDropTask, onDeleteColumn, onAddTask, categoryId }: KanbanColumnProps) {
   const styles = mainLayoutStyles();
+  const canDelete = title !== 'Uncategorized' && categoryId;
+
   return (
     <div
       className={styles.kanbanColumn}
@@ -30,7 +36,19 @@ export default function KanbanColumn({ title, tasks, usersById, onTaskClick, onD
     >
       <div className={styles.kanbanColumnHeader}>
         <h3 className={styles.kanbanColumnTitle}>{title}</h3>
-        <div style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>{tasks.length}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXS }}>
+          <div style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>{tasks.length}</div>
+          {canDelete && (
+            <Button
+              appearance="subtle"
+              size="small"
+              icon={<Delete24Regular />}
+              onClick={() => onDeleteColumn?.(title)}
+              title="Delete column"
+              style={{ minWidth: 'auto', padding: tokens.spacingHorizontalXS }}
+            />
+          )}
+        </div>
       </div>
       <div className={styles.kanbanTaskList}>
         {tasks.map(task => (
@@ -50,6 +68,20 @@ export default function KanbanColumn({ title, tasks, usersById, onTaskClick, onD
             border: `1px dashed ${tokens.colorNeutralStroke3}`,
             borderRadius: tokens.borderRadiusMedium
           }}>No tasks</div>
+        )}
+        {onAddTask && (
+          <Button
+            appearance="transparent"
+            size="small"
+            onClick={() => onAddTask(title)}
+            style={{
+              width: '100%',
+              marginTop: tokens.spacingVerticalXS,
+              justifyContent: 'flex-start'
+            }}
+          >
+            + Add Task
+          </Button>
         )}
       </div>
     </div>

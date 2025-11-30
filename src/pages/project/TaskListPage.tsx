@@ -129,20 +129,20 @@ export default function TaskListPage() {
 
             if (project?.id) {
                 try {
-                    // Fetch the project details to get team members
-                    const projectDetails = await projectsApi.getProjectById(project.id);
-                    const teamMemberIds = projectDetails.teamMembers || [];
-
-                    if (teamMemberIds.length > 0) {
-                        // Fetch all team member details
-                        const memberPromises = teamMemberIds.map(id =>
-                            usersApi.getUserById(id).catch(() => null)
-                        );
-                        const members = await Promise.all(memberPromises);
-                        unique = members.filter((m): m is User => m !== null);
-                    }
+                    // Use the dedicated project members endpoint
+                    const projectMembers = await projectsApi.getProjectMembers(project.id);
+                    // Convert ProjectMember[] to User[] (they have compatible structures)
+                    unique = projectMembers.map(member => ({
+                        id: member.id,
+                        userName: member.userName,
+                        firstName: member.firstName,
+                        middleName: member.middleName,
+                        lastName: member.lastName,
+                        email: member.email,
+                        userIMG: member.userIMG,
+                    } as User));
                 } catch (projectErr) {
-                    console.error('Failed to fetch project details:', projectErr);
+                    console.error('Failed to fetch project members:', projectErr);
                 }
             }
 

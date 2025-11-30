@@ -9,6 +9,7 @@ import type { TaskResponse } from '../apis/tasks';
 import { usersApi } from '../apis/users';
 import type { User } from '../apis/auth';
 import { categoriesApi } from '../apis/categories';
+import { useUser } from '../../hooks/useUser';
 
 export interface KanbanBoardProps {
   projectId?: string; // optional for now; if absent, show info message
@@ -18,11 +19,12 @@ const UNCATEGORIZED = 'Uncategorized';
 
 export default function KanbanBoard({ projectId }: KanbanBoardProps) {
   const styles = mainLayoutStyles();
+  const { user: currentUser } = useUser();
   const [tasks, setTasks] = useState<TaskResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [columns, setColumns] = useState<string[]>([]);
-  // We don't currently use category objects beyond their names; maintain only names list.
+  const [categoriesMap, setCategoriesMap] = useState<Record<string, string>>({});
   const [addingColumn, setAddingColumn] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
   const [usersById, setUsersById] = useState<Record<string, User>>({});
@@ -32,7 +34,6 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
   });
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('edit');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
   const [isLoadingAssignableUsers, setIsLoadingAssignableUsers] = useState(false);
 
@@ -51,6 +52,13 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
         const merged = Array.from(new Set([...categoryNames, ...taskCategories]));
         if (data.some(t => !t.category)) merged.push(UNCATEGORIZED);
         setColumns(merged);
+
+        // Build map of categoryName -> categoryId
+        const catMap: Record<string, string> = {};
+        cats.forEach(c => {
+          catMap[c.categoryName] = c.id;
+        });
+        setCategoriesMap(catMap);
       })
       .catch(e => setError((e as Error)?.message || 'Failed to load board'))
       .finally(() => setLoading(false));
@@ -68,30 +76,30 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
       });
   }, [tasks]);
 
-  // Load current user
-  useEffect(() => {
-    usersApi.getCurrentUser().then(setCurrentUser).catch(() => { });
-  }, []);
-
   // Load assignable users (project team members, with fallback to all users)
   useEffect(() => {
     if (!projectId) return;
     setIsLoadingAssignableUsers(true);
 
-    projectsApi.getProjectById(projectId)
-      .then(async project => {
-        const teamMemberIds = project.teamMembers || [];
-        if (teamMemberIds.length > 0) {
-          const results = await Promise.all(teamMemberIds.map(id => usersApi.getUserById(id).catch(() => null)));
-          const members = results.filter(Boolean) as User[];
-          if (members.length > 0) {
-            setAssignableUsers(members);
-            return;
-          }
+    projectsApi.getProjectMembers(projectId)
+      .then(members => {
+        // Convert ProjectMember[] to User[] (they have compatible structures)
+        const users: User[] = members.map(member => ({
+          id: member.id,
+          userName: member.userName,
+          firstName: member.firstName,
+          middleName: member.middleName,
+          lastName: member.lastName,
+          email: member.email,
+          userIMG: member.userIMG,
+        } as User));
+
+        if (users.length > 0) {
+          setAssignableUsers(users);
+        } else {
+          // Fallback: fetch all users if no team members found
+          usersApi.getAllUsers().then(setAssignableUsers).catch(() => setAssignableUsers([]));
         }
-        // Fallback: fetch all users if no team members found
-        const allUsers = await usersApi.getAllUsers();
-        setAssignableUsers(allUsers);
       })
       .catch(async () => {
         // On error, try to fetch all users as fallback
@@ -144,11 +152,59 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
     try {
       const created = await categoriesApi.createCategory({ projectId, categoryName: name, createdBy: 'system' });
       setColumns(prev => [...prev, created.categoryName]);
+      setCategoriesMap(prev => ({ ...prev, [created.categoryName]: created.id }));
       setNewColumnName('');
       setAddingColumn(false);
     } catch {
       setError('Failed to create column');
     }
+  }
+
+  async function handleDeleteColumn(columnTitle: string) {
+    const categoryId = categoriesMap[columnTitle];
+    if (!categoryId) return;
+
+    // Check if column has tasks
+    const columnTasks = tasksByColumn[columnTitle] || [];
+    if (columnTasks.length > 0) {
+      setError('Cannot delete column with tasks. Please move or delete tasks first.');
+      return;
+    }
+
+    try {
+      await categoriesApi.deleteCategory(categoryId);
+      setColumns(prev => prev.filter(c => c !== columnTitle));
+      setCategoriesMap(prev => {
+        const newMap = { ...prev };
+        delete newMap[columnTitle];
+        return newMap;
+      });
+    } catch {
+      setError('Failed to delete column');
+    }
+  }
+
+  function handleAddTask(categoryTitle: string) {
+    if (!currentUser?.id) {
+      setError('User not authenticated. Please log in.');
+      return;
+    }
+    setDialogMode('add');
+    setSelectedTaskId(null);
+    setDialogForm({
+      title: '',
+      description: '',
+      priority: 'Low',
+      status: 'To Do',
+      startDate: '',
+      endDate: '',
+      assignedTo: [],
+      createdBy: currentUser.id,
+      category: categoryTitle === UNCATEGORIZED ? '' : categoryTitle,
+      projectId: projectId || '',
+      comments: ''
+    });
+    setDialogOpen(true);
   }
 
   if (!projectId) {
@@ -166,6 +222,9 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
             tasks={tasksByColumn[col] || []}
             usersById={usersById}
             onDropTask={handleDropTask}
+            onDeleteColumn={handleDeleteColumn}
+            onAddTask={handleAddTask}
+            categoryId={categoriesMap[col]}
             onTaskClick={(task) => {
               // Helper to format date for HTML date input (YYYY-MM-DD)
               const formatDateForInput = (dateValue: string | null | undefined): string => {
@@ -230,10 +289,10 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
           }}
           onSubmit={async (e) => {
             e.preventDefault();
-            const taskId = selectedTaskId;
-            if (taskId) {
-              try {
-                await tasksApi.patchTask(taskId, {
+            try {
+              if (dialogMode === 'edit' && selectedTaskId) {
+                // Update existing task
+                await tasksApi.patchTask(selectedTaskId, {
                   title: dialogForm.title,
                   description: dialogForm.description,
                   priority: dialogForm.priority,
@@ -243,15 +302,36 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                   endDate: dialogForm.endDate,
                   assignedTo: dialogForm.assignedTo,
                 });
-                if (projectId) {
-                  const refreshed = await tasksApi.getTasksByProject(projectId);
-                  setTasks(refreshed);
+              } else if (dialogMode === 'add') {
+                // Create new task
+                if (!currentUser?.id) {
+                  setError('User not authenticated. Please log in.');
+                  return;
                 }
-              } catch {
-                setError('Failed to update task');
+                await tasksApi.createTask({
+                  title: dialogForm.title,
+                  description: dialogForm.description,
+                  priority: dialogForm.priority,
+                  status: dialogForm.status,
+                  category: dialogForm.category,
+                  startDate: dialogForm.startDate,
+                  endDate: dialogForm.endDate,
+                  assignedTo: dialogForm.assignedTo,
+                  createdBy: currentUser.id,
+                  projectId: projectId || '',
+                  comments: dialogForm.comments || ''
+                });
               }
+
+              // Refresh tasks
+              if (projectId) {
+                const refreshed = await tasksApi.getTasksByProject(projectId);
+                setTasks(refreshed);
+              }
+              setDialogOpen(false);
+            } catch {
+              setError(dialogMode === 'edit' ? 'Failed to update task' : 'Failed to create task');
             }
-            setDialogOpen(false);
           }}
           assignableUsers={assignableUsers}
           isLoadingAssignableUsers={isLoadingAssignableUsers}
