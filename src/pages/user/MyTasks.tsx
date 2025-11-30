@@ -79,13 +79,26 @@ export default function MyTasks() {
         setDialogMode('edit');
         setEditingTaskId(task._id);
         setSelectedTask(task);
+
+        // Helper to format date for HTML date input (YYYY-MM-DD)
+        const formatDateForInput = (dateValue: string | null | undefined): string => {
+            if (!dateValue) return '';
+            try {
+                const date = new Date(dateValue);
+                if (isNaN(date.getTime())) return '';
+                return date.toISOString().split('T')[0];
+            } catch {
+                return '';
+            }
+        };
+
         setForm({
             title: task.title || '',
             description: task.description || '',
             priority: task.priority || 'Medium',
             status: task.status || 'To Do',
-            startDate: task.startDate || '',
-            endDate: task.endDate || '',
+            startDate: formatDateForInput(task.startDate),
+            endDate: formatDateForInput(task.endDate),
             assignedTo: task.assignedTo || [],
             createdBy: task.createdBy || '',
             category: task.category || task.categoryId || '',
@@ -93,29 +106,47 @@ export default function MyTasks() {
             comments: '',
         });
         setOpen(true);
-        fetchAssignableUsers(task.assignedTo);
+        // Pass the task's projectId directly since setForm is async and form.projectId won't be updated yet
+        const taskProjectId = (task as Task & { projectId?: string }).projectId || '';
+        fetchAssignableUsers(task.assignedTo, taskProjectId);
         fetchProjects();
     }
 
-    async function fetchAssignableUsers(assignedToIds?: string[]) {
+    async function fetchAssignableUsers(assignedToIds?: string[], taskProjectId?: string) {
         setIsLoadingAssignableUsers(true);
         setAssignableUsersError(null);
         try {
             let unique: User[] = [];
 
             // If a project is selected, fetch only project members
-            if (form.projectId || (selectedTask && (selectedTask as Task & { projectId?: string }).projectId)) {
-                const projectId = form.projectId || (selectedTask && (selectedTask as Task & { projectId?: string }).projectId);
-                if (projectId) {
+            // Use taskProjectId if provided (for edit mode), otherwise fall back to form.projectId
+            const projectId = taskProjectId || form.projectId || (selectedTask && (selectedTask as Task & { projectId?: string }).projectId);
+            if (projectId) {
+                try {
                     const projectDetails = await projectsApi.getProjectById(projectId);
                     const teamMemberIds = projectDetails.teamMembers || [];
 
-                    // Fetch all team member details
-                    const memberPromises = teamMemberIds.map(id =>
-                        usersApi.getUserById(id).catch(() => null)
-                    );
-                    const members = await Promise.all(memberPromises);
-                    unique = members.filter((m): m is User => m !== null);
+                    if (teamMemberIds.length > 0) {
+                        // Fetch all team member details
+                        const memberPromises = teamMemberIds.map(id =>
+                            usersApi.getUserById(id).catch(() => null)
+                        );
+                        const members = await Promise.all(memberPromises);
+                        unique = members.filter((m): m is User => m !== null);
+                    }
+                } catch (projectErr) {
+                    console.error('Failed to fetch project details:', projectErr);
+                    // Fall through to fetch all users
+                }
+            }
+
+            // If no project members were found, fetch all users as fallback
+            if (unique.length === 0) {
+                try {
+                    const allUsers = await usersApi.getAllUsers();
+                    unique = allUsers;
+                } catch (usersErr) {
+                    console.error('Failed to fetch all users:', usersErr);
                 }
             }
 
@@ -146,21 +177,21 @@ export default function MyTasks() {
         if (value === '' || (Array.isArray(value) && value.length === 0)) return;
 
         try {
-                // Build a safe typed payload for the patch API
-                // Build a typed payload object safely (avoid using `any`)
-                const payloadRec: Record<string, unknown> = {};
-                if (typeof value === 'string') {
-                    payloadRec[fieldName] = value;
-                } else if (Array.isArray(value)) {
-                    payloadRec[fieldName] = value as string[];
-                } else if (typeof value === 'number' || typeof value === 'boolean') {
-                    payloadRec[fieldName] = value;
-                } else {
-                    // unknown or unsupported type — skip
-                    return;
-                }
+            // Build a safe typed payload for the patch API
+            // Build a typed payload object safely (avoid using `any`)
+            const payloadRec: Record<string, unknown> = {};
+            if (typeof value === 'string') {
+                payloadRec[fieldName] = value;
+            } else if (Array.isArray(value)) {
+                payloadRec[fieldName] = value as string[];
+            } else if (typeof value === 'number' || typeof value === 'boolean') {
+                payloadRec[fieldName] = value;
+            } else {
+                // unknown or unsupported type — skip
+                return;
+            }
 
-                await tasksApi.patchTask(editingTaskId, payloadRec as Partial<CreateTaskData>);
+            await tasksApi.patchTask(editingTaskId, payloadRec as Partial<CreateTaskData>);
             // refresh data grid
             setRefreshKey(k => k + 1);
         } catch (err) {

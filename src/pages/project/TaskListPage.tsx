@@ -89,6 +89,18 @@ export default function TaskListPage() {
         fetchAssignableUsers();
     };
 
+    // Helper to format date for HTML date input (YYYY-MM-DD)
+    const formatDateForInput = (dateValue: string | null | undefined): string => {
+        if (!dateValue) return '';
+        try {
+            const date = new Date(dateValue);
+            if (isNaN(date.getTime())) return '';
+            return date.toISOString().split('T')[0];
+        } catch {
+            return '';
+        }
+    };
+
     const onRowClick = (task: Task) => {
         setDialogMode('edit');
         setEditingTaskId(task._id);
@@ -98,8 +110,8 @@ export default function TaskListPage() {
             description: task.description || '',
             priority: task.priority || 'Medium',
             status: task.status || 'To Do',
-            startDate: task.startDate || '',
-            endDate: task.endDate || '',
+            startDate: formatDateForInput(task.startDate),
+            endDate: formatDateForInput(task.endDate),
             assignedTo: task.assignedTo || [],
             createdBy: task.createdBy || '',
             category: task.category || task.categoryId || '',
@@ -113,21 +125,36 @@ export default function TaskListPage() {
     async function fetchAssignableUsers(assignedToIds?: string[]) {
         setIsLoadingAssignableUsers(true);
         try {
-            if (!project?.id) {
-                setAssignableUsers([]);
-                return;
+            let unique: User[] = [];
+
+            if (project?.id) {
+                try {
+                    // Fetch the project details to get team members
+                    const projectDetails = await projectsApi.getProjectById(project.id);
+                    const teamMemberIds = projectDetails.teamMembers || [];
+
+                    if (teamMemberIds.length > 0) {
+                        // Fetch all team member details
+                        const memberPromises = teamMemberIds.map(id =>
+                            usersApi.getUserById(id).catch(() => null)
+                        );
+                        const members = await Promise.all(memberPromises);
+                        unique = members.filter((m): m is User => m !== null);
+                    }
+                } catch (projectErr) {
+                    console.error('Failed to fetch project details:', projectErr);
+                }
             }
 
-            // Fetch the project details to get team members
-            const projectDetails = await projectsApi.getProjectById(project.id);
-            const teamMemberIds = projectDetails.teamMembers || [];
-
-            // Fetch all team member details
-            const memberPromises = teamMemberIds.map(id =>
-                usersApi.getUserById(id).catch(() => null)
-            );
-            const members = await Promise.all(memberPromises);
-            const unique = members.filter((m): m is User => m !== null);
+            // If no project members were found, fetch all users as fallback
+            if (unique.length === 0) {
+                try {
+                    const allUsers = await usersApi.getAllUsers();
+                    unique = allUsers;
+                } catch (usersErr) {
+                    console.error('Failed to fetch all users:', usersErr);
+                }
+            }
 
             // Add current user if not already in the list
             if (user && !unique.some((u) => u.id === user.id)) unique.push(user);

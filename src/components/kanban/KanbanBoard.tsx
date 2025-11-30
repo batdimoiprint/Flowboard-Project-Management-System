@@ -70,19 +70,38 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
 
   // Load current user
   useEffect(() => {
-    usersApi.getCurrentUser().then(setCurrentUser).catch(() => {});
+    usersApi.getCurrentUser().then(setCurrentUser).catch(() => { });
   }, []);
 
-  // Load assignable users (project team members)
+  // Load assignable users (project team members, with fallback to all users)
   useEffect(() => {
     if (!projectId) return;
     setIsLoadingAssignableUsers(true);
+
     projectsApi.getProjectById(projectId)
-      .then(project => Promise.all(project.teamMembers.map(id => usersApi.getUserById(id).catch(() => null))))
-      .then(results => {
-        setAssignableUsers(results.filter(Boolean) as User[]);
+      .then(async project => {
+        const teamMemberIds = project.teamMembers || [];
+        if (teamMemberIds.length > 0) {
+          const results = await Promise.all(teamMemberIds.map(id => usersApi.getUserById(id).catch(() => null)));
+          const members = results.filter(Boolean) as User[];
+          if (members.length > 0) {
+            setAssignableUsers(members);
+            return;
+          }
+        }
+        // Fallback: fetch all users if no team members found
+        const allUsers = await usersApi.getAllUsers();
+        setAssignableUsers(allUsers);
       })
-      .catch(() => setAssignableUsers([]))
+      .catch(async () => {
+        // On error, try to fetch all users as fallback
+        try {
+          const allUsers = await usersApi.getAllUsers();
+          setAssignableUsers(allUsers);
+        } catch {
+          setAssignableUsers([]);
+        }
+      })
       .finally(() => setIsLoadingAssignableUsers(false));
   }, [projectId]);
 
@@ -148,6 +167,18 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
             usersById={usersById}
             onDropTask={handleDropTask}
             onTaskClick={(task) => {
+              // Helper to format date for HTML date input (YYYY-MM-DD)
+              const formatDateForInput = (dateValue: string | null | undefined): string => {
+                if (!dateValue) return '';
+                try {
+                  const date = new Date(dateValue);
+                  if (isNaN(date.getTime())) return '';
+                  return date.toISOString().split('T')[0];
+                } catch {
+                  return '';
+                }
+              };
+
               // Open dialog with clicked task
               setDialogMode('edit');
               setDialogForm({
@@ -155,8 +186,8 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                 description: task.description || '',
                 priority: task.priority || 'Low',
                 status: task.status || 'To Do',
-                startDate: task.startDate || '',
-                endDate: task.endDate || '',
+                startDate: formatDateForInput(task.startDate),
+                endDate: formatDateForInput(task.endDate),
                 assignedTo: task.assignedTo || [],
                 createdBy: task.createdBy || '',
                 category: task.category || '',

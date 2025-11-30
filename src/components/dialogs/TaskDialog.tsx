@@ -1,10 +1,12 @@
 import {
     Avatar,
     AvatarGroup, AvatarGroupItem,
-    Button, Dialog, DialogSurface, DialogTitle, Divider, Dropdown, Field, Input, mergeClasses, Option, Persona, Select, tokens, Tooltip
+    Button, Dialog, DialogSurface, DialogTitle, Divider, Dropdown, Field, Input, mergeClasses, Option, Persona, Popover, PopoverSurface, PopoverTrigger, Select, tokens, Tooltip
 } from '@fluentui/react-components';
+import { Calendar } from '@fluentui/react-calendar-compat';
 import {
     //  AddCircle32Filled,
+    CalendarLtr24Regular,
     Delete24Regular, Dismiss24Regular
 } from '@fluentui/react-icons';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
@@ -69,6 +71,8 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
     const [editingTitle, setEditingTitle] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const [newComment, setNewComment] = useState('');
+    const [startDatePopoverOpen, setStartDatePopoverOpen] = useState(false);
+    const [endDatePopoverOpen, setEndDatePopoverOpen] = useState(false);
     const styles = mainLayoutStyles();
     const commentContainerStyle: CSSProperties = {
         border: `1px solid ${tokens.colorNeutralStroke1}`,
@@ -130,6 +134,42 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
         }
     }
 
+    // Helper to convert YYYY-MM-DD string to Date object
+    function parseFormDate(dateStr: string): Date | undefined {
+        if (!dateStr) return undefined;
+        const date = new Date(dateStr + 'T00:00:00');
+        return isNaN(date.getTime()) ? undefined : date;
+    }
+
+    // Helper to convert Date to YYYY-MM-DD string
+    function formatDateToString(date: Date): string {
+        return date.toISOString().split('T')[0];
+    }
+
+    function handleStartDateSelect(date: Date): void {
+        const syntheticEvent = {
+            target: {
+                name: 'startDate',
+                value: formatDateToString(date),
+                type: 'date',
+            },
+        } as React.ChangeEvent<HTMLInputElement>;
+        onInputChange(syntheticEvent);
+        setStartDatePopoverOpen(false);
+    }
+
+    function handleEndDateSelect(date: Date): void {
+        const syntheticEvent = {
+            target: {
+                name: 'endDate',
+                value: formatDateToString(date),
+                type: 'date',
+            },
+        } as React.ChangeEvent<HTMLInputElement>;
+        onInputChange(syntheticEvent);
+        setEndDatePopoverOpen(false);
+    }
+
     async function handleAddCommentLocal() {
         if (!newComment.trim() || !taskId) return;
         if (!onAddComment) return;
@@ -144,8 +184,8 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
 
     return (
         <Dialog open={open} onOpenChange={(_, data) => onOpenChange(data.open)}>
-            <DialogSurface>
-                <form onSubmit={onSubmit} style={{ minWidth: "auto", maxWidth: 1000 }}>
+            <DialogSurface style={{ minWidth: 700, maxWidth: 900, width: '90vw' }}>
+                <form onSubmit={onSubmit} style={{ width: '100%' }}>
                     {/* Row 1: Delete and Cancel (Dismiss) icon buttons */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', height: 24, marginBottom: 8, gap: 8 }}>
                         {dialogMode === 'edit' && (
@@ -193,43 +233,68 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                             )}
                         </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: "left", gap: 16, marginBottom: 16 }}>
-                        <Tooltip content={`Created by ${userInfo ? `${userInfo.firstName} ${userInfo.lastName}` : 'User'}`} relationship="label">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: "flex-start", gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+                        {/* Created by section with avatar and name */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <Avatar
                                 name={userInfo ? `${userInfo.firstName} ${userInfo.lastName}` : 'User'}
                                 size={32}
                                 color="colorful"
                                 image={userInfo?.userIMG ? { src: userInfo.userIMG } : undefined}
                             />
-                        </Tooltip>
-                        <Divider vertical style={{ height: "100%" }} />
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>Created by</span>
+                                <span style={{ fontSize: tokens.fontSizeBase300, fontWeight: 500 }}>
+                                    {userInfo ? `${userInfo.firstName} ${userInfo.lastName}` : 'User'}
+                                </span>
+                            </div>
+                        </div>
+                        <Divider vertical style={{ height: 40 }} />
 
+                        {/* Assigned to section with avatars - show tooltip with names */}
                         {form.assignedTo && form.assignedTo.length > 0 && (
                             <>
-                                <AvatarGroup layout="stack">
-                                    {form.assignedTo.map((userId) => {
+                                <Tooltip
+                                    content={form.assignedTo.map((userId) => {
                                         const user = assignableUsers.find(u => u.id === userId);
-                                        return (
-                                            <AvatarGroupItem key={userId} name={user ? `${user.firstName} ${user.lastName}` : 'Unknown'}>
-                                                <Avatar
-                                                    name={user ? `${user.firstName} ${user.lastName}` : 'Unknown'}
-                                                    image={user?.userIMG ? { src: user.userIMG } : undefined}
-                                                    size={32}
-                                                    color="colorful"
-                                                />
-                                            </AvatarGroupItem>
-                                        );
-                                    })}
-                                </AvatarGroup>
-                                <Divider vertical style={{ height: "100%" }} />
+                                        return user ? `${user.firstName} ${user.lastName}` : 'Unknown';
+                                    }).join(', ')}
+                                    relationship="label"
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                        <AvatarGroup layout="stack">
+                                            {form.assignedTo.map((userId) => {
+                                                const user = assignableUsers.find(u => u.id === userId);
+                                                return (
+                                                    <AvatarGroupItem key={userId} name={user ? `${user.firstName} ${user.lastName}` : 'Unknown'}>
+                                                        <Avatar
+                                                            name={user ? `${user.firstName} ${user.lastName}` : 'Unknown'}
+                                                            image={user?.userIMG ? { src: user.userIMG } : undefined}
+                                                            size={32}
+                                                            color="colorful"
+                                                        />
+                                                    </AvatarGroupItem>
+                                                );
+                                            })}
+                                        </AvatarGroup>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>Assigned to</span>
+                                            <span style={{ fontSize: tokens.fontSizeBase300, fontWeight: 500 }}>
+                                                {form.assignedTo.length} member{form.assignedTo.length !== 1 ? 's' : ''}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </Tooltip>
+                                <Divider vertical style={{ height: 40 }} />
                             </>
                         )}
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, flex: '0 1 auto' }}>
                             <Dropdown
                                 id="assign-member-dropdown"
                                 placeholder={isLoadingAssignableUsers ? 'Loading users…' : 'Select members'}
-                                style={{ minWidth: 220 }}
+                                style={{ minWidth: 180, maxWidth: 280 }}
+                                listbox={{ style: { minWidth: 320 } }}
                                 multiselect={true}
                                 selectedOptions={form.assignedTo}
                                 onOptionSelect={handleAssignedUserSelect}
@@ -264,6 +329,57 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                                 </span>
                             )}
                         </div>
+
+                        {/* Project info display in edit mode */}
+                        {dialogMode === 'edit' && form.projectId && (
+                            <>
+                                <Divider vertical style={{ height: 40 }} />
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>Project</span>
+                                    <span style={{ fontSize: tokens.fontSizeBase300, fontWeight: 500 }}>
+                                        {projects.find(p => p.id === form.projectId)?.projectName || form.projectId}
+                                    </span>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Category info display in edit mode */}
+                        {dialogMode === 'edit' && form.category && (
+                            <>
+                                <Divider vertical style={{ height: 40 }} />
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>Category</span>
+                                    <span style={{ fontSize: tokens.fontSizeBase300, fontWeight: 500 }}>
+                                        {form.category}
+                                    </span>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Date info display in edit mode */}
+                        {dialogMode === 'edit' && (form.startDate || form.endDate) && (
+                            <>
+                                <Divider vertical style={{ height: 40 }} />
+                                <div style={{ display: 'flex', gap: 16 }}>
+                                    {form.startDate && (
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>Start Date</span>
+                                            <span style={{ fontSize: tokens.fontSizeBase300, fontWeight: 500 }}>
+                                                {new Date(form.startDate).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {form.endDate && (
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>Due Date</span>
+                                            <span style={{ fontSize: tokens.fontSizeBase300, fontWeight: 500 }}>
+                                                {new Date(form.endDate).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
                     {/* Row 3: Description */}
                     <Field label="Description" style={{ marginBottom: 16 }}>
@@ -271,7 +387,7 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                     </Field>
                     {/* Row 4: Project (conditional), Category, Status, Priority */}
                     <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-                        {!hideProjectField && (
+                        {!hideProjectField && dialogMode !== 'edit' && (
                             <Field label="Project" style={{ flex: 1 }}>
                                 <Select name="projectId" value={form.projectId || ''} onChange={onInputChange} disabled={isLoadingProjects || projects.length === 0}>
                                     <option value="">{isLoadingProjects ? 'Loading projects…' : 'Select project'}</option>
@@ -286,22 +402,24 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                                 )}
                             </Field>
                         )}
-                        <Field label="Category" style={{ flex: 1 }}>
-                            <Select name="category" value={form.category} onChange={onInputChange} disabled={isLoadingCategories || (categories.length === 0 && !hideProjectField && !form.projectId)}>
-                                <option value="">{isLoadingCategories ? 'Loading categories…' : 'Select category'}</option>
-                                {!isLoadingCategories && categories.length === 0 && (
-                                    <option value="" disabled>No categories available</option>
+                        {dialogMode !== 'edit' && (
+                            <Field label="Category" style={{ flex: 1 }}>
+                                <Select name="category" value={form.category} onChange={onInputChange} disabled={isLoadingCategories || (categories.length === 0 && !hideProjectField && !form.projectId)}>
+                                    <option value="">{isLoadingCategories ? 'Loading categories…' : 'Select category'}</option>
+                                    {!isLoadingCategories && categories.length === 0 && (
+                                        <option value="" disabled>No categories available</option>
+                                    )}
+                                    {!isLoadingCategories && categories.map(cat => (
+                                        <option key={cat.id} value={cat.categoryName}>{cat.categoryName}</option>
+                                    ))}
+                                </Select>
+                                {categoriesError && (
+                                    <span style={{ color: tokens.colorPaletteRedForeground3, fontSize: tokens.fontSizeBase100 }}>
+                                        {categoriesError}
+                                    </span>
                                 )}
-                                {!isLoadingCategories && categories.map(cat => (
-                                    <option key={cat.id} value={cat.categoryName}>{cat.categoryName}</option>
-                                ))}
-                            </Select>
-                            {categoriesError && (
-                                <span style={{ color: tokens.colorPaletteRedForeground3, fontSize: tokens.fontSizeBase100 }}>
-                                    {categoriesError}
-                                </span>
-                            )}
-                        </Field>
+                            </Field>
+                        )}
                         <Field label="Status" style={{ flex: 1 }}>
                             <Select name="status" value={form.status} onChange={onInputChange}>
                                 <option value="To Do">To Do</option>
@@ -317,13 +435,58 @@ export default function TaskDialog({ open, onOpenChange, form, onInputChange, on
                             </Select>
                         </Field>
                     </div>
-                    {/* Row 5: Start Date, End Date (Optional) */}
+                    {/* Row 5: Start Date, End Date (Optional) with Calendar */}
                     <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
                         <Field label="Start Date (Optional)" style={{ flex: 1 }}>
-                            <Input name="startDate" type="date" value={form.startDate} onChange={onInputChange} />
+                            <Popover
+                                open={startDatePopoverOpen}
+                                onOpenChange={(_, data) => setStartDatePopoverOpen(data.open)}
+                            >
+                                <PopoverTrigger disableButtonEnhancement>
+                                    <Input
+                                        name="startDate"
+                                        value={form.startDate ? new Date(form.startDate + 'T00:00:00').toLocaleDateString() : ''}
+                                        placeholder="Select start date"
+                                        readOnly
+                                        contentAfter={<CalendarLtr24Regular style={{ cursor: 'pointer' }} />}
+                                        style={{ cursor: 'pointer' }}
+                                    />
+                                </PopoverTrigger>
+                                <PopoverSurface>
+                                    <Calendar
+                                        showSixWeeksByDefault
+                                        showGoToToday
+                                        onSelectDate={handleStartDateSelect}
+                                        value={parseFormDate(form.startDate)}
+                                    />
+                                </PopoverSurface>
+                            </Popover>
                         </Field>
                         <Field label="Due Date (Optional)" style={{ flex: 1 }}>
-                            <Input name="endDate" type="date" value={form.endDate} onChange={onInputChange} />
+                            <Popover
+                                open={endDatePopoverOpen}
+                                onOpenChange={(_, data) => setEndDatePopoverOpen(data.open)}
+                            >
+                                <PopoverTrigger disableButtonEnhancement>
+                                    <Input
+                                        name="endDate"
+                                        value={form.endDate ? new Date(form.endDate + 'T00:00:00').toLocaleDateString() : ''}
+                                        placeholder="Select due date"
+                                        readOnly
+                                        contentAfter={<CalendarLtr24Regular style={{ cursor: 'pointer' }} />}
+                                        style={{ cursor: 'pointer' }}
+                                    />
+                                </PopoverTrigger>
+                                <PopoverSurface>
+                                    <Calendar
+                                        showSixWeeksByDefault
+                                        showGoToToday
+                                        onSelectDate={handleEndDateSelect}
+                                        value={parseFormDate(form.endDate)}
+                                        minDate={parseFormDate(form.startDate)}
+                                    />
+                                </PopoverSurface>
+                            </Popover>
                         </Field>
                     </div>
                     {/* Row 6: Comments */}
