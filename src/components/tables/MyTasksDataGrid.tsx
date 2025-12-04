@@ -85,8 +85,9 @@ function MyTasksDataGrid({ onRowClick, onAddClick, onFetchComplete, refreshSigna
 
                 return {
                     _id: taskId,
+                    projectId: task.projectId, // Include projectId for category loading
                     category: task.category, // API uses 'category'
-                    categoryId: task.category, // Map category to categoryId for backward compatibility
+                    categoryId: task.categoryId || '', // Use actual categoryId from API
                     assignedTo: assignedToArray,
                     title: task.title,
                     description: task.description,

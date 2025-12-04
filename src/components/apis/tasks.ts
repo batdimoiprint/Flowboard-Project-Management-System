@@ -162,4 +162,16 @@ export const tasksApi = {
         const response = await axiosInstance.post<TaskResponse>(`/api/tasks/${taskId}/comments`, payload);
         return response.data;
     },
+
+    /**
+     * Update only the category of a task
+     * Backend path: PATCH /api/tasks/{taskId}/category
+     */
+    patchTaskCategory: async (taskId: string, categoryId: string): Promise<{ message: string; categoryId: string; categoryName: string }> => {
+        const response = await axiosInstance.patch<{ message: string; categoryId: string; categoryName: string }>(
+            `/api/tasks/${taskId}/category`,
+            { categoryId }
+        );
+        return response.data;
+    },
 };

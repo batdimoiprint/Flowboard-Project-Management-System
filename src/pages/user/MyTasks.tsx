@@ -36,6 +36,7 @@ export default function MyTasks() {
         assignedTo: user?.id ? [user.id] : [] as string[],
         createdBy: user?.id || '',
         category: '',
+        categoryId: '',
         projectId: '',
         comments: '',
     });
@@ -51,6 +52,7 @@ export default function MyTasks() {
     const [commentError, setCommentError] = useState<string | null>(null);
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+    const [isChangingCategory, setIsChangingCategory] = useState(false);
 
     // Called by DataGrid when adding button clicked
     function handleAddClick() {
@@ -65,6 +67,7 @@ export default function MyTasks() {
             assignedTo: user?.id ? [user.id] : [],
             createdBy: user?.id || '',
             category: '',
+            categoryId: '',
             projectId: '',
             comments: '',
         });
@@ -101,15 +104,33 @@ export default function MyTasks() {
             endDate: formatDateForInput(task.endDate),
             assignedTo: task.assignedTo || [],
             createdBy: task.createdBy || '',
-            category: task.category || task.categoryId || '',
-            projectId: (task as Task & { projectId?: string }).projectId || '',
+            category: task.category || '',
+            categoryId: task.categoryId || '',
+            projectId: task.projectId || '',
             comments: '',
         });
         setOpen(true);
         // Pass the task's projectId directly since setForm is async and form.projectId won't be updated yet
-        const taskProjectId = (task as Task & { projectId?: string }).projectId || '';
+        const taskProjectId = task.projectId || '';
         fetchAssignableUsers(task.assignedTo, taskProjectId);
         fetchProjects();
+        // Fetch categories for the task's project immediately
+        if (taskProjectId) {
+            fetchCategoriesByProject(taskProjectId);
+        }
+    }
+
+    async function fetchCategoriesByProject(projectId: string) {
+        setIsLoadingCategories(true);
+        try {
+            const cats = await categoriesApi.getCategoriesByProject(projectId);
+            setCategories(cats);
+        } catch (err) {
+            console.error('Failed to load categories:', err);
+            setCategories([]);
+        } finally {
+            setIsLoadingCategories(false);
+        }
     }
 
     async function fetchAssignableUsers(assignedToIds?: string[], taskProjectId?: string) {
@@ -120,7 +141,7 @@ export default function MyTasks() {
 
             // If a project is selected, fetch only project members
             // Use taskProjectId if provided (for edit mode), otherwise fall back to form.projectId
-            const projectId = taskProjectId || form.projectId || (selectedTask && (selectedTask as Task & { projectId?: string }).projectId);
+            const projectId = taskProjectId || form.projectId || selectedTask?.projectId;
             if (projectId) {
                 try {
                     // Use the dedicated project members endpoint
@@ -302,18 +323,24 @@ export default function MyTasks() {
         fetchProjects();
     }, [user?.id]);
 
-    // Load categories when projectId changes
+    // Load categories when projectId changes (for add mode)
     useEffect(() => {
-        if (form.projectId) {
-            setIsLoadingCategories(true);
-            categoriesApi.getCategoriesByProject(form.projectId)
-                .then(cats => setCategories(cats))
-                .catch(err => console.error('Failed to load categories:', err))
-                .finally(() => setIsLoadingCategories(false));
-        } else {
+        if (form.projectId && dialogMode === 'add') {
+            fetchCategoriesByProject(form.projectId);
+        } else if (!form.projectId) {
             setCategories([]);
         }
-    }, [form.projectId]);
+    }, [form.projectId, dialogMode]);
+
+    // When categories are loaded, try to match categoryId from category name if not set
+    useEffect(() => {
+        if (categories.length > 0 && form.category && !form.categoryId) {
+            const matchedCategory = categories.find(c => c.categoryName === form.category);
+            if (matchedCategory) {
+                setForm(prev => ({ ...prev, categoryId: matchedCategory.id }));
+            }
+        }
+    }, [categories, form.category, form.categoryId]);
 
     // Reload assignable users when project changes (only when dialog is open)
     useEffect(() => {
@@ -354,6 +381,26 @@ export default function MyTasks() {
             setCommentError(errorMessage);
         } finally {
             setIsAddingComment(false);
+        }
+    }
+
+    async function handleCategoryChange(categoryId: string) {
+        if (!editingTaskId) return;
+        setIsChangingCategory(true);
+        try {
+            const result = await tasksApi.patchTaskCategory(editingTaskId, categoryId);
+            // Update the form with new category info
+            setForm(prev => ({
+                ...prev,
+                categoryId: result.categoryId,
+                category: result.categoryName
+            }));
+            setRefreshKey(k => k + 1);
+        } catch (err: unknown) {
+            console.error('Failed to change category:', err);
+            setSubmitError(err instanceof Error ? err.message : 'Failed to change category');
+        } finally {
+            setIsChangingCategory(false);
         }
     }
 
@@ -400,6 +447,8 @@ export default function MyTasks() {
                 isLoadingCategories={isLoadingCategories}
                 categoriesError={null}
                 hideProjectField={false}
+                onCategoryChange={handleCategoryChange}
+                isChangingCategory={isChangingCategory}
             />
         </>
     )

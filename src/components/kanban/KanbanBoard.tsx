@@ -2,7 +2,7 @@ import { Button, Input, Spinner, tokens } from '@fluentui/react-components';
 import { useEffect, useState, useMemo } from 'react';
 import KanbanColumn from './KanbanColumn';
 import TaskDialog from '../dialogs/TaskDialog';
-import { projectsApi } from '../apis/projects';
+import { projectsApi, type Project } from '../apis/projects';
 import { mainLayoutStyles } from '../styles/Styles';
 import { tasksApi } from '../apis/tasks';
 import type { TaskResponse } from '../apis/tasks';
@@ -30,12 +30,24 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
   const [usersById, setUsersById] = useState<Record<string, User>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogForm, setDialogForm] = useState({
-    title: '', description: '', priority: 'Low', status: 'To Do', startDate: '', endDate: '', assignedTo: [] as string[], createdBy: '', category: '', projectId: projectId || '', comments: ''
+    title: '', description: '', priority: 'Low', status: 'To Do', startDate: '', endDate: '', assignedTo: [] as string[], createdBy: '', category: '', categoryId: '', projectId: projectId || '', comments: ''
   });
   const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('edit');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
   const [isLoadingAssignableUsers, setIsLoadingAssignableUsers] = useState(false);
+  const [isChangingCategory, setIsChangingCategory] = useState(false);
+  const [categoriesList, setCategoriesList] = useState<{ id: string; projectId: string; categoryName: string; createdBy: string }[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+
+  // Fetch project details
+  useEffect(() => {
+    if (!projectId) return;
+    projectsApi.getProjectById(projectId)
+      .then(project => setCurrentProject(project))
+      .catch(err => console.error('Failed to fetch project:', err));
+  }, [projectId]);
 
   // Fetch categories and tasks
   useEffect(() => {
@@ -47,6 +59,7 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
     ])
       .then(([cats, data]) => {
         setTasks(data);
+        setCategoriesList(cats);
         const categoryNames = cats.map(c => c.categoryName);
         const taskCategories = Array.from(new Set(data.map(t => (t.category || '').trim()))).filter(Boolean);
         const merged = Array.from(new Set([...categoryNames, ...taskCategories]));
@@ -189,6 +202,7 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
       setError('User not authenticated. Please log in.');
       return;
     }
+    const categoryId = categoriesMap[categoryTitle] || '';
     setDialogMode('add');
     setSelectedTaskId(null);
     setDialogForm({
@@ -201,10 +215,46 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
       assignedTo: [],
       createdBy: currentUser.id,
       category: categoryTitle === UNCATEGORIZED ? '' : categoryTitle,
+      categoryId: categoryId,
       projectId: projectId || '',
       comments: ''
     });
     setDialogOpen(true);
+  }
+
+  async function handleCategoryChange(categoryId: string) {
+    if (!selectedTaskId) return;
+
+    // Optimistic update
+    const selectedCategory = categoriesList.find(c => c.id === categoryId);
+    if (selectedCategory) {
+      setDialogForm(prev => ({
+        ...prev,
+        categoryId: categoryId,
+        category: selectedCategory.categoryName
+      }));
+    }
+
+    setIsChangingCategory(true);
+    try {
+      const result = await tasksApi.patchTaskCategory(selectedTaskId, categoryId);
+      // Update the form with new category info (confirm with server response)
+      setDialogForm(prev => ({
+        ...prev,
+        categoryId: result.categoryId,
+        category: result.categoryName
+      }));
+      // Refresh tasks to update the board
+      if (projectId) {
+        const refreshed = await tasksApi.getTasksByProject(projectId);
+        setTasks(refreshed);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to change category');
+      // Revert optimistic update if needed (optional, but good practice would be to refetch or revert)
+    } finally {
+      setIsChangingCategory(false);
+    }
   }
 
   if (!projectId) {
@@ -225,7 +275,7 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
             onDeleteColumn={handleDeleteColumn}
             onAddTask={handleAddTask}
             categoryId={categoriesMap[col]}
-            onTaskClick={(task) => {
+            onTaskClick={async (task) => {
               // Helper to format date for HTML date input (YYYY-MM-DD)
               const formatDateForInput = (dateValue: string | null | undefined): string => {
                 if (!dateValue) return '';
@@ -250,12 +300,26 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                 assignedTo: task.assignedTo || [],
                 createdBy: task.createdBy || '',
                 category: task.category || '',
+                categoryId: task.categoryId || categoriesMap[task.category || ''] || '',
                 projectId: task.projectId || projectId || '',
                 comments: ''
               });
               // Persist selected task id in component state instead of window
               setSelectedTaskId(task._id);
               setDialogOpen(true);
+
+              // Refetch categories for the current project
+              if (projectId) {
+                setIsLoadingCategories(true);
+                try {
+                  const cats = await categoriesApi.getCategoriesByProject(projectId);
+                  setCategoriesList(cats);
+                } catch (err) {
+                  console.error('Failed to fetch categories:', err);
+                } finally {
+                  setIsLoadingCategories(false);
+                }
+              }
             }}
           />
         ))}
@@ -338,8 +402,11 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
           currentUser={currentUser}
           dialogMode={dialogMode}
           hideProjectField={true}
-          categories={columns.filter(c => c !== 'Uncategorized').map(name => ({ id: name, projectId: projectId || '', categoryName: name, createdBy: '' }))}
-          isLoadingCategories={false}
+          projects={currentProject ? [currentProject] : []}
+          categories={categoriesList}
+          isLoadingCategories={isLoadingCategories}
+          onCategoryChange={handleCategoryChange}
+          isChangingCategory={isChangingCategory}
         />
       )}
     </div>

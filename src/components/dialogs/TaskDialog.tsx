@@ -17,6 +17,7 @@ export interface TaskDialogProps {
         assignedTo: string[];
         createdBy: string;
         category: string;
+        categoryId?: string;
         projectId?: string | null;
         comments?: string;
     };
@@ -52,6 +53,8 @@ export interface TaskDialogProps {
         createdAt?: string;
     }>;
     taskId?: string;
+    onCategoryChange?: (categoryId: string) => Promise<void> | void;
+    isChangingCategory?: boolean;
 }
 
 export default function TaskDialog(props: TaskDialogProps) {
@@ -77,6 +80,11 @@ export default function TaskDialog(props: TaskDialogProps) {
                 createdByUser={props.createdByUser}
                 comments={props.comments}
                 taskId={props.taskId}
+                categories={props.categories}
+                isLoadingCategories={props.isLoadingCategories}
+                categoriesError={props.categoriesError}
+                onCategoryChange={props.onCategoryChange}
+                isChangingCategory={props.isChangingCategory}
             />
         );
     }

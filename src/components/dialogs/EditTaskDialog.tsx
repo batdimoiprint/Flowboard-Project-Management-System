@@ -11,6 +11,7 @@ import {
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { User } from '../apis/auth';
 import type { Project } from '../apis/projects';
+import type { Category } from '../apis/categories';
 import { mainLayoutStyles } from '../styles/Styles';
 
 export interface EditTaskDialogProps {
@@ -26,6 +27,7 @@ export interface EditTaskDialogProps {
         assignedTo: string[];
         createdBy: string;
         category: string;
+        categoryId?: string;
         projectId?: string | null;
         comments?: string;
     };
@@ -52,6 +54,11 @@ export interface EditTaskDialogProps {
         createdAt?: string;
     }>;
     taskId?: string;
+    categories?: Category[];
+    isLoadingCategories?: boolean;
+    categoriesError?: string | null;
+    onCategoryChange?: (categoryId: string) => Promise<void> | void;
+    isChangingCategory?: boolean;
 }
 
 export default function EditTaskDialog({
@@ -73,7 +80,12 @@ export default function EditTaskDialog({
     isLoadingAssignableUsers = false,
     assignableUsersError = null,
     projects = [],
-    currentUser = null
+    currentUser = null,
+    categories = [],
+    isLoadingCategories = false,
+    categoriesError = null,
+    onCategoryChange,
+    isChangingCategory = false
 }: EditTaskDialogProps) {
     const [editingTitle, setEditingTitle] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -344,18 +356,51 @@ export default function EditTaskDialog({
                             </>
                         )}
 
-                        {/* Category info display in edit mode */}
-                        {form.category && (
-                            <>
-                                <Divider vertical style={{ height: 40 }} />
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>Category</span>
-                                    <span style={{ fontSize: tokens.fontSizeBase300, fontWeight: 500 }}>
-                                        {form.category}
+                        {/* Category dropdown for changing task category */}
+                        <>
+                            <Divider vertical style={{ height: 40 }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, flex: '0 1 auto' }}>
+                                <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3, marginBottom: 4 }}>
+                                    Category
+                                </span>
+                                <Dropdown
+                                    id="category-dropdown"
+                                    placeholder={isLoadingCategories ? 'Loading categories…' : 'Select category'}
+                                    style={{ minWidth: 150, maxWidth: 220 }}
+                                    listbox={{ style: { minWidth: 200 } }}
+                                    selectedOptions={form.categoryId ? [form.categoryId] : (form.category ? [categories.find(c => c.categoryName === form.category)?.id || ''] : [])}
+                                    value={form.category || categories.find(c => c.id === form.categoryId)?.categoryName || ''}
+                                    onOptionSelect={(_event, data) => {
+                                        const selectedCategoryId = data.optionValue as string;
+                                        if (selectedCategoryId && selectedCategoryId !== 'loading' && selectedCategoryId !== 'no-categories' && onCategoryChange) {
+                                            onCategoryChange(selectedCategoryId);
+                                        }
+                                    }}
+                                    disabled={isLoadingCategories || categories.length === 0 || isChangingCategory}
+                                >
+                                    {isLoadingCategories && (
+                                        <Option value="loading" disabled text="Loading">
+                                            Loading categories…
+                                        </Option>
+                                    )}
+                                    {!isLoadingCategories && categories.length === 0 && (
+                                        <Option value="no-categories" disabled text="No categories">
+                                            No categories available
+                                        </Option>
+                                    )}
+                                    {categories.map(cat => (
+                                        <Option key={cat.id} value={cat.id} text={cat.categoryName}>
+                                            {cat.categoryName}
+                                        </Option>
+                                    ))}
+                                </Dropdown>
+                                {categoriesError && (
+                                    <span style={{ color: tokens.colorPaletteRedForeground3, fontSize: tokens.fontSizeBase100 }}>
+                                        {categoriesError}
                                     </span>
-                                </div>
-                            </>
-                        )}
+                                )}
+                            </div>
+                        </>
 
                         {/* Date info display in edit mode */}
                         {(form.startDate || form.endDate) && (
