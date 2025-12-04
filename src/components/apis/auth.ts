@@ -1,4 +1,5 @@
 import axiosInstance from './axiosInstance';
+import type { AddressData } from './philippineAddress';
 
 export interface User {
     id: string;
@@ -7,9 +8,12 @@ export interface User {
     firstName: string;
     middleName: string;
     contactNumber: string;
+    secondaryContactNumber?: string | null;
     birthDate: string;
     userIMG: string | null;
     email: string;
+    address?: AddressData | null;
+    secondaryAddress?: AddressData | null;
     createdAt: string;
 }
 
@@ -30,10 +34,13 @@ export interface RegisterRequest {
     lastName: string;
     middleName: string;
     contactNumber: string;
+    secondaryContactNumber?: string | null;
     birthDate: string;
     userIMG: string | null;
     email: string;
     password: string;
+    address?: AddressData | null;
+    secondaryAddress?: AddressData | null;
 }
 
 export interface RegisterResponse {
