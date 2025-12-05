@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// export const API_BASE_URL = "https://flowboard-backend.azurewebsites.net/";
+export const API_BASE_URL = "https://flowboard-backend.azurewebsites.net/";
 // export const API_BASE_URL = "https://animated-space-fiesta-w6wpx564wqxh5vwj-5158.app.github.dev//";
- export const API_BASE_URL = "http://localhost:5158/";
+//  export const API_BASE_URL = "http://localhost:5158/";
 
 const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
