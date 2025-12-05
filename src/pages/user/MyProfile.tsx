@@ -112,7 +112,7 @@ export default function MyProfile() {
   const currentPasswordValue = watch('currentPassword');
   const newPasswordValue = watch('newPassword');
   const confirmPasswordValue = watch('confirmPassword');
-  
+
   // Watch primary address fields for cascading dropdowns
   const selectedRegion = watch('region');
   const selectedProvince = watch('province');
@@ -153,7 +153,7 @@ export default function MyProfile() {
 
     const loadProvinces = async () => {
       setAddressLoading(prev => ({ ...prev, provinces: true }));
-      
+
       try {
         const ncrCheck = philippineAddressApi.isNCR(regionData.code);
         setIsNCR(ncrCheck);
@@ -409,11 +409,11 @@ export default function MyProfile() {
       const userId = userCtx?.user?.id;
       if (!userId) throw new Error('No user is logged in.');
 
-      const { 
-        currentPassword, newPassword, confirmPassword, 
+      const {
+        currentPassword, newPassword, confirmPassword,
         region, province, cityMunicipality, barangay, streetAddress, zipCode,
         secondaryRegion, secondaryProvince, secondaryCityMunicipality, secondaryBarangay, secondaryStreetAddress, secondaryZipCode,
-        ...profileFields 
+        ...profileFields
       } = data;
       const payload: UserUpdateRequest = {};
 
@@ -504,7 +504,7 @@ export default function MyProfile() {
 
         // Check if address has changed
         const currentAddress = userCtx?.user?.address;
-        const addressChanged = 
+        const addressChanged =
           newAddress.region !== (currentAddress?.region || '') ||
           newAddress.province !== (currentAddress?.province || '') ||
           newAddress.cityMunicipality !== (currentAddress?.cityMunicipality || '') ||
@@ -540,7 +540,7 @@ export default function MyProfile() {
 
         // Check if secondary address has changed
         const currentSecondaryAddress = userCtx?.user?.secondaryAddress;
-        const secondaryAddressChanged = 
+        const secondaryAddressChanged =
           newSecondaryAddress.region !== (currentSecondaryAddress?.region || '') ||
           newSecondaryAddress.province !== (currentSecondaryAddress?.province || '') ||
           newSecondaryAddress.cityMunicipality !== (currentSecondaryAddress?.cityMunicipality || '') ||

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label, tokens, Card, Text } from '@fluentui/react-components';
-import { PersonRegular, LockClosedRegular } from '@fluentui/react-icons';
+import { Button, Input, Label, tokens, Card, Text, mergeClasses } from '@fluentui/react-components';
 import { useNavigate } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { mainLayoutStyles } from '../styles/Styles';
@@ -38,114 +37,51 @@ export default function Login() {
     };
 
     return (
-        <Card style={{ 
-            width: '100%',
-            maxWidth: '520px', 
-            margin: '0 auto', 
-            padding: `${tokens.spacingVerticalXXL} ${tokens.spacingHorizontalXXXL}` 
-        }}>
-            {/* Header - Visual Hierarchy (HCI Principle) */}
-            <div style={{ marginBottom: tokens.spacingVerticalXXL, textAlign: 'center' }}>
-                <Text size={800} weight="semibold" block style={{ marginBottom: tokens.spacingVerticalM }}>
-                    Welcome back
-                </Text>
-                <Text size={400} style={{ color: tokens.colorNeutralForeground3 }}>
-                    Sign in to continue to Flowboard
-                </Text>
-            </div>
-
-            <form onSubmit={handleSubmit(onSubmit)}>
-                {/* Adequate spacing for readability and reduced cognitive load */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalL }}>
-                    <div className={styles.formField}>
-                        <Label htmlFor="userNameOrEmail" required size="medium" style={{ marginBottom: tokens.spacingVerticalXS }}>
-                            Username or Email
-                        </Label>
-                        <Input
-                            id="userNameOrEmail"
-                            type="text"
-                            placeholder="Enter your username or email"
-                            autoComplete="username"
-                            size="large"
-                            contentBefore={<PersonRegular />}
-                            style={{ width: '100%' }}
-                            {...register('userNameOrEmail', { required: 'Username or Email is required' })}
-                        />
-                        {errors.userNameOrEmail && (
-                            <Text className={styles.errorText} style={{ marginTop: tokens.spacingVerticalXS }}>
-                                {errors.userNameOrEmail.message}
-                            </Text>
-                        )}
-                    </div>
-
-                    <div className={styles.formField}>
-                        <Label htmlFor="password" required size="medium" style={{ marginBottom: tokens.spacingVerticalXS }}>
-                            Password
-                        </Label>
-                        <Input
-                            id="password"
-                            type="password"
-                            placeholder="Enter your password"
-                            autoComplete="current-password"
-                            size="large"
-                            contentBefore={<LockClosedRegular />}
-                            style={{ width: '100%' }}
-                            {...register('password', { required: 'Password is required' })}
-                        />
-                        {errors.password && (
-                            <Text className={styles.errorText} style={{ marginTop: tokens.spacingVerticalXS }}>
-                                {errors.password.message}
-                            </Text>
-                        )}
-                    </div>
-
-                    {formError && (
-                        <Text className={styles.errorText} style={{ display: 'block', textAlign: 'center' }}>
-                            {formError}
-                        </Text>
+        <Card className={mergeClasses(styles.layoutPadding, styles.flexColFit, styles.componentBorder)} style={{ width: '55%' }}>
+            <h2 className={styles.brand}>Sign in</h2>
+            <form className={styles.formSection} onSubmit={handleSubmit(onSubmit)}>
+                <div className={styles.formField}>
+                    <Label htmlFor="userNameOrEmail">Username or Email</Label>
+                    <Input
+                        className={styles.formField}
+                        id="userNameOrEmail"
+                        type="text"
+                        placeholder="username or you@email.com"
+                        autoComplete="username"
+                        {...register('userNameOrEmail', { required: 'Username or Email is required' })}
+                    />
+                    {errors.userNameOrEmail && (
+                        <Text as="span" className={styles.errorText}>{errors.userNameOrEmail.message}</Text>
                     )}
-
-                    {/* Fitts's Law - Large clickable target for primary action */}
-                    <Button 
-                        appearance="primary" 
-                        type="submit" 
-                        size="large" 
-                        disabled={loading}
-                        style={{ 
-                            width: '100%', 
-                            marginTop: tokens.spacingVerticalM,
-                            padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalL}`
-                        }}
-                    >
+                </div>
+                <div className={styles.formField}>
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                        className={styles.formField}
+                        id="password"
+                        type="password"
+                        placeholder="Password"
+                        autoComplete="current-password"
+                        {...register('password', { required: 'Password is required' })}
+                    />
+                    {errors.password && (
+                        <Text as="span" className={styles.errorText}>{errors.password.message}</Text>
+                    )}
+                </div>
+                {formError && (
+                    <Text as="span" className={styles.errorText} style={{ marginTop: tokens.spacingVerticalXS }}>
+                        {formError}
+                    </Text>
+                )}
+                <div className={styles.formSection}>
+                    <Button className={styles.formField} appearance="primary" type="submit" size="large" disabled={loading}>
                         {loading ? 'Signing In...' : 'Sign In'}
+                    </Button>
+                    <Button className={styles.formField} appearance="outline" size="large" onClick={() => { navigate("/register") }} type="button">
+                        Create Account
                     </Button>
                 </div>
             </form>
-
-            {/* Footer - Clear visual separation and secondary action */}
-            <div style={{ 
-                marginTop: tokens.spacingVerticalXXL,
-                paddingTop: tokens.spacingVerticalL,
-                borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
-                textAlign: 'center',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: tokens.spacingHorizontalXS
-            }}>
-                <Text size={400} style={{ color: tokens.colorNeutralForeground3 }}>
-                    Don't have an account?
-                </Text>
-                <Button 
-                    appearance="transparent" 
-                    size="medium"
-                    onClick={() => navigate('/register')}
-                    type="button"
-                    style={{ padding: `0 ${tokens.spacingHorizontalXS}`, minWidth: 'auto', fontWeight: 600 }}
-                >
-                    Create one
-                </Button>
-            </div>
         </Card>
     );
 }
