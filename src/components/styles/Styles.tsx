@@ -94,6 +94,18 @@ export const mainLayoutStyles = makeStyles({
 		flexDirection: "row",
 	},
 
+	// Scrollable container for dense tables/datagrids
+	dataGridScrollable: {
+		display: 'flex',
+		flexDirection: 'column',
+		flex: 1,
+		minHeight: 0,
+		height: '100%',
+		maxHeight: '100%',
+		width: '100%',
+		overflowY: 'auto',
+	},
+
 	// New helpers for width/height control (Tailwind-like)
 	wFull: {
 		width: "100%",
@@ -133,14 +145,33 @@ export const mainLayoutStyles = makeStyles({
 	///////////////////////////
 	// Kanban Board Styles
 	///////////////////////////
+	kanbanPageContainer: {
+		height: '100%',
+		maxHeight: '100vh',
+		display: 'flex',
+		flexDirection: 'column',
+		overflow: 'hidden',
+	},
+	kanbanBoardOuter: {
+		display: 'flex',
+		flexDirection: 'column',
+		flex: 1,
+		overflow: 'hidden',
+		minHeight: '400px',
+		height: '100%',
+		maxHeight: '100%',
+	},
 	kanbanBoard: {
 		boxSizing: 'border-box',
 		display: 'flex',
 		flexDirection: 'row',
-		alignItems: 'flex-start',
+		alignItems: 'stretch',
 		gap: tokens.spacingHorizontalL,
+		flex: 1,
 		width: '100%',
+		height: '100%',
 		overflowX: 'auto',
+		overflowY: 'hidden',
 		paddingBottom: tokens.spacingVerticalL,
 	},
 	kanbanColumn: {
@@ -149,6 +180,8 @@ export const mainLayoutStyles = makeStyles({
 		flexDirection: 'column',
 		flex: '0 0 280px',
 		maxWidth: '300px',
+		height: '100%',
+		maxHeight: '100%',
 		backgroundColor: tokens.colorNeutralBackground2,
 		borderRadius: tokens.borderRadiusMedium,
 		padding: tokens.spacingHorizontalM,
@@ -171,8 +204,10 @@ export const mainLayoutStyles = makeStyles({
 		display: 'flex',
 		flexDirection: 'column',
 		gap: tokens.spacingVerticalS,
+		flex: 1,
+		minHeight: 0,
 		overflowY: 'auto',
-		maxHeight: 'calc(100vh - 260px)',
+		maxHeight: '100%',
 		paddingRight: tokens.spacingHorizontalXS,
 	},
 	kanbanAddColumn: {
@@ -202,6 +237,11 @@ export const mainLayoutStyles = makeStyles({
 		display: 'flex',
 		flexDirection: 'column',
 		gap: tokens.spacingVerticalXS,
+		height: 'auto',
+		minHeight: 'fit-content',
+		width: '100%',
+		maxWidth: '100%',
+		overflow: 'visible',
 		':active': { cursor: 'grabbing' },
 	},
 	kanbanTaskTitle: {

@@ -18,7 +18,9 @@ import type { ChangeEvent } from 'react';
 import { categoriesApi, type Category } from '../apis/categories';
 import CreateTaskDialog from '../dialogs/CreateTaskDialog';
 import EditTaskDialog from '../dialogs/EditTaskDialog';
+import CreateMainTaskDialog from '../dialogs/CreateMainTaskDialog';
 import { tasksApi, type TaskResponse, type CreateTaskData } from '../apis/tasks';
+import { mainTasksApi } from '../apis/maintasks';
 import { projectsApi, type ProjectMember, type Project } from '../apis/projects';
 import type { User } from '../apis/auth';
 
@@ -40,8 +42,8 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
     const [createTaskOpen, setCreateTaskOpen] = useState(false);
     const [isSubmittingTask, setIsSubmittingTask] = useState(false);
     const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
-    const [isLoadingAssignableUsers, setIsLoadingAssignableUsers] = useState(false);
-    const [assignableUsersError, setAssignableUsersError] = useState<string | null>(null);
+    const [isLoadingAssignableUsers] = useState(false);
+    const [assignableUsersError] = useState<string | null>(null);
     const [editTaskOpen, setEditTaskOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isLoadingEditTask, setIsLoadingEditTask] = useState(false);
@@ -49,6 +51,12 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
     const [editProject, setEditProject] = useState<Project | null>(null);
     type EditFormType = CreateFormType & { categoryId?: string };
     const [editForm, setEditForm] = useState<EditFormType | null>(null);
+
+    // MainTask dialog state
+    const [createMainTaskOpen, setCreateMainTaskOpen] = useState(false);
+    const [mainTaskForm, setMainTaskForm] = useState({ title: '', description: '' });
+    const [isSubmittingMainTask, setIsSubmittingMainTask] = useState(false);
+    const [mainTaskSubmitError, setMainTaskSubmitError] = useState<string | null>(null);
 
     type CreateFormType = {
         title: string;
@@ -89,11 +97,11 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
     );
 
     const mapTaskResponse = (task: TaskResponse): Task => ({
-        id: task.id || task._id || '',
+        id: task.id || '',
         title: task.title,
         description: task.description,
         priority: task.priority ? (task.priority.charAt(0).toUpperCase() + task.priority.slice(1).toLowerCase()) as Task['priority'] : undefined,
-        status: task.status,
+        status: 'To Do', // SubTasks don't have status, default to 'To Do'
         startDate: task.startDate,
         endDate: task.endDate,
         dueDate: task.endDate,
@@ -115,19 +123,17 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
             tasksApi.getTasksByProject(projectId),
         ])
             .then(([categories, tasks]) => {
-                console.log('📦 Raw Categories:', categories);
-                console.log('📋 Raw Tasks:', tasks);
+
                 setFetchedCategories(categories);
 
                 // Direct mapping: for each category, find tasks where task.categoryId === category.id
                 const columnsFromCategories: Column[] = categories.map(category => {
                     const columnTasks = tasks.filter(task => {
                         const match = task.categoryId === category.id;
-                        console.log(`🔍 Task "${task.title}" (catId: ${task.categoryId}) → Category "${category.categoryName}" (id: ${category.id})? ${match}`);
+
                         return match;
                     }).map(mapTaskResponse);
 
-                    console.log(`📊 Column "${category.categoryName}" has ${columnTasks.length} tasks`);
 
                     return {
                         id: category.id,
@@ -141,12 +147,10 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                     .filter(t => !t.categoryId)
                     .map(mapTaskResponse);
 
-                const cols = [...columnsFromCategories];
-                if (uncategorized.length) {
-                    cols.push({ id: 'uncategorized', title: 'Uncategorized', tasks: uncategorized });
-                }
+                const cols = uncategorized.length
+                    ? [{ id: 'uncategorized', title: 'Uncategorized', tasks: uncategorized }, ...columnsFromCategories]
+                    : [...columnsFromCategories];
 
-                console.log('✅ Final columns with task counts:', cols.map(c => `${c.title}: ${c.tasks.length}`));
                 setColumns(cols);
             })
             .catch((e: unknown) => {
@@ -268,49 +272,47 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
         }
     };
 
-    const handleAddTask = async (columnId: string) => {
-        console.log('Open create task for column:', columnId);
+    const handleAddTask = (columnId: string) => {
+        // Open MainTask creation dialog
         const column = columns.find(c => c.id === columnId);
+        setMainTaskForm({
+            title: column?.title ? `${column.title} Task` : '',
+            description: ''
+        });
+        setCreateMainTaskOpen(true);
+    };
 
-        setCreateForm(prev => ({
-            ...prev,
-            projectId: projectId || prev.projectId,
-            createdBy: user?.id || prev.createdBy,
-            category: column?.title || prev.category,
-        }));
+    const handleMainTaskInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setMainTaskForm(prev => ({ ...prev, [name]: value }));
+    };
 
-        if (projectId) {
-            setIsLoadingAssignableUsers(true);
-            setAssignableUsersError(null);
-            try {
-                const members = await projectsApi.getProjectMembers(projectId);
-                const mappedUsers: User[] = members.map((member: ProjectMember) => ({
-                    id: member.id,
-                    userName: member.userName,
-                    firstName: member.firstName,
-                    lastName: member.lastName,
-                    middleName: member.middleName ?? '',
-                    contactNumber: '',
-                    birthDate: '',
-                    userIMG: member.userIMG ?? null,
-                    email: member.email,
-                    createdAt: '',
-                    secondaryContactNumber: null,
-                }));
-                setAssignableUsers(mappedUsers);
-            } catch (err) {
-                console.error('Failed to load project members', err);
-                const message = (err as Error)?.message || 'Failed to load project members';
-                setAssignableUsersError(message);
-                setAssignableUsers([]);
-            } finally {
-                setIsLoadingAssignableUsers(false);
-            }
-        } else {
-            setAssignableUsers([]);
+    const handleMainTaskSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!mainTaskForm.title.trim()) return;
+
+        setIsSubmittingMainTask(true);
+        setMainTaskSubmitError(null);
+
+        try {
+            const newMainTask = await mainTasksApi.createMainTask({
+                title: mainTaskForm.title,
+                description: mainTaskForm.description
+            });
+
+            console.log('Created MainTask:', newMainTask);
+
+            // Reset form and close dialog
+            setMainTaskForm({ title: '', description: '' });
+            setCreateMainTaskOpen(false);
+
+            // TODO: Refresh the kanban board to show the new MainTask as a column
+            // This would require restructuring the board to use MainTasks as columns
+        } catch (error) {
+            setMainTaskSubmitError((error as Error).message || 'Failed to create main task');
+        } finally {
+            setIsSubmittingMainTask(false);
         }
-
-        setCreateTaskOpen(true);
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -331,12 +333,10 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                 title: createForm.title,
                 description: createForm.description,
                 priority: createForm.priority,
-                status: createForm.status,
                 startDate: createForm.startDate,
                 endDate: createForm.endDate,
                 createdBy: createForm.createdBy,
-                comments: createForm.comments || undefined,
-                projectId: createForm.projectId || undefined,
+                projectId: (createForm.projectId && createForm.projectId !== '') ? createForm.projectId : projectId || '',
                 category: createForm.category,
             };
 
@@ -493,28 +493,30 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
             {loading ? (
                 <div style={{ color: 'var(--colorNeutralForeground3)' }}>Loading kanban…</div>
             ) : (
-                <div className={styles.kanbanBoard}>
-                    {columns.map(column => (
-                        <KanbanColumn
-                            key={column.id}
-                            column={column}
-                            onAddTask={handleAddTask}
-                            onTaskClick={handleTaskClick}
-                            onDeleteColumn={handleDeleteCategory}
-                        />
-                    ))}
-                    <div className={styles.kanbanAddColumn}>
-                        {isAddingColumn ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                                <Input placeholder="Column name" value={newCategoryName} onChange={(e: ChangeEvent<HTMLInputElement>) => setNewCategoryName(e.target.value)} />
-                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                    <Button appearance="primary" onClick={handleAddCategory} disabled={!newCategoryName.trim()}>Save</Button>
-                                    <Button appearance="subtle" onClick={() => { setIsAddingColumn(false); setNewCategoryName(''); }}>Cancel</Button>
+                <div className={styles.kanbanBoardOuter}>
+                    <div className={styles.kanbanBoard}>
+                        {columns.map(column => (
+                            <KanbanColumn
+                                key={column.id}
+                                column={column}
+                                onAddTask={handleAddTask}
+                                onTaskClick={handleTaskClick}
+                                onDeleteColumn={handleDeleteCategory}
+                            />
+                        ))}
+                        <div className={styles.kanbanAddColumn}>
+                            {isAddingColumn ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                                    <Input placeholder="Column name" value={newCategoryName} onChange={(e: ChangeEvent<HTMLInputElement>) => setNewCategoryName(e.target.value)} />
+                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                        <Button appearance="primary" onClick={handleAddCategory} disabled={!newCategoryName.trim()}>Save</Button>
+                                        <Button appearance="subtle" onClick={() => { setIsAddingColumn(false); setNewCategoryName(''); }}>Cancel</Button>
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <Button appearance="subtle" onClick={() => setIsAddingColumn(true)}>+ Add column</Button>
-                        )}
+                            ) : (
+                                <Button appearance="subtle" onClick={() => setIsAddingColumn(true)}>+ Add column</Button>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
@@ -570,6 +572,19 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                     taskId={selectedTask.id}
                 />
             )}
+
+            {/* MainTask Creation Dialog */}
+            <CreateMainTaskDialog
+                open={createMainTaskOpen}
+                onOpenChange={setCreateMainTaskOpen}
+                form={mainTaskForm}
+                onInputChange={handleMainTaskInputChange}
+                onSubmit={handleMainTaskSubmit}
+                currentUser={user}
+                isSubmitting={isSubmittingMainTask}
+                submitError={mainTaskSubmitError}
+                projectId={projectId}
+            />
         </DndContext>
     );
 }

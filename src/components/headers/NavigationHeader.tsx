@@ -1,6 +1,6 @@
 import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Button, Tooltip } from "@fluentui/react-components";
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Folder20Regular, Board20Regular, TaskListSquareLtr20Regular, Settings20Regular } from '@fluentui/react-icons';
+import { Folder20Regular, Board20Regular, TaskListSquareLtr20Regular, Settings20Regular, ChartMultiple20Regular } from '@fluentui/react-icons';
 import React from 'react';
 
 function titleCase(segment: string) {
@@ -39,13 +39,15 @@ export default function NavigationHeader() {
     // Construct navigation paths
     const kanbanPath = projectName ? `/home/project/${projectName}/kanban` : null;
     const tasksPath = projectName ? `/home/project/${projectName}/tasks` : null;
+    const analyticsPath = projectName ? `/home/project/${projectName}/analytics` : null;
     const settingsPath = projectName ? `/home/project/${projectName}` : null;
 
-    // Check if current page is kanban, tasks, or settings
+    // Check if current page is kanban, tasks, analytics, or settings
     const lastSegment = segments[segments.length - 1];
     const isKanbanPage = lastSegment === 'kanban';
     const isTasksPage = lastSegment === 'tasks';
-    const isSettingsPage = segments.length === 2 && segments[0] === 'project' && lastSegment !== 'kanban' && lastSegment !== 'tasks';
+    const isAnalyticsPageProject = lastSegment === 'analytics' && isInProject;
+    const isSettingsPage = segments.length === 2 && segments[0] === 'project' && lastSegment !== 'kanban' && lastSegment !== 'tasks' && lastSegment !== 'analytics';
 
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -66,7 +68,7 @@ export default function NavigationHeader() {
                 ))}
             </Breadcrumb>
 
-            {/* Show Kanban, Tasks, and Settings buttons when in a project context */}
+            {/* Show Kanban, Tasks, Settings, and Analytics buttons when in a project context */}
             {isInProject && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
                     {kanbanPath && (
@@ -88,6 +90,17 @@ export default function NavigationHeader() {
                                 onClick={() => navigate(tasksPath)}
                             >
                                 Tasks
+                            </Button>
+                        </Tooltip>
+                    )}
+                    {analyticsPath && (
+                        <Tooltip content="Analytics Dashboard" relationship="label">
+                            <Button
+                                appearance={isAnalyticsPageProject ? 'primary' : 'subtle'}
+                                icon={<ChartMultiple20Regular />}
+                                onClick={() => navigate(analyticsPath)}
+                            >
+                                Analytics
                             </Button>
                         </Tooltip>
                     )}

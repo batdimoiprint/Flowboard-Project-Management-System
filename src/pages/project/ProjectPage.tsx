@@ -21,6 +21,7 @@ import {
   Option,
   Input,
   Textarea,
+  mergeClasses,
 } from '@fluentui/react-components';
 import { AddCircle20Regular, FolderOpen24Regular, Edit20Regular, Checkmark20Regular, Dismiss20Regular } from '@fluentui/react-icons';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
@@ -353,7 +354,7 @@ export default function ProjectPage() {
 
   return (
     <Card
-      className={`${styles.artifCard} ${styles.layoutPadding} ${styles.wFull}`}
+      className={mergeClasses(styles.artifCard, styles.layoutPadding, styles.wFull)}
       style={{ minHeight: 'calc(100vh - 160px)' }}
     >
       {loading && (
@@ -368,8 +369,8 @@ export default function ProjectPage() {
 
       {!loading && !error && (
         <>
-          <div className={`${styles.spaceBetweenRow} ${styles.wFull}`} style={{ gap: tokens.spacingHorizontalXXL, flexWrap: 'wrap' }}>
-            <div className={`${styles.personaRow}`} style={{ flex: 1, gap: tokens.spacingHorizontalL }}>
+          <div className={mergeClasses(styles.spaceBetweenRow, styles.wFull)} style={{ gap: tokens.spacingHorizontalXXL, flexWrap: 'wrap' }}>
+            <div className={styles.personaRow} style={{ flex: 1, gap: tokens.spacingHorizontalL }}>
               <ProjectGlyph />
               <div style={{ flex: 1 }}>
                 {isEditingProject ? (

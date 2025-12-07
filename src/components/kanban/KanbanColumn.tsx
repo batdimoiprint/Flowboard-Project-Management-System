@@ -1,6 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Button, Text } from '@fluentui/react-components';
+import { Button, Text, mergeClasses } from '@fluentui/react-components';
 import { Add20Regular, Delete20Regular } from '@fluentui/react-icons';
 import { mainLayoutStyles } from '../styles/Styles';
 import KanbanCard, { type Task } from './KanbanCard';
@@ -29,7 +29,7 @@ export default function KanbanColumn({ column, onAddTask, onTaskClick, onDeleteC
     return (
         <div
             ref={setNodeRef}
-            className={`${styles.kanbanColumn} ${isOver ? styles.kanbanDragOver : ''}`}
+            className={mergeClasses(styles.kanbanColumn, styles.hFull, isOver && styles.kanbanDragOver)}
         >
             <div className={styles.kanbanColumnHeader}>
                 <Text className={styles.kanbanColumnTitle}>

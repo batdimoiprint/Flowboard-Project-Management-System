@@ -16,6 +16,7 @@ import LoginPage from "../pages/auth/LoginPage";
 import RegisterPage from "../pages/auth/RegisterPage";
 import Landing from "../pages/landing/Landing";
 import MyProfile from "../pages/user/MyProfile";
+import AnalyticsPage from "../pages/user/AnalyticsPage";
 
 
 const Features = () => <div>Features Page</div>;
@@ -61,6 +62,7 @@ export default function AppRoutes() {
                 {/* My Tasks*/}
                 <Route index element={<MyTasks />} />
                 <Route path="profile" element={<MyProfile />} />
+                <Route path="analytics" element={<AnalyticsPage />} />
 
                 {/* Project routes */}
                 <Route path="project">
@@ -77,6 +79,7 @@ export default function AppRoutes() {
 
                         <Route path="kanban" element={<KanbanPage />} />
                         <Route path="tasks" element={<TaskListPage />} />
+                        <Route path="analytics" element={<AnalyticsPage />} />
                     </Route>
                 </Route>
 

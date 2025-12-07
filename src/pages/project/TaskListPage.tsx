@@ -1,16 +1,19 @@
-import { Card, tokens } from '@fluentui/react-components';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Card, tokens, mergeClasses, DataGrid, DataGridHeader, DataGridRow, DataGridHeaderCell, DataGridBody, DataGridCell, TableCellLayout, createTableColumn, Button, Spinner, TabList, Tab } from '@fluentui/react-components';
+import type { TableColumnDefinition, SelectTabEvent, SelectTabData } from '@fluentui/react-components';
+import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import ProjectTasksDataGrid from '../../components/tables/ProjectTasksDataGrid';
 import { mainLayoutStyles } from '../../components/styles/Styles';
-import TaskDialog from '../../components/dialogs/TaskDialog';
 import { useUser } from '../../hooks/useUser';
 import { usersApi } from '../../components/apis/users';
 import type { User } from '../../components/apis/auth';
-import { tasksApi } from '../../components/apis/tasks';
 import { projectsApi, type Project } from '../../components/apis/projects';
 import { categoriesApi, type Category } from '../../components/apis/categories';
-import type { Task } from '../../types/MyTasksTypes';
+import { mainTasksApi, type MainTaskResponse } from '../../components/apis/maintasks';
+import { subTasksApi, type SubTaskResponse } from '../../components/apis/subtasks';
+import CreateMainTaskDialog from '../../components/dialogs/CreateMainTaskDialog';
+import EditMainTaskDialog from '../../components/dialogs/EditMainTaskDialog';
+import EditTaskDialog from '../../components/dialogs/EditTaskDialog';
+import { Add24Regular } from '@fluentui/react-icons';
 
 export default function TaskListPage() {
     const { projectName } = useParams<{ projectName: string }>();
@@ -19,28 +22,42 @@ export default function TaskListPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const s = mainLayoutStyles();
-    const navigate = useNavigate();
     const { user } = useUser();
 
-    // Dialog state + form state
-    const [open, setOpen] = useState(false);
-    const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
-    const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-    const [refreshKey, setRefreshKey] = useState(0);
+    // Filter state
+    const [activeTab, setActiveTab] = useState<'mainTasks' | 'subTasks'>('mainTasks');
 
-    const [form, setForm] = useState({
+    // MainTask state
+    const [mainTasks, setMainTasks] = useState<MainTaskResponse[]>([]);
+    const [loadingMainTasks, setLoadingMainTasks] = useState(true);
+    const [subTaskCounts, setSubTaskCounts] = useState<Record<string, number>>({});
+
+    // SubTask state
+    const [subTasks, setSubTasks] = useState<SubTaskResponse[]>([]);
+    const [loadingSubTasks, setLoadingSubTasks] = useState(false);
+
+    // Dialog state
+    const [createMainTaskOpen, setCreateMainTaskOpen] = useState(false);
+    const [editMainTaskOpen, setEditMainTaskOpen] = useState(false);
+    const [selectedMainTask, setSelectedMainTask] = useState<MainTaskResponse | null>(null);
+    const [mainTaskForm, setMainTaskForm] = useState({ title: '', description: '' });
+    const [isSubmittingMainTask, setIsSubmittingMainTask] = useState(false);
+
+    // SubTask dialog state
+    const [editSubTaskOpen, setEditSubTaskOpen] = useState(false);
+    const [selectedSubTask, setSelectedSubTask] = useState<SubTaskResponse | null>(null);
+    const [subTaskForm, setSubTaskForm] = useState({
         title: '',
         description: '',
-        priority: 'Medium',
+        priority: 'Low',
         status: 'To Do',
         startDate: '',
         endDate: '',
-        assignedTo: user?.id ? [user.id] : [] as string[],
-        createdBy: user?.id || '',
+        assignedTo: [] as string[],
+        createdBy: '',
         category: '',
-        projectId: '',
-        comments: '',
+        categoryId: '',
+        projectId: ''
     });
 
     const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
@@ -60,13 +77,15 @@ export default function TaskListPage() {
                 const matched = all.find(p => findSlug(p.projectName) === (titleSlug ? titleSlug.replace(/-/g, '-') : ''));
                 if (matched) {
                     setProject(matched);
-                    // Load categories for this project
+                    // Load categories and users for this project
                     if (matched.id) {
                         setIsLoadingCategories(true);
                         categoriesApi.getCategoriesByProject(matched.id)
                             .then(cats => { if (active) setCategories(cats); })
                             .catch(err => console.error('Failed to load categories:', err))
                             .finally(() => { if (active) setIsLoadingCategories(false); });
+
+                        fetchAssignableUsers();
                     }
                 } else {
                     setError('Project not found');
@@ -80,58 +99,119 @@ export default function TaskListPage() {
 
         loadProject();
         return () => { active = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [titleSlug]);
 
-    const onAddClick = () => {
-        setDialogMode('add');
-        setForm(prev => ({ ...prev, assignedTo: user?.id ? [user.id] : [], createdBy: user?.id || '', projectId: project?.id || '' }));
-        setOpen(true);
-        fetchAssignableUsers();
-    };
+    useEffect(() => {
+        if (project?.id) {
+            loadMainTasks();
+            if (activeTab === 'subTasks') {
+                loadSubTasks();
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [project, activeTab]);
 
-    // Helper to format date for HTML date input (YYYY-MM-DD)
-    const formatDateForInput = (dateValue: string | null | undefined): string => {
-        if (!dateValue) return '';
+    const loadMainTasks = async () => {
+        if (!project?.id) return;
         try {
-            const date = new Date(dateValue);
-            if (isNaN(date.getTime())) return '';
-            return date.toISOString().split('T')[0];
-        } catch {
-            return '';
+            setLoadingMainTasks(true);
+            const tasks = await mainTasksApi.getMainTasks();
+            setMainTasks(tasks);
+
+            // Load SubTask counts for each MainTask
+            const counts: Record<string, number> = {};
+            await Promise.all(
+                tasks.map(async (task) => {
+                    try {
+                        const subTasks = await mainTasksApi.getSubTasksForMainTask(task.id);
+                        counts[task.id] = subTasks.length;
+                    } catch {
+                        counts[task.id] = 0;
+                    }
+                })
+            );
+            setSubTaskCounts(counts);
+        } catch (err) {
+            console.error('Failed to load main tasks:', err);
+        } finally {
+            setLoadingMainTasks(false);
         }
     };
 
-    const onRowClick = (task: Task) => {
-        setDialogMode('edit');
-        setEditingTaskId(task._id);
-        setSelectedTask(task);
-        setForm({
-            title: task.title || '',
-            description: task.description || '',
-            priority: task.priority || 'Medium',
-            status: task.status || 'To Do',
-            startDate: formatDateForInput(task.startDate),
-            endDate: formatDateForInput(task.endDate),
-            assignedTo: task.assignedTo || [],
-            createdBy: task.createdBy || '',
-            category: task.category || task.categoryId || '',
-            projectId: project?.id || '',
-            comments: '',
-        });
-        setOpen(true);
-        fetchAssignableUsers(task.assignedTo);
+    const loadSubTasks = async () => {
+        if (!project?.id) return;
+        try {
+            setLoadingSubTasks(true);
+            const tasks = await subTasksApi.getSubTasksByProject(project.id);
+            setSubTasks(tasks);
+        } catch (err) {
+            console.error('Failed to load subtasks:', err);
+        } finally {
+            setLoadingSubTasks(false);
+        }
     };
 
-    async function fetchAssignableUsers(assignedToIds?: string[]) {
+    const handleAddMainTask = () => {
+        setMainTaskForm({ title: '', description: '' });
+        setCreateMainTaskOpen(true);
+    };
+
+    const handleMainTaskRowClick = (mainTask: MainTaskResponse) => {
+        setSelectedMainTask(mainTask);
+        setMainTaskForm({
+            title: mainTask.title,
+            description: mainTask.description || ''
+        });
+        setEditMainTaskOpen(true);
+    };
+
+    const handleSubTaskRowClick = (subTask: SubTaskResponse) => {
+        setSelectedSubTask(subTask);
+        setSubTaskForm({
+            title: subTask.title || '',
+            description: subTask.description || '',
+            priority: subTask.priority || 'Low',
+            status: 'To Do',
+            startDate: subTask.startDate ? new Date(subTask.startDate).toISOString().split('T')[0] : '',
+            endDate: subTask.endDate ? new Date(subTask.endDate).toISOString().split('T')[0] : '',
+            assignedTo: subTask.assignedTo || [],
+            createdBy: subTask.createdBy || '',
+            category: subTask.category || '',
+            categoryId: subTask.categoryId || '',
+            projectId: subTask.projectId
+        });
+        setEditSubTaskOpen(true);
+    };
+
+    const handleMainTaskSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!mainTaskForm.title.trim()) return;
+
+        try {
+            setIsSubmittingMainTask(true);
+            await mainTasksApi.createMainTask({
+                title: mainTaskForm.title,
+                description: mainTaskForm.description,
+            });
+            setCreateMainTaskOpen(false);
+            setMainTaskForm({ title: '', description: '' });
+            loadMainTasks();
+        } catch (err) {
+            console.error('Failed to create main task:', err);
+        } finally {
+            setIsSubmittingMainTask(false);
+        }
+    };
+
+    async function fetchAssignableUsers() {
         setIsLoadingAssignableUsers(true);
         try {
             let unique: User[] = [];
 
             if (project?.id) {
                 try {
-                    // Use the dedicated project members endpoint
                     const projectMembers = await projectsApi.getProjectMembers(project.id);
-                    // Convert ProjectMember[] to User[] (they have compatible structures)
                     unique = projectMembers.map(member => ({
                         id: member.id,
                         userName: member.userName,
@@ -146,7 +226,6 @@ export default function TaskListPage() {
                 }
             }
 
-            // If no project members were found, fetch all users as fallback
             if (unique.length === 0) {
                 try {
                     const allUsers = await usersApi.getAllUsers();
@@ -156,135 +235,371 @@ export default function TaskListPage() {
                 }
             }
 
-            // Add current user if not already in the list
             if (user && !unique.some((u) => u.id === user.id)) unique.push(user);
-
-            // Add any assigned users that might not be in the current member list (for existing tasks)
-            if (assignedToIds && assignedToIds.length > 0) {
-                const missingIds = assignedToIds.filter(id => !unique.some(u => u.id === id));
-                if (missingIds.length > 0) {
-                    const missingUsers = await Promise.all(missingIds.map(id => usersApi.getUserById(id).catch(() => null)));
-                    missingUsers.forEach(u => {
-                        if (u) unique.push(u);
-                    });
-                }
-            }
-
             setAssignableUsers(unique);
         } catch (err) {
-            console.error('Failed to fetch users for task creation:', err);
+            console.error('Failed to fetch users:', err);
         } finally {
             setIsLoadingAssignableUsers(false);
         }
-    } async function handleAddTask(e: React.FormEvent) {
-        e.preventDefault();
-        setForm(prev => ({ ...prev, projectId: project?.id || prev.projectId }));
-        try {
-            await tasksApi.createTask({
-                category: form.category,
-                projectId: project?.id || form.projectId,
-                assignedTo: form.assignedTo,
-                title: form.title,
-                description: form.description,
-                priority: form.priority,
-                status: form.status,
-                startDate: form.startDate,
-                endDate: form.endDate,
-                createdBy: user?.id || '',
-                comments: form.comments,
-            });
-            setOpen(false);
-            setRefreshKey(k => k + 1);
-        } catch (err) {
-            console.error('Failed to create task', err);
-        }
     }
 
-    async function handleEditSubmit(e: React.FormEvent) {
-        e.preventDefault();
-        if (!editingTaskId) return;
-        try {
-            await tasksApi.updateTask(editingTaskId, {
-                category: form.category,
-                projectId: project?.id || form.projectId,
-                assignedTo: form.assignedTo,
-                title: form.title,
-                description: form.description,
-                priority: form.priority,
-                status: form.status,
-                startDate: form.startDate,
-                endDate: form.endDate,
-                createdBy: form.createdBy,
-                comments: form.comments,
-            });
-            setOpen(false);
-            setEditingTaskId(null);
-            setDialogMode('add');
-            setRefreshKey(k => k + 1);
-        } catch (err) {
-            console.error('Failed to update task', err);
-        }
-    }
+    // DataGrid columns for MainTasks
+    const mainTaskColumns: TableColumnDefinition<MainTaskResponse>[] = [
+        createTableColumn<MainTaskResponse>({
+            columnId: 'title',
+            compare: (a, b) => a.title.localeCompare(b.title),
+            renderHeaderCell: () => 'Title',
+            renderCell: (item) => <TableCellLayout>{item.title}</TableCellLayout>,
+        }),
+        createTableColumn<MainTaskResponse>({
+            columnId: 'description',
+            renderHeaderCell: () => 'Description',
+            renderCell: (item) => (
+                <TableCellLayout>
+                    {item.description ? item.description.substring(0, 50) + (item.description.length > 50 ? '...' : '') : '-'}
+                </TableCellLayout>
+            ),
+        }),
+        createTableColumn<MainTaskResponse>({
+            columnId: 'subTasks',
+            renderHeaderCell: () => 'SubTasks',
+            renderCell: (item) => (
+                <TableCellLayout>{subTaskCounts[item.id] || 0}</TableCellLayout>
+            ),
+        }),
+        createTableColumn<MainTaskResponse>({
+            columnId: 'createdAt',
+            compare: (a, b) => {
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateA - dateB;
+            },
+            renderHeaderCell: () => 'Created',
+            renderCell: (item) => (
+                <TableCellLayout>
+                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-'}
+                </TableCellLayout>
+            ),
+        }),
+    ];
 
-    async function handleDeleteTask() {
-        if (!editingTaskId) return;
-        if (!confirm('Delete this task?')) return;
-        try {
-            await tasksApi.deleteTask(editingTaskId);
-            setOpen(false);
-            setEditingTaskId(null);
-            setDialogMode('add');
-            setRefreshKey(k => k + 1);
-        } catch (err) {
-            console.error('Failed to delete task', err);
-        }
-    }
+    // DataGrid columns for SubTasks
+    const subTaskColumns: TableColumnDefinition<SubTaskResponse>[] = [
+        createTableColumn<SubTaskResponse>({
+            columnId: 'title',
+            compare: (a, b) => (a.title || '').localeCompare(b.title || ''),
+            renderHeaderCell: () => 'Title',
+            renderCell: (item) => <TableCellLayout>{item.title || '-'}</TableCellLayout>,
+        }),
+        createTableColumn<SubTaskResponse>({
+            columnId: 'description',
+            renderHeaderCell: () => 'Description',
+            renderCell: (item) => (
+                <TableCellLayout>
+                    {item.description ? item.description.substring(0, 50) + (item.description.length > 50 ? '...' : '') : '-'}
+                </TableCellLayout>
+            ),
+        }),
+        createTableColumn<SubTaskResponse>({
+            columnId: 'priority',
+            compare: (a, b) => (a.priority || '').localeCompare(b.priority || ''),
+            renderHeaderCell: () => 'Priority',
+            renderCell: (item) => <TableCellLayout>{item.priority || '-'}</TableCellLayout>,
+        }),
+        createTableColumn<SubTaskResponse>({
+            columnId: 'category',
+            renderHeaderCell: () => 'Category',
+            renderCell: (item) => <TableCellLayout>{item.category || '-'}</TableCellLayout>,
+        }),
+        createTableColumn<SubTaskResponse>({
+            columnId: 'assignedTo',
+            renderHeaderCell: () => 'Assigned',
+            renderCell: (item) => (
+                <TableCellLayout>
+                    {item.assignedTo && item.assignedTo.length > 0
+                        ? `${item.assignedTo.length} member${item.assignedTo.length !== 1 ? 's' : ''}`
+                        : '-'}
+                </TableCellLayout>
+            ),
+        }),
+        createTableColumn<SubTaskResponse>({
+            columnId: 'createdAt',
+            compare: (a, b) => {
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateA - dateB;
+            },
+            renderHeaderCell: () => 'Created',
+            renderCell: (item) => (
+                <TableCellLayout>
+                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-'}
+                </TableCellLayout>
+            ),
+        }),
+    ];
 
     if (loading) return (<Card style={{ padding: tokens.spacingVerticalXXL }}><div>Loading project...</div></Card>);
     if (error || !project) return (<Card style={{ padding: tokens.spacingVerticalXXL }}><div>{error ?? 'Project not found'}</div></Card>);
 
     return (
-        <Card className={`${s.artifCard} ${s.wFull} ${s.layoutPadding}`}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Card className={mergeClasses(s.artifCard, s.wFull, s.layoutPadding)}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: tokens.spacingVerticalL }}>
                 <h1 style={{ margin: 0 }}>{project.projectName} - Tasks</h1>
-                <div>
-                    <button onClick={() => navigate(`/home/project/${encodeURIComponent(project.projectName.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'))}/tasks`)} style={{ display: 'none' }}>refresh</button>
-                </div>
+                {activeTab === 'mainTasks' && (
+                    <Button
+                        appearance="primary"
+                        icon={<Add24Regular />}
+                        onClick={handleAddMainTask}
+                    >
+                        Add Main Task
+                    </Button>
+                )}
             </div>
 
-            <ProjectTasksDataGrid projectId={project.id} onAddClick={onAddClick} onRowClick={onRowClick} refreshSignal={refreshKey} />
-
-            <TaskDialog
-                open={open}
-                onOpenChange={(v) => { setOpen(v); if (!v) { setDialogMode('add'); setEditingTaskId(null); setSelectedTask(null); } }}
-                form={form}
-                onInputChange={(e) => {
-                    const { name, value } = e.target as unknown as { name: string; value: unknown };
-                    setForm(prev => ({ ...prev, [name]: value }));
+            <TabList
+                selectedValue={activeTab}
+                onTabSelect={(_: SelectTabEvent, data: SelectTabData) => {
+                    setActiveTab(data.value as 'mainTasks' | 'subTasks');
                 }}
-                onSubmit={dialogMode === 'add' ? handleAddTask : handleEditSubmit}
-                onDeleteClick={handleDeleteTask}
-                isSubmitting={false}
+                style={{ marginBottom: tokens.spacingVerticalL }}
+            >
+                <Tab value="mainTasks">Main Tasks</Tab>
+                <Tab value="subTasks">SubTasks</Tab>
+            </TabList>
+
+            {activeTab === 'mainTasks' ? (
+                loadingMainTasks ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: tokens.spacingVerticalXXL }}>
+                        <Spinner label="Loading main tasks..." />
+                    </div>
+                ) : mainTasks.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: tokens.spacingVerticalXXL, color: tokens.colorNeutralForeground3 }}>
+                        No main tasks yet. Create one to get started!
+                    </div>
+                ) : (
+                    <DataGrid
+                        items={mainTasks}
+                        columns={mainTaskColumns}
+                        sortable
+                        size="small"
+                        style={{ minWidth: '100%' }}
+                    >
+                        <DataGridHeader>
+                            <DataGridRow>
+                                {({ renderHeaderCell }) => (
+                                    <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
+                                )}
+                            </DataGridRow>
+                        </DataGridHeader>
+                        <DataGridBody<MainTaskResponse>>
+                            {({ item, rowId }) => (
+                                <DataGridRow<MainTaskResponse>
+                                    key={rowId}
+                                    onClick={() => handleMainTaskRowClick(item)}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    {({ renderCell }) => (
+                                        <DataGridCell>{renderCell(item)}</DataGridCell>
+                                    )}
+                                </DataGridRow>
+                            )}
+                        </DataGridBody>
+                    </DataGrid>
+                )
+            ) : (
+                loadingSubTasks ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: tokens.spacingVerticalXXL }}>
+                        <Spinner label="Loading subtasks..." />
+                    </div>
+                ) : subTasks.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: tokens.spacingVerticalXXL, color: tokens.colorNeutralForeground3 }}>
+                        No subtasks in this project yet.
+                    </div>
+                ) : (
+                    <DataGrid
+                        items={subTasks}
+                        columns={subTaskColumns}
+                        sortable
+                        size="small"
+                        style={{ minWidth: '100%' }}
+                    >
+                        <DataGridHeader>
+                            <DataGridRow>
+                                {({ renderHeaderCell }) => (
+                                    <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
+                                )}
+                            </DataGridRow>
+                        </DataGridHeader>
+                        <DataGridBody<SubTaskResponse>>
+                            {({ item, rowId }) => (
+                                <DataGridRow<SubTaskResponse>
+                                    key={rowId}
+                                    onClick={() => handleSubTaskRowClick(item)}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    {({ renderCell }) => (
+                                        <DataGridCell>{renderCell(item)}</DataGridCell>
+                                    )}
+                                </DataGridRow>
+                            )}
+                        </DataGridBody>
+                    </DataGrid>
+                )
+            )}
+
+            <CreateMainTaskDialog
+                open={createMainTaskOpen}
+                onOpenChange={setCreateMainTaskOpen}
+                form={mainTaskForm}
+                onInputChange={(e) => {
+                    const { name, value } = e.target;
+                    setMainTaskForm(prev => ({ ...prev, [name]: value }));
+                }}
+                onSubmit={handleMainTaskSubmit}
+                isSubmitting={isSubmittingMainTask}
                 submitError={null}
-                dialogMode={dialogMode}
-                createdByUser={selectedTask ? selectedTask.createdByUser : undefined}
-                comments={selectedTask ? selectedTask.comments : []}
-                taskId={editingTaskId || undefined}
-                onAddComment={async (text) => { if (!editingTaskId || !user?.id) return; await tasksApi.addComment(editingTaskId, { authorId: user.id, text }); setRefreshKey(k => k + 1); }}
-                isAddingComment={false}
-                commentError={null}
+                currentUser={user}
+                projectId={project.id}
                 assignableUsers={assignableUsers}
                 isLoadingAssignableUsers={isLoadingAssignableUsers}
                 assignableUsersError={null}
-                currentUser={user}
                 projects={[project]}
-                isLoadingProjects={false}
-                projectsError={null}
                 categories={categories}
                 isLoadingCategories={isLoadingCategories}
-                categoriesError={null}
-                hideProjectField={true}
+                onSubTaskCreated={loadMainTasks}
             />
+
+            {selectedMainTask && (
+                <EditMainTaskDialog
+                    open={editMainTaskOpen}
+                    onOpenChange={setEditMainTaskOpen}
+                    form={mainTaskForm}
+                    onInputChange={(e) => {
+                        const { name, value } = e.target;
+                        setMainTaskForm(prev => ({ ...prev, [name]: value }));
+                    }}
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                    }}
+                    onDeleteClick={async () => {
+                        if (!confirm('Delete this main task and all its subtasks?')) return;
+                        try {
+                            await mainTasksApi.deleteMainTask(selectedMainTask.id);
+                            setEditMainTaskOpen(false);
+                            loadMainTasks();
+                        } catch (err) {
+                            console.error('Failed to delete main task:', err);
+                        }
+                    }}
+                    currentUser={user}
+                    mainTaskId={selectedMainTask.id}
+                    createdAt={selectedMainTask.createdAt}
+                    subTaskIds={selectedMainTask.subTaskIds}
+                    projectId={project.id}
+                    onSubTaskClick={(subTask) => {
+                        console.log('SubTask clicked:', subTask);
+                    }}
+                    assignableUsers={assignableUsers}
+                    isLoadingAssignableUsers={isLoadingAssignableUsers}
+                    assignableUsersError={null}
+                    projects={[project]}
+                    categories={categories}
+                    isLoadingCategories={isLoadingCategories}
+                    onSubTaskCreated={() => {
+                        loadMainTasks();
+                        if (activeTab === 'subTasks') loadSubTasks();
+                    }}
+                />
+            )}
+
+            {selectedSubTask && (
+                <EditTaskDialog
+                    open={editSubTaskOpen}
+                    onOpenChange={setEditSubTaskOpen}
+                    form={subTaskForm}
+                    onInputChange={(e) => {
+                        const { name, value } = e.target;
+                        setSubTaskForm(prev => ({ ...prev, [name]: value }));
+                    }}
+                    onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!selectedSubTask?.id) return;
+                        try {
+                            await subTasksApi.updateSubTask(selectedSubTask.id, {
+                                title: subTaskForm.title,
+                                description: subTaskForm.description,
+                                priority: subTaskForm.priority,
+                                projectId: subTaskForm.projectId,
+                                mainTaskId: selectedSubTask.mainTaskId,
+                                category: subTaskForm.category,
+                                categoryId: subTaskForm.categoryId,
+                                createdBy: subTaskForm.createdBy,
+                                assignedTo: subTaskForm.assignedTo,
+                                startDate: subTaskForm.startDate,
+                                endDate: subTaskForm.endDate,
+                            });
+                            setEditSubTaskOpen(false);
+                            loadSubTasks();
+                        } catch (err) {
+                            console.error('Failed to update subtask:', err);
+                        }
+                    }}
+                    onDeleteClick={async () => {
+                        if (!selectedSubTask?.id) return;
+                        if (!confirm('Delete this subtask?')) return;
+                        try {
+                            await subTasksApi.deleteSubTask(selectedSubTask.id);
+                            setEditSubTaskOpen(false);
+                            loadSubTasks();
+                        } catch (err) {
+                            console.error('Failed to delete subtask:', err);
+                        }
+                    }}
+                    assignableUsers={assignableUsers}
+                    isLoadingAssignableUsers={isLoadingAssignableUsers}
+                    projects={[project]}
+                    currentUser={user}
+                    categories={categories}
+                    isLoadingCategories={isLoadingCategories}
+                    taskId={selectedSubTask.id}
+                    comments={selectedSubTask.comments?.map(c => ({
+                        authorId: c.authorId,
+                        content: c.content,
+                        createdAt: c.createdAt
+                    })) || []}
+                    onAddComment={async (text: string) => {
+                        if (!selectedSubTask?.id || !user?.id) return;
+                        try {
+                            await subTasksApi.addComment(selectedSubTask.id, {
+                                authorId: user.id,
+                                text: text
+                            });
+                            const updated = await subTasksApi.getSubTaskById(selectedSubTask.id);
+                            setSelectedSubTask(updated);
+                            loadSubTasks();
+                        } catch (err) {
+                            console.error('Failed to add comment:', err);
+                            throw err;
+                        }
+                    }}
+                    onCategoryChange={async (categoryId: string) => {
+                        if (!selectedSubTask?.id) return;
+                        try {
+                            await subTasksApi.patchSubTask(selectedSubTask.id, { categoryId });
+                            const category = categories.find(c => c.id === categoryId);
+                            setSubTaskForm(prev => ({
+                                ...prev,
+                                categoryId: categoryId,
+                                category: category?.categoryName || ''
+                            }));
+                            loadSubTasks();
+                        } catch (err) {
+                            console.error('Failed to change category:', err);
+                        }
+                    }}
+                />
+            )}
         </Card>
     );
 }

@@ -1,4 +1,4 @@
-import { Card, tokens } from '@fluentui/react-components';
+import { Card, tokens, mergeClasses } from '@fluentui/react-components';
 import { useParams } from 'react-router-dom';
 import KanbanBoard from '../../components/kanban/KanbanBoard';
 import { projectsApi } from '../../components/apis/projects';
@@ -29,14 +29,16 @@ export default function KanbanPage() {
     }, [decodedName]);
 
     return (
-        <Card className={`${styles.artifCard} ${styles.layoutPadding} ${styles.flexColFit} ${styles.gap}`}>
+        <Card className={mergeClasses(styles.artifCard, styles.layoutPadding, styles.flexColFill, styles.hFull)} style={{ minHeight: '70vh' }}>
             {projectError && (
                 <div style={{ color: tokens.colorPaletteRedForeground3 }}>{projectError}</div>
             )}
             {loadingProject ? (
                 <div style={{ color: tokens.colorNeutralForeground3 }}>Resolving project…</div>
             ) : (
-                <KanbanBoard projectId={projectId} />
+                <div className={mergeClasses(styles.flexColFill)} style={{ overflow: 'hidden' }}>
+                    <KanbanBoard projectId={projectId} />
+                </div>
             )}
         </Card>
     );
