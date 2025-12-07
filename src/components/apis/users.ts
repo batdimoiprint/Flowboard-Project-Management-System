@@ -1,6 +1,7 @@
 import axiosInstance from './axiosInstance';
 import type { User } from './auth';
 
+export type { User };
 export type UserUpdateRequest = Partial<Omit<User, 'id' | 'createdAt'>> & {
     password?: string;
 };

@@ -16,7 +16,8 @@ export interface CreateTaskData {
 }
 
 export interface TaskResponse {
-    _id: string;
+    id: string;
+    _id?: string; // Keep for backward compatibility
     projectId?: string;
     category?: string; // API uses 'category' instead of 'categoryId'
     categoryId?: string; // Keep for backward compatibility
@@ -168,9 +169,13 @@ export const tasksApi = {
      * Backend path: PATCH /api/tasks/{taskId}/category
      */
     patchTaskCategory: async (taskId: string, categoryId: string): Promise<{ message: string; categoryId: string; categoryName: string }> => {
+        const payload = {
+            categoryId: categoryId,
+            category: categoryId, // Send both variants for backend compatibility
+        };
         const response = await axiosInstance.patch<{ message: string; categoryId: string; categoryName: string }>(
             `/api/tasks/${taskId}/category`,
-            { categoryId }
+            payload
         );
         return response.data;
     },

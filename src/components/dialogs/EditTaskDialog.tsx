@@ -229,7 +229,7 @@ export default function EditTaskDialog({
                                     onKeyDown={handleTitleKeyDown}
                                     ref={inputRef}
                                     size="large"
-                                    style={{ fontWeight: 600, fontSize: 22, padding: 0, height: 40 }}
+                                    style={{ fontWeight: 600, fontSize: 22, padding: 0, height: 40, width: '100%' }}
                                 />
                             ) : (
                                 <DialogTitle
