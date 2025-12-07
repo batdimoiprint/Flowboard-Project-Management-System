@@ -20,7 +20,7 @@ import {
   Dropdown,
   Option,
 } from '@fluentui/react-components';
-import { AddCircle20Regular, ChevronDown12Regular } from '@fluentui/react-icons';
+import { AddCircle20Regular } from '@fluentui/react-icons';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { projectsApi, type Project } from '../../components/apis/projects';
 import { usersApi } from '../../components/apis/users';
@@ -411,7 +411,7 @@ export default function ProjectPage() {
                       {/* Permission access not shown */}
                       <TableCell>
                         <div className={styles.personaRow} style={{ gap: tokens.spacingHorizontalXXS }}>
-                          <ChevronDown12Regular />
+
                           <span>{formatDate(member.joinedAt)}</span>
                         </div>
                       </TableCell>

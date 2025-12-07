@@ -401,6 +401,26 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
         }
     };
 
+    const handleDeleteCategory = async (categoryId: string) => {
+        if (!projectId) {
+            setError('No project selected');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            await categoriesApi.deleteCategory(categoryId);
+
+            // Remove column from state
+            setColumns(cols => cols.filter(col => col.id !== categoryId));
+        } catch (e: unknown) {
+            const msg = (e as Error)?.message || 'Failed to delete category';
+            setError(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleTaskClick = async (task: Task) => {
         console.log('Task clicked:', task);
         setSelectedTask(task);
@@ -480,6 +500,7 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                             column={column}
                             onAddTask={handleAddTask}
                             onTaskClick={handleTaskClick}
+                            onDeleteColumn={handleDeleteCategory}
                         />
                     ))}
                     <div className={styles.kanbanAddColumn}>

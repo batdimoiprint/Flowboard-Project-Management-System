@@ -28,11 +28,8 @@ export default function KanbanPage() {
             .finally(() => setLoadingProject(false));
     }, [decodedName]);
 
-    const title = decodedName || 'Project';
-
     return (
         <Card className={`${styles.artifCard} ${styles.layoutPadding} ${styles.flexColFit} ${styles.gap}`}>
-            <h1 className={styles.pageTitle}>{title} - Kanban</h1>
             {projectError && (
                 <div style={{ color: tokens.colorPaletteRedForeground3 }}>{projectError}</div>
             )}
