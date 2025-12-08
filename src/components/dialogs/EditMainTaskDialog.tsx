@@ -6,7 +6,6 @@ import {
     DialogTitle,
     Field,
     Input,
-    Textarea,
     tokens,
     Tooltip,
     Text,
@@ -35,7 +34,6 @@ export interface EditMainTaskDialogProps {
         description: string;
     };
     onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-    onSubmit: (e: React.FormEvent) => void;
     onDeleteClick?: () => void;
     currentUser?: User | null;
     createdByUser?: User | null;
@@ -43,7 +41,6 @@ export interface EditMainTaskDialogProps {
     submitError?: string | null;
     mainTaskId?: string;
     createdAt?: string;
-    subTaskIds?: string[];
     projectId?: string;
     onAddSubTask?: () => void;
     onSubTaskClick?: (subTask: SubTaskResponse) => void;
@@ -61,7 +58,6 @@ export default function EditMainTaskDialog({
     onOpenChange,
     form,
     onInputChange,
-    onSubmit,
     onDeleteClick,
     isSubmitting = false,
     submitError,
@@ -69,7 +65,6 @@ export default function EditMainTaskDialog({
     createdByUser = null,
     mainTaskId,
     createdAt,
-    subTaskIds = [],
     projectId,
     onSubTaskClick,
     assignableUsers = [],

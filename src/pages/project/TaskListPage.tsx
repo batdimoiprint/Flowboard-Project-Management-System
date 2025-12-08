@@ -479,9 +479,6 @@ export default function TaskListPage() {
                         const { name, value } = e.target;
                         setMainTaskForm(prev => ({ ...prev, [name]: value }));
                     }}
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                    }}
                     onDeleteClick={async () => {
                         if (!confirm('Delete this main task and all its subtasks?')) return;
                         try {
@@ -495,7 +492,6 @@ export default function TaskListPage() {
                     currentUser={user}
                     mainTaskId={selectedMainTask.id}
                     createdAt={selectedMainTask.createdAt}
-                    subTaskIds={selectedMainTask.subTaskIds}
                     projectId={project.id}
                     onSubTaskClick={(subTask) => {
                         console.log('SubTask clicked:', subTask);
