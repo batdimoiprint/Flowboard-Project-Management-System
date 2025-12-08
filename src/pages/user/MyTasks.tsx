@@ -1,15 +1,14 @@
-import { Card } from '@fluentui/react-components'
+import { Card, mergeClasses } from '@fluentui/react-components'
 import MyTasksDataGrid from '../../components/tables/MyTasksDataGrid'
 import { mainLayoutStyles } from '../../components/styles/Styles'
 import TaskDialog from '../../components/dialogs/TaskDialog'
 import { useUser } from '../../hooks/useUser'
-import { tasksApi } from '../../components/apis/tasks'
+import { subTasksApi, type UpdateSubTaskData } from '../../components/apis/subtasks'
 import { projectsApi, type Project } from '../../components/apis/projects'
 import { categoriesApi, type Category } from '../../components/apis/categories'
 import { usersApi } from '../../components/apis/users'
 import type { User } from '../../components/apis/auth'
 import type { Task } from '../../types/MyTasksTypes'
-import type { CreateTaskData } from '../../components/apis/tasks'
 import { useState, useRef, useEffect } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 
@@ -192,7 +191,9 @@ export default function MyTasks() {
         } finally {
             setIsLoadingAssignableUsers(false);
         }
-    } async function handleFieldUpdate(fieldName: string, value: unknown) {
+    }
+
+    async function handleFieldUpdate(fieldName: string, value: unknown) {
         if (!editingTaskId) return;
 
         // If the new value is empty, skip calling the backend to avoid 'No valid updatable fields provided.'
@@ -200,24 +201,32 @@ export default function MyTasks() {
 
         try {
             // Build a safe typed payload for the patch API
-            // Build a typed payload object safely (avoid using `any`)
-            const payloadRec: Record<string, unknown> = {};
-            if (typeof value === 'string') {
-                payloadRec[fieldName] = value;
-            } else if (Array.isArray(value)) {
-                payloadRec[fieldName] = value as string[];
-            } else if (typeof value === 'number' || typeof value === 'boolean') {
-                payloadRec[fieldName] = value;
+            const updates: Partial<UpdateSubTaskData> = {};
+
+            if (fieldName === 'title' && typeof value === 'string') {
+                updates.title = value;
+            } else if (fieldName === 'description' && typeof value === 'string') {
+                updates.description = value;
+            } else if (fieldName === 'priority' && typeof value === 'string') {
+                updates.priority = value;
+            } else if (fieldName === 'categoryId' && typeof value === 'string') {
+                updates.categoryId = value;
+            } else if (fieldName === 'assignedTo' && Array.isArray(value)) {
+                updates.assignedTo = value as string[];
+            } else if (fieldName === 'startDate' && typeof value === 'string') {
+                updates.startDate = value;
+            } else if (fieldName === 'endDate' && typeof value === 'string') {
+                updates.endDate = value;
             } else {
-                // unknown or unsupported type — skip
+                // unsupported field — skip
                 return;
             }
 
-            await tasksApi.patchTask(editingTaskId, payloadRec as Partial<CreateTaskData>);
+            await subTasksApi.patchSubTask(editingTaskId, updates);
             // refresh data grid
             setRefreshKey(k => k + 1);
         } catch (err) {
-            console.error('Failed to patch task:', err);
+            console.error('Failed to patch subtask:', err);
         }
     }
 
@@ -252,19 +261,18 @@ export default function MyTasks() {
         setSubmitError(null);
         try {
             const taskData = {
-                category: form.category,
-                projectId: form.projectId,
-                assignedTo: form.assignedTo.length > 0 ? form.assignedTo : (user?.id ? [user.id] : []),
                 title: form.title,
+                projectId: form.projectId,
                 description: form.description,
                 priority: form.priority,
-                status: form.status,
+                category: form.category,
+                categoryId: form.categoryId,
+                createdBy: user?.id || '',
+                assignedTo: form.assignedTo.length > 0 ? form.assignedTo : (user?.id ? [user.id] : []),
                 startDate: form.startDate,
                 endDate: form.endDate,
-                createdBy: user?.id || '',
-                comments: form.comments,
             };
-            await tasksApi.createTask(taskData);
+            await subTasksApi.createSubTask(taskData);
             setOpen(false);
             setRefreshKey(k => k + 1);
         } catch (error: unknown) {
@@ -280,18 +288,17 @@ export default function MyTasks() {
         setIsSubmitting(true);
         setSubmitError(null);
         try {
-            await tasksApi.updateTask(editingTaskId, {
-                category: form.category,
-                projectId: form.projectId,
-                assignedTo: form.assignedTo,
+            await subTasksApi.updateSubTask(editingTaskId, {
                 title: form.title,
                 description: form.description,
                 priority: form.priority,
-                status: form.status,
+                projectId: form.projectId,
+                category: form.category,
+                categoryId: form.categoryId,
+                createdBy: form.createdBy,
+                assignedTo: form.assignedTo,
                 startDate: form.startDate,
                 endDate: form.endDate,
-                createdBy: form.createdBy,
-                comments: form.comments,
             });
             setOpen(false);
             setEditingTaskId(null);
@@ -357,7 +364,7 @@ export default function MyTasks() {
         setIsSubmitting(true);
         setSubmitError(null);
         try {
-            await tasksApi.deleteTask(editingTaskId);
+            await subTasksApi.deleteSubTask(editingTaskId);
             setOpen(false);
             setEditingTaskId(null);
             setDialogMode('add');
@@ -374,7 +381,7 @@ export default function MyTasks() {
         setIsAddingComment(true);
         setCommentError(null);
         try {
-            await tasksApi.addComment(editingTaskId, { authorId: user.id, text });
+            await subTasksApi.addComment(editingTaskId, { authorId: user.id, text });
             setRefreshKey(k => k + 1);
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to add comment';
@@ -388,12 +395,14 @@ export default function MyTasks() {
         if (!editingTaskId) return;
         setIsChangingCategory(true);
         try {
-            const result = await tasksApi.patchTaskCategory(editingTaskId, categoryId);
+            await subTasksApi.patchSubTask(editingTaskId, { categoryId });
+            // Find the category name from the categories list
+            const category = categories.find(c => c.id === categoryId);
             // Update the form with new category info
             setForm(prev => ({
                 ...prev,
-                categoryId: result.categoryId,
-                category: result.categoryName
+                categoryId: categoryId,
+                category: category?.categoryName || ''
             }));
             setRefreshKey(k => k + 1);
         } catch (err: unknown) {
@@ -416,9 +425,11 @@ export default function MyTasks() {
 
     return (
         <>
-            <Card className={s.componentBorder}>
-                <MyTasksDataGrid onRowClick={handleRowClick} onAddClick={handleAddClick} refreshSignal={refreshKey} />
-            </Card>
+            <div className={mergeClasses(s.flexColFill, s.hFull, s.wFull)} style={{ minHeight: '70vh' }}>
+                <Card className={mergeClasses(s.componentBorder, s.flexColFill, s.hFull, s.wFull)} style={{ height: '100%', maxHeight: '100%' }}>
+                    <MyTasksDataGrid onRowClick={handleRowClick} onAddClick={handleAddClick} refreshSignal={refreshKey} />
+                </Card>
+            </div>
 
             <TaskDialog
                 open={open}

@@ -8,6 +8,7 @@ import { usersApi } from '../../components/apis/users';
 import type { UserUpdateRequest } from '../../components/apis/users';
 import { mainLayoutStyles } from '../../components/styles/Styles';
 import { mergeClasses } from '@fluentui/react-components';
+import imageCompression from 'browser-image-compression';
 import {
   philippineAddressApi,
   type Region,
@@ -351,8 +352,8 @@ export default function MyProfile() {
     }
   }, [userCtx?.user, reset]);
 
-  // Handle image file selection
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle image file selection with compression
+  const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     setImageError(null);
 
@@ -365,24 +366,39 @@ export default function MyProfile() {
       return;
     }
 
-    // Validate file size (5MB max)
+    // Validate file size (5MB max before compression)
     const maxSizeBytes = 5 * 1024 * 1024;
     if (file.size > maxSizeBytes) {
       setImageError('Image size must be less than 5MB');
       return;
     }
 
-    // Read and convert to base64
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const base64 = e.target?.result as string;
-      setImagePreview(base64);
-      setValue('userIMG', base64);
-    };
-    reader.onerror = () => {
-      setImageError('Failed to read image file');
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Compress image to 72x72px with high quality
+      const options = {
+        maxSizeMB: 0.1,
+        maxWidthOrHeight: 256,
+        useWebWorker: true,
+        fileType: 'image/webp',
+      };
+
+      const compressedFile = await imageCompression(file, options);
+
+      // Read and convert to base64
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        setImagePreview(base64);
+        setValue('userIMG', base64);
+      };
+      reader.onerror = () => {
+        setImageError('Failed to read image file');
+      };
+      reader.readAsDataURL(compressedFile);
+    } catch (error) {
+      console.error('Image compression failed:', error);
+      setImageError('Failed to process image');
+    }
   };
 
   // Handle image removal
@@ -638,7 +654,7 @@ export default function MyProfile() {
   const username = userCtx?.user?.userName || 'User';
 
   return (
-    <Card className={mergeClasses(s.flexColFill, s.layoutPadding, s.gap)}>
+    <Card className={mergeClasses(s.flexColFill, s.layoutPadding, s.gap, s.componentBorder)}>
       {/* Title Row */}
 
       <h1 className={mergeClasses(s.brand)}>My Profile</h1>

@@ -69,6 +69,11 @@ export const projectsApi = {
         return response.data;
     },
 
+    getProjectsAsMember: async (): Promise<Project[]> => {
+        const response = await axiosInstance.get<Project[]>('/api/projects/member/all');
+        return response.data;
+    },
+
     createProject: async (projectData: CreateProjectRequest): Promise<Project> => {
         const response = await axiosInstance.post<Project>('/api/projects', projectData);
         return response.data;

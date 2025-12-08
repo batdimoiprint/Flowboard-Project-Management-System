@@ -19,8 +19,11 @@ import {
   DialogContent,
   Dropdown,
   Option,
+  Input,
+  Textarea,
+  mergeClasses,
 } from '@fluentui/react-components';
-import { AddCircle20Regular, ChevronDown12Regular } from '@fluentui/react-icons';
+import { AddCircle20Regular, FolderOpen24Regular, Edit20Regular, Checkmark20Regular, Dismiss20Regular } from '@fluentui/react-icons';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { projectsApi, type Project } from '../../components/apis/projects';
 import { usersApi } from '../../components/apis/users';
@@ -74,30 +77,19 @@ const formatDate = (iso?: string) => {
 // Visual badges removed - not displayed in the members table
 
 function ProjectGlyph() {
-  const tileStyle = {
-    width: 18,
-    height: 18,
-    borderRadius: tokens.borderRadiusMedium,
-    backgroundColor: '#174580',
-  } as const;
-
   return (
     <div
       style={{
         width: 90,
         height: 90,
         borderRadius: tokens.borderRadiusXLarge,
-        backgroundColor: '#E5EEFF',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: 10,
-        padding: 10,
-        boxSizing: 'border-box',
+        backgroundColor: tokens.colorBrandBackground2,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
-      {Array.from({ length: 6 }).map((_, index) => (
-        <div key={index} style={tileStyle} />
-      ))}
+      <FolderOpen24Regular style={{ fontSize: 48, color: tokens.colorBrandForeground1 }} />
     </div>
   );
 }
@@ -121,6 +113,12 @@ export default function ProjectPage() {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isEditingProject, setIsEditingProject] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [editedDescription, setEditedDescription] = useState('');
+
+  const refreshProject = () => setRefreshTrigger(prev => prev + 1);
 
   useEffect(() => {
     let active = true;
@@ -220,7 +218,7 @@ export default function ProjectPage() {
     return () => {
       active = false;
     };
-  }, [normalizedSlug]);
+  }, [normalizedSlug, refreshTrigger]);
 
   const heading = useMemo(() => {
     if (project?.projectName) {
@@ -248,8 +246,7 @@ export default function ProjectPage() {
       await projectsApi.addProjectMembers(project.id, [selectedUserId]);
       setInviteDialogOpen(false);
       setSelectedUserId('');
-      // Refetch project data
-      window.location.reload();
+      refreshProject();
     } catch (err) {
       console.error('Failed to invite member:', err);
       alert('Failed to invite member');
@@ -264,8 +261,7 @@ export default function ProjectPage() {
     setActionLoading(true);
     try {
       await projectsApi.removeProjectMembers(project.id, memberId);
-      // Refetch project data
-      window.location.reload();
+      refreshProject();
     } catch (err) {
       console.error('Failed to remove member:', err);
       alert('Failed to remove member');
@@ -308,6 +304,38 @@ export default function ProjectPage() {
     }
   };
 
+  const handleStartEdit = () => {
+    setEditedName(project?.projectName || '');
+    setEditedDescription(project?.description || '');
+    setIsEditingProject(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingProject(false);
+    setEditedName('');
+    setEditedDescription('');
+  };
+
+  const handleSaveProject = async () => {
+    if (!project?.id || !editedName.trim()) return;
+    setActionLoading(true);
+    try {
+      await projectsApi.updateProject(project.id, {
+        projectName: editedName.trim(),
+        description: editedDescription.trim(),
+        teamMembers: project.teamMembers,
+      });
+      setIsEditingProject(false);
+      refreshProject();
+      outlet?.bumpProjects?.();
+    } catch (err) {
+      console.error('Failed to update project:', err);
+      alert('Failed to update project');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const openInviteDialog = async () => {
     try {
       const users = await usersApi.getAllUsers();
@@ -326,7 +354,7 @@ export default function ProjectPage() {
 
   return (
     <Card
-      className={`${styles.artifCard} ${styles.layoutPadding} ${styles.wFull}`}
+      className={mergeClasses(styles.artifCard, styles.layoutPadding, styles.wFull, styles.hFull, styles.componentBorder)}
       style={{ minHeight: 'calc(100vh - 160px)' }}
     >
       {loading && (
@@ -341,23 +369,44 @@ export default function ProjectPage() {
 
       {!loading && !error && (
         <>
-          <div className={`${styles.spaceBetweenRow} ${styles.wFull}`} style={{ gap: tokens.spacingHorizontalXXL, flexWrap: 'wrap' }}>
-            <div className={`${styles.personaRow}`} style={{ flex: 1, gap: tokens.spacingHorizontalL }}>
+          <div className={mergeClasses(styles.spaceBetweenRow, styles.wFull)} style={{ gap: tokens.spacingHorizontalXXL, flexWrap: 'wrap' }}>
+            <div className={styles.personaRow} style={{ flex: 1, gap: tokens.spacingHorizontalL }}>
               <ProjectGlyph />
-              <div>
-                <h1 className={styles.pageTitle}>
-                  {heading}
-                </h1>
-                <p
-                  style={{
-                    marginTop: tokens.spacingVerticalXXS,
-                    marginBottom: 0,
-                    color: tokens.colorNeutralForeground3,
-                    fontSize: tokens.fontSizeBase300,
-                  }}
-                >
-                  {subtitle}
-                </p>
+              <div style={{ flex: 1 }}>
+                {isEditingProject ? (
+                  <>
+                    <Input
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      placeholder="Project name"
+                      size="large"
+                      style={{ marginBottom: tokens.spacingVerticalS, fontSize: tokens.fontSizeHero700, fontWeight: 600 }}
+                    />
+                    <Textarea
+                      value={editedDescription}
+                      onChange={(e) => setEditedDescription(e.target.value)}
+                      placeholder="Project description"
+                      resize="vertical"
+                      style={{ marginBottom: tokens.spacingVerticalS }}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <h1 className={styles.pageTitle}>
+                      {heading}
+                    </h1>
+                    <p
+                      style={{
+                        marginTop: tokens.spacingVerticalXXS,
+                        marginBottom: 0,
+                        color: tokens.colorNeutralForeground3,
+                        fontSize: tokens.fontSizeBase300,
+                      }}
+                    >
+                      {subtitle}
+                    </p>
+                  </>
+                )}
                 {manager && (
                   <div style={{ marginTop: tokens.spacingVerticalS }}>
                     <div className={styles.personaRow} style={{ gap: tokens.spacingHorizontalS }}>
@@ -369,11 +418,28 @@ export default function ProjectPage() {
               </div>
             </div>
             <div className={styles.personaRow} style={{ gap: tokens.spacingHorizontalS }}>
-              {isOwner ? (
-                <Button appearance="primary" size="large" onClick={() => setDeleteDialogOpen(true)}>
-                  Delete Project
-                </Button>
-              ) : (
+              {isOwner && (
+                isEditingProject ? (
+                  <>
+                    <Button appearance="primary" size="large" icon={<Checkmark20Regular />} onClick={handleSaveProject} disabled={actionLoading || !editedName.trim()}>
+                      {actionLoading ? 'Saving...' : 'Save'}
+                    </Button>
+                    <Button appearance="secondary" size="large" icon={<Dismiss20Regular />} onClick={handleCancelEdit} disabled={actionLoading}>
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button appearance="secondary" size="large" icon={<Edit20Regular />} onClick={handleStartEdit}>
+                      Edit Project
+                    </Button>
+                    <Button appearance="primary" size="large" onClick={() => setDeleteDialogOpen(true)}>
+                      Delete Project
+                    </Button>
+                  </>
+                )
+              )}
+              {!isOwner && (
                 <Button appearance="primary" size="large" onClick={handleLeaveProject} disabled={actionLoading}>
                   {actionLoading ? 'Leaving...' : 'Leave Team'}
                 </Button>
@@ -411,7 +477,7 @@ export default function ProjectPage() {
                       {/* Permission access not shown */}
                       <TableCell>
                         <div className={styles.personaRow} style={{ gap: tokens.spacingHorizontalXXS }}>
-                          <ChevronDown12Regular />
+
                           <span>{formatDate(member.joinedAt)}</span>
                         </div>
                       </TableCell>

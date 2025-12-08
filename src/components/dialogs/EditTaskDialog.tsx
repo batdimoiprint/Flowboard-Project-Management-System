@@ -229,7 +229,7 @@ export default function EditTaskDialog({
                                     onKeyDown={handleTitleKeyDown}
                                     ref={inputRef}
                                     size="large"
-                                    style={{ fontWeight: 600, fontSize: 22, padding: 0, height: 40 }}
+                                    style={{ fontWeight: 600, fontSize: 22, padding: 0, height: 40, width: '100%' }}
                                 />
                             ) : (
                                 <DialogTitle
@@ -572,31 +572,7 @@ export default function EditTaskDialog({
                                 </div>
                             </div>
                         )}
-                        {/* If no comments, still show add comment input */}
-                        {(!comments || comments.length === 0) && (
-                            <div className={mergeClasses(styles.flexRowFill, styles.spaceBetween, styles.layoutPadding)}>
-                                <Input
-                                    placeholder="Add a comment..."
-                                    value={newComment}
-                                    onChange={(e) => setNewComment(e.target.value)}
-                                />
-                                {commentError && (
-                                    <div style={{ color: 'red', fontSize: 12, marginBottom: 8 }}>
-                                        {commentError}
-                                    </div>
-                                )}
-                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                    <Button
-                                        appearance="primary"
-                                        size="small"
-                                        onClick={handleAddCommentLocal}
-                                        disabled={!newComment.trim() || isAddingComment}
-                                    >
-                                        {isAddingComment ? 'Adding...' : 'Add Comment'}
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
+
                     </Field>
                     {/* Error message */}
                     {submitError && (

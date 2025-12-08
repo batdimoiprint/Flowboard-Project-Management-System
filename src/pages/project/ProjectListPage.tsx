@@ -64,10 +64,10 @@ export default function ProjectListPage() {
     return (
         <Card className={mergeClasses(styles.artifCard, styles.componentBorder, styles.wFull, styles.hFull, styles.layoutPadding)}>
             <div className={styles.sectionHeader}>
-                <div className={`${styles.personaRow}`}>
+                <div className={styles.personaRow}>
                     <Label>Projects List</Label>
                 </div>
-                <div className={`${styles.actionsRight} ${styles.alignCenter}`}>
+                <div className={mergeClasses(styles.actionsRight, styles.alignCenter)}>
                     <Button appearance="primary" onClick={() => navigate('/home/project/create')}>
                         Create Project
                     </Button>

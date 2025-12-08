@@ -1,177 +1,130 @@
-import axiosInstance from './axiosInstance';
+/*
+ * DEPRECATED: This file has been refactored into:
+ * - maintasks.ts (handles MainTask operations at /api/maintasks)
+ * - subtasks.ts (handles SubTask operations at /api/subtasks)
+ *
+ * The old "Task" entity is now "SubTask" (detailed task with all properties)
+ * The old "DetailedTask" entity is now "MainTask" (parent task with basic info)
+ *
+ * This file now re-exports the new APIs for backward compatibility.
+ */
 
-export interface CreateTaskData {
-    category?: string; // API uses 'category'
-    categoryId?: string; // Keep for backward compatibility
-    projectId?: string; // Add projectId for tasks
-    assignedTo: string[];
-    title: string;
-    description: string;
-    priority: string;
-    status: string;
-    startDate: string;
-    endDate: string;
-    createdBy: string;
-    comments?: string; // Optional comment text from form
+import { subTasksApi, type SubTaskResponse, type CreateSubTaskData } from './subtasks';
+
+// Re-export types with backward-compatible names
+export type CreateTaskData = CreateSubTaskData;
+export type TaskResponse = SubTaskResponse;
+
+// Legacy interface for backward compatibility
+export interface LegacyTaskResponse extends SubTaskResponse {
+    _id?: string; // Keep for backward compatibility
+    status?: string; // Legacy field (not in SubTask model)
 }
 
-export interface TaskResponse {
-    _id: string;
-    projectId?: string;
-    category?: string; // API uses 'category' instead of 'categoryId'
-    categoryId?: string; // Keep for backward compatibility
-    assignedTo: string[];
-    title: string;
-    description: string;
-    priority: string;
-    status: string;
-    startDate: string;
-    endDate: string;
-    createdBy: string;
-    createdAt?: string;
-    comments: Array<{
-        authorId: string;
-        text?: string;
-        content?: string | null;
-        createdAt: string;
-    }>;
-}
-
+/**
+ * Legacy tasksApi - now redirects to SubTasks API
+ * SubTasks are the new "Tasks" with detailed information
+ */
 export const tasksApi = {
+    /**
+     * Create a new task (now SubTask)
+     * Backend path: POST /api/subtasks
+     */
     createTask: async (taskData: CreateTaskData): Promise<TaskResponse> => {
-        // Transform the data to match API expectations
-        const payload = {
-            ...taskData,
-            projectId: taskData.projectId || undefined,
-            // Use 'category' for API, fallback to categoryId
-            category: taskData.category || taskData.categoryId,
-            categoryId: undefined, // Remove categoryId from payload
-            status: taskData.status.toLowerCase().replace(' ', ' '), // e.g., "To Do" -> "to do"
-            comments: taskData.comments ? [{
-                authorId: taskData.createdBy,
-                content: taskData.comments,
-                createdAt: new Date().toISOString(),
-            }] : [{
-                authorId: taskData.createdBy,
-                content: "Initial task created",
-                createdAt: new Date().toISOString(),
-            }],
-        };
-
-        const response = await axiosInstance.post<TaskResponse>('/api/tasks', payload);
-        return response.data;
+        return subTasksApi.createSubTask(taskData);
     },
 
+    /**
+     * Get all tasks (now SubTasks)
+     * Backend path: GET /api/subtasks
+     */
     getTasks: async (): Promise<TaskResponse[]> => {
-        const response = await axiosInstance.get<TaskResponse[]>('/api/tasks');
-        return response.data;
+        return subTasksApi.getSubTasks();
     },
 
     /**
      * Fetch all tasks for a project using query param projectId
-     * Backend path: GET /api/tasks?projectId={projectId}
+     * Backend path: GET /api/subtasks?projectId={projectId}
      */
     getTasksByProject: async (projectId: string): Promise<TaskResponse[]> => {
-        const response = await axiosInstance.get<TaskResponse[]>('/api/tasks', { params: { projectId } });
-        return response.data;
+        return subTasksApi.getSubTasks(projectId);
     },
 
     /**
      * Fetch tasks for the currently authenticated user (shortcut)
-     * Backend path: GET /api/tasks/me
+     * Backend path: GET /api/subtasks/me
      */
     getMyTasks: async (): Promise<TaskResponse[]> => {
-        const response = await axiosInstance.get<TaskResponse[]>('/api/tasks/me');
-        return response.data;
+        return subTasksApi.getMySubTasks();
     },
 
     /**
      * Fetch tasks for a specific user (createdBy OR assignedTo)
-     * Backend path: GET /api/tasks/user/{userId}
+     * Backend path: GET /api/subtasks/user/{userId}
      */
     getTasksByUser: async (userId: string): Promise<TaskResponse[]> => {
-        const response = await axiosInstance.get<TaskResponse[]>(`/api/tasks/user/${userId}`);
-        return response.data;
-    },
-
-    getTaskById: async (taskId: string): Promise<TaskResponse> => {
-        const response = await axiosInstance.get<TaskResponse>(`/api/tasks/${taskId}`);
-        return response.data;
-    },
-
-    updateTask: async (taskId: string, taskData: Partial<CreateTaskData>): Promise<TaskResponse> => {
-        const payload = {
-            ...taskData,
-            projectId: taskData.projectId || undefined,
-            // Use 'category' for API, fallback to categoryId
-            category: taskData.category || taskData.categoryId,
-            categoryId: undefined, // Remove categoryId from payload
-            status: taskData.status ? taskData.status.toLowerCase().replace(' ', ' ') : undefined,
-        };
-
-        const response = await axiosInstance.put<TaskResponse>(`/api/tasks/${taskId}`, payload);
-        return response.data;
-    },
-
-    patchTask: async (taskId: string, updates: Partial<CreateTaskData>): Promise<TaskResponse> => {
-        const payload: Partial<{
-            title: string;
-            description: string;
-            priority: string;
-            status: string;
-            category: string;
-            categoryId: string;
-            projectId: string;
-            startDate: string;
-            endDate: string;
-            assignedTo: string[];
-        }> = {};
-
-        // Only include fields that are provided
-        if (updates.title !== undefined) payload.title = updates.title;
-        if (updates.description !== undefined) payload.description = updates.description;
-        if (updates.priority !== undefined && updates.priority !== '') payload.priority = updates.priority;
-        if (updates.status !== undefined && updates.status !== '') payload.status = updates.status.toLowerCase();
-        if (updates.categoryId !== undefined && updates.categoryId !== '') {
-            (payload as Record<string, string>).categoryId = updates.categoryId;
-            payload.category = updates.categoryId; // include non-ID alias too
-        } else if (updates.category !== undefined && updates.category !== '') {
-            payload.category = updates.category;
-            // Include categoryId alias in case backend expects categoryId for partial updates
-            (payload as Record<string, string>).categoryId = updates.category;
-        }
-        if (updates.projectId !== undefined && updates.projectId !== '') payload.projectId = updates.projectId;
-        if (updates.startDate !== undefined) payload.startDate = updates.startDate;
-        if (updates.endDate !== undefined) payload.endDate = updates.endDate;
-        if (updates.assignedTo !== undefined) payload.assignedTo = updates.assignedTo;
-
-        const response = await axiosInstance.patch<TaskResponse>(`/api/tasks/${taskId}`, payload);
-        return response.data;
-    },
-
-    deleteTask: async (taskId: string): Promise<void> => {
-        await axiosInstance.delete(`/api/tasks/${taskId}`);
-    },
-
-    addComment: async (taskId: string, commentData: { authorId: string; text: string }): Promise<TaskResponse> => {
-        const payload = {
-            authorId: commentData.authorId,
-            text: commentData.text,
-            createdAt: new Date().toISOString(),
-        };
-        const response = await axiosInstance.post<TaskResponse>(`/api/tasks/${taskId}/comments`, payload);
-        return response.data;
+        return subTasksApi.getSubTasksByUser(userId);
     },
 
     /**
-     * Update only the category of a task
-     * Backend path: PATCH /api/tasks/{taskId}/category
+     * Get task by ID
+     * Backend path: GET /api/subtasks/{id}
+     */
+    getTaskById: async (taskId: string): Promise<TaskResponse> => {
+        return subTasksApi.getSubTaskById(taskId);
+    },
+
+    /**
+     * Update task (full update)
+     * Backend path: PUT /api/subtasks/{id}
+     */
+    updateTask: async (taskId: string, taskData: Partial<CreateTaskData>): Promise<{ message: string }> => {
+        return subTasksApi.updateSubTask(taskId, taskData);
+    },
+
+    /**
+     * Partial update of a task
+     * Backend path: PATCH /api/subtasks/{id}
+     */
+    patchTask: async (taskId: string, updates: Partial<CreateTaskData>): Promise<{ message: string }> => {
+        return subTasksApi.patchSubTask(taskId, updates);
+    },
+
+    /**
+     * Delete a task
+     * Backend path: DELETE /api/subtasks/{id}
+     */
+    deleteTask: async (taskId: string): Promise<void> => {
+        return subTasksApi.deleteSubTask(taskId);
+    },
+
+    /**
+     * Add comment to a task
+     * Backend path: POST /api/subtasks/{id}/comments
+     */
+    addComment: async (taskId: string, commentData: { authorId: string; text: string }): Promise<{
+        authorId: string;
+        content: string;
+        createdAt: string;
+    }> => {
+        return subTasksApi.addComment(taskId, commentData);
+    },
+
+    /**
+     * DEPRECATED: Update only the category of a task
+     * Use patchTask instead
+     * Backend path: PATCH /api/subtasks/{id}
      */
     patchTaskCategory: async (taskId: string, categoryId: string): Promise<{ message: string; categoryId: string; categoryName: string }> => {
-        const response = await axiosInstance.patch<{ message: string; categoryId: string; categoryName: string }>(
-            `/api/tasks/${taskId}/category`,
-            { categoryId }
-        );
-        return response.data;
+        await subTasksApi.patchSubTask(taskId, { categoryId });
+        return {
+            message: 'Category updated.',
+            categoryId: categoryId,
+            categoryName: categoryId // SubTask doesn't return categoryName separately
+        };
     },
 };
+
+// Re-export the new APIs for direct access
+export { mainTasksApi } from './maintasks';
+export { subTasksApi } from './subtasks';

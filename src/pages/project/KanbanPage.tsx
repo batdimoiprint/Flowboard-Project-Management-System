@@ -1,12 +1,14 @@
-import { Card, tokens } from '@fluentui/react-components';
+import { Card, tokens, mergeClasses } from '@fluentui/react-components';
 import { useParams } from 'react-router-dom';
 import KanbanBoard from '../../components/kanban/KanbanBoard';
 import { projectsApi } from '../../components/apis/projects';
 import type { Project } from '../../components/apis/projects';
 import { useEffect, useState } from 'react';
+import { mainLayoutStyles } from '../../components/styles/Styles';
 
 // Route currently only provides projectName; we look up projectId by name.
 export default function KanbanPage() {
+    const styles = mainLayoutStyles();
     const { projectName } = useParams<{ projectName: string }>();
     const decodedName = projectName ? decodeURIComponent(projectName).replace(/-/g, ' ') : '';
     const [projectId, setProjectId] = useState<string | undefined>(undefined);
@@ -26,16 +28,18 @@ export default function KanbanPage() {
             .finally(() => setLoadingProject(false));
     }, [decodedName]);
 
-    const title = decodedName || 'Project';
-
     return (
-        <Card style={{ padding: tokens.spacingVerticalXXL, display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalM }}>
-            <h1 style={{ margin: 0 }}>{title} - Kanban</h1>
+        <Card className={mergeClasses(styles.artifCard, styles.layoutPadding, styles.flexColFill, styles.hFull, styles.componentBorder)} style={{ minHeight: '70vh' }}>
             {projectError && (
                 <div style={{ color: tokens.colorPaletteRedForeground3 }}>{projectError}</div>
             )}
-            <KanbanBoard projectId={projectId} />
-            {loadingProject && <div style={{ color: tokens.colorNeutralForeground3 }}>Resolving project…</div>}
+            {loadingProject ? (
+                <div style={{ color: tokens.colorNeutralForeground3 }}>Resolving project…</div>
+            ) : (
+                <div className={mergeClasses(styles.flexColFill)} style={{ overflow: 'hidden' }}>
+                    <KanbanBoard projectId={projectId} />
+                </div>
+            )}
         </Card>
     );
 }

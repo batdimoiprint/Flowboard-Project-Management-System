@@ -1,414 +1,591 @@
-import { Button, Input, Spinner, tokens } from '@fluentui/react-components';
-import { useEffect, useState, useMemo } from 'react';
-import KanbanColumn from './KanbanColumn';
-import TaskDialog from '../dialogs/TaskDialog';
-import { projectsApi, type Project } from '../apis/projects';
+import { useEffect, useState } from 'react';
+import {
+    DndContext,
+    DragOverlay,
+    closestCorners,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 import { mainLayoutStyles } from '../styles/Styles';
-import { tasksApi } from '../apis/tasks';
-import type { TaskResponse } from '../apis/tasks';
-import { usersApi } from '../apis/users';
-import type { User } from '../apis/auth';
-import { categoriesApi } from '../apis/categories';
+import KanbanColumn, { type Column } from './KanbanColumn';
+import KanbanCard, { type Task } from './KanbanCard';
 import { useUser } from '../../hooks/useUser';
+import { Button, Input } from '@fluentui/react-components';
+import type { ChangeEvent } from 'react';
+import { categoriesApi, type Category } from '../apis/categories';
+import CreateTaskDialog from '../dialogs/CreateTaskDialog';
+import EditTaskDialog from '../dialogs/EditTaskDialog';
+import CreateMainTaskDialog from '../dialogs/CreateMainTaskDialog';
+import { tasksApi, type TaskResponse, type CreateTaskData } from '../apis/tasks';
+import { mainTasksApi } from '../apis/maintasks';
+import { projectsApi, type ProjectMember, type Project } from '../apis/projects';
+import type { User } from '../apis/auth';
 
-export interface KanbanBoardProps {
-  projectId?: string; // optional for now; if absent, show info message
+interface KanbanBoardProps {
+    projectId?: string;
 }
 
-const UNCATEGORIZED = 'Uncategorized';
-
 export default function KanbanBoard({ projectId }: KanbanBoardProps) {
-  const styles = mainLayoutStyles();
-  const { user: currentUser } = useUser();
-  const [tasks, setTasks] = useState<TaskResponse[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [columns, setColumns] = useState<string[]>([]);
-  const [categoriesMap, setCategoriesMap] = useState<Record<string, string>>({});
-  const [addingColumn, setAddingColumn] = useState(false);
-  const [newColumnName, setNewColumnName] = useState('');
-  const [usersById, setUsersById] = useState<Record<string, User>>({});
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogForm, setDialogForm] = useState({
-    title: '', description: '', priority: 'Low', status: 'To Do', startDate: '', endDate: '', assignedTo: [] as string[], createdBy: '', category: '', categoryId: '', projectId: projectId || '', comments: ''
-  });
-  const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('edit');
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
-  const [isLoadingAssignableUsers, setIsLoadingAssignableUsers] = useState(false);
-  const [isChangingCategory, setIsChangingCategory] = useState(false);
-  const [categoriesList, setCategoriesList] = useState<{ id: string; projectId: string; categoryName: string; createdBy: string }[]>([]);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
-  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+    const styles = mainLayoutStyles();
 
-  // Fetch project details
-  useEffect(() => {
-    if (!projectId) return;
-    projectsApi.getProjectById(projectId)
-      .then(project => setCurrentProject(project))
-      .catch(err => console.error('Failed to fetch project:', err));
-  }, [projectId]);
+    const [columns, setColumns] = useState<Column[]>([]);
+    const [fetchedCategories, setFetchedCategories] = useState<Category[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [activeTask, setActiveTask] = useState<Task | null>(null);
+    const [activeFromColumn, setActiveFromColumn] = useState<string | null>(null);
+    const [isAddingColumn, setIsAddingColumn] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [createTaskOpen, setCreateTaskOpen] = useState(false);
+    const [isSubmittingTask, setIsSubmittingTask] = useState(false);
+    const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
+    const [isLoadingAssignableUsers] = useState(false);
+    const [assignableUsersError] = useState<string | null>(null);
+    const [editTaskOpen, setEditTaskOpen] = useState(false);
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [isLoadingEditTask, setIsLoadingEditTask] = useState(false);
+    const [editTaskError, setEditTaskError] = useState<string | null>(null);
+    const [editProject, setEditProject] = useState<Project | null>(null);
+    type EditFormType = CreateFormType & { categoryId?: string };
+    const [editForm, setEditForm] = useState<EditFormType | null>(null);
 
-  // Fetch categories and tasks
-  useEffect(() => {
-    if (!projectId) return;
-    setLoading(true);
-    Promise.all([
-      categoriesApi.getCategoriesByProject(projectId),
-      tasksApi.getTasksByProject(projectId)
-    ])
-      .then(([cats, data]) => {
-        setTasks(data);
-        setCategoriesList(cats);
-        const categoryNames = cats.map(c => c.categoryName);
-        const taskCategories = Array.from(new Set(data.map(t => (t.category || '').trim()))).filter(Boolean);
-        const merged = Array.from(new Set([...categoryNames, ...taskCategories]));
-        if (data.some(t => !t.category)) merged.push(UNCATEGORIZED);
-        setColumns(merged);
+    // MainTask dialog state
+    const [createMainTaskOpen, setCreateMainTaskOpen] = useState(false);
+    const [mainTaskForm, setMainTaskForm] = useState({ title: '', description: '' });
+    const [isSubmittingMainTask, setIsSubmittingMainTask] = useState(false);
+    const [mainTaskSubmitError, setMainTaskSubmitError] = useState<string | null>(null);
 
-        // Build map of categoryName -> categoryId
-        const catMap: Record<string, string> = {};
-        cats.forEach(c => {
-          catMap[c.categoryName] = c.id;
-        });
-        setCategoriesMap(catMap);
-      })
-      .catch(e => setError((e as Error)?.message || 'Failed to load board'))
-      .finally(() => setLoading(false));
-  }, [projectId]);
+    type CreateFormType = {
+        title: string;
+        description: string;
+        priority: string;
+        status: string;
+        startDate: string;
+        endDate: string;
+        assignedTo: string[];
+        createdBy: string;
+        category: string;
+        projectId?: string | null;
+        comments?: string | undefined;
+    };
 
-  // Fetch user details for assigned users
-  useEffect(() => {
-    const uniqueUserIds = Array.from(new Set(tasks.flatMap(t => t.assignedTo)));
-    if (uniqueUserIds.length === 0) return;
-    Promise.all(uniqueUserIds.map(id => usersApi.getUserById(id).catch(() => null)))
-      .then(results => {
-        const map: Record<string, User> = {};
-        results.filter(Boolean).forEach(u => { if (u) map[u.id] = u; });
-        setUsersById(map);
-      });
-  }, [tasks]);
-
-  // Load assignable users (project team members, with fallback to all users)
-  useEffect(() => {
-    if (!projectId) return;
-    setIsLoadingAssignableUsers(true);
-
-    projectsApi.getProjectMembers(projectId)
-      .then(members => {
-        // Convert ProjectMember[] to User[] (they have compatible structures)
-        const users: User[] = members.map(member => ({
-          id: member.id,
-          userName: member.userName,
-          firstName: member.firstName,
-          middleName: member.middleName,
-          lastName: member.lastName,
-          email: member.email,
-          userIMG: member.userIMG,
-        } as User));
-
-        if (users.length > 0) {
-          setAssignableUsers(users);
-        } else {
-          // Fallback: fetch all users if no team members found
-          usersApi.getAllUsers().then(setAssignableUsers).catch(() => setAssignableUsers([]));
-        }
-      })
-      .catch(async () => {
-        // On error, try to fetch all users as fallback
-        try {
-          const allUsers = await usersApi.getAllUsers();
-          setAssignableUsers(allUsers);
-        } catch {
-          setAssignableUsers([]);
-        }
-      })
-      .finally(() => setIsLoadingAssignableUsers(false));
-  }, [projectId]);
-
-  function safeCategory(name: string | undefined) { return (name || '').trim() || UNCATEGORIZED; }
-
-  // Normalized tasks by column title
-  const tasksByColumn = useMemo(() => {
-    const map: Record<string, TaskResponse[]> = {};
-    columns.forEach(c => { map[c] = []; });
-    tasks.forEach(task => {
-      const col = safeCategory(task.category);
-      if (!map[col]) map[col] = [];
-      map[col].push(task);
+    const [createForm, setCreateForm] = useState<CreateFormType>({
+        title: '',
+        description: '',
+        priority: 'Low',
+        status: 'To Do',
+        startDate: '',
+        endDate: '',
+        assignedTo: [] as string[],
+        createdBy: '',
+        category: '',
+        projectId: projectId || '',
+        comments: '' as string | undefined,
     });
-    return map;
-  }, [tasks, columns]);
+    // Single user source
+    const { user } = useUser();
 
-  async function handleDropTask(taskId: string, newCategory: string) {
-    try {
-      const task = tasks.find(t => t._id === taskId);
-      if (!task) return;
-      // Optimistic update
-      setTasks(prev => prev.map(t => t._id === taskId ? { ...t, category: newCategory === UNCATEGORIZED ? '' : newCategory } : t));
-      if (newCategory !== UNCATEGORIZED) {
-        await tasksApi.patchTask(taskId, { category: newCategory });
-      } else {
-        await tasksApi.patchTask(taskId, { category: '' });
-      }
-    } catch {
-      setError('Failed to move task');
-    }
-  }
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        })
+    );
 
-  // (Removed unused helper functions – inline handlers used instead)
-
-  async function handleAddColumn() {
-    const name = newColumnName.trim();
-    if (!name || !projectId) return;
-    if (columns.includes(name)) return;
-    try {
-      const created = await categoriesApi.createCategory({ projectId, categoryName: name, createdBy: 'system' });
-      setColumns(prev => [...prev, created.categoryName]);
-      setCategoriesMap(prev => ({ ...prev, [created.categoryName]: created.id }));
-      setNewColumnName('');
-      setAddingColumn(false);
-    } catch {
-      setError('Failed to create column');
-    }
-  }
-
-  async function handleDeleteColumn(columnTitle: string) {
-    const categoryId = categoriesMap[columnTitle];
-    if (!categoryId) return;
-
-    // Check if column has tasks
-    const columnTasks = tasksByColumn[columnTitle] || [];
-    if (columnTasks.length > 0) {
-      setError('Cannot delete column with tasks. Please move or delete tasks first.');
-      return;
-    }
-
-    try {
-      await categoriesApi.deleteCategory(categoryId);
-      setColumns(prev => prev.filter(c => c !== columnTitle));
-      setCategoriesMap(prev => {
-        const newMap = { ...prev };
-        delete newMap[columnTitle];
-        return newMap;
-      });
-    } catch {
-      setError('Failed to delete column');
-    }
-  }
-
-  function handleAddTask(categoryTitle: string) {
-    if (!currentUser?.id) {
-      setError('User not authenticated. Please log in.');
-      return;
-    }
-    const categoryId = categoriesMap[categoryTitle] || '';
-    setDialogMode('add');
-    setSelectedTaskId(null);
-    setDialogForm({
-      title: '',
-      description: '',
-      priority: 'Low',
-      status: 'To Do',
-      startDate: '',
-      endDate: '',
-      assignedTo: [],
-      createdBy: currentUser.id,
-      category: categoryTitle === UNCATEGORIZED ? '' : categoryTitle,
-      categoryId: categoryId,
-      projectId: projectId || '',
-      comments: ''
+    const mapTaskResponse = (task: TaskResponse): Task => ({
+        id: task.id || '',
+        title: task.title,
+        description: task.description,
+        priority: task.priority ? (task.priority.charAt(0).toUpperCase() + task.priority.slice(1).toLowerCase()) as Task['priority'] : undefined,
+        status: 'To Do', // SubTasks don't have status, default to 'To Do'
+        startDate: task.startDate,
+        endDate: task.endDate,
+        dueDate: task.endDate,
+        assignee: task.assignedTo?.[0],
+        assignedTo: task.assignedTo,
     });
-    setDialogOpen(true);
-  }
 
-  async function handleCategoryChange(categoryId: string) {
-    if (!selectedTaskId) return;
+    useEffect(() => {
+        if (!projectId) {
+            setColumns([]);
+            return;
+        }
 
-    // Optimistic update
-    const selectedCategory = categoriesList.find(c => c.id === categoryId);
-    if (selectedCategory) {
-      setDialogForm(prev => ({
-        ...prev,
-        categoryId: categoryId,
-        category: selectedCategory.categoryName
-      }));
-    }
+        setLoading(true);
+        setError(null);
 
-    setIsChangingCategory(true);
-    try {
-      const result = await tasksApi.patchTaskCategory(selectedTaskId, categoryId);
-      // Update the form with new category info (confirm with server response)
-      setDialogForm(prev => ({
-        ...prev,
-        categoryId: result.categoryId,
-        category: result.categoryName
-      }));
-      // Refresh tasks to update the board
-      if (projectId) {
-        const refreshed = await tasksApi.getTasksByProject(projectId);
-        setTasks(refreshed);
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to change category');
-      // Revert optimistic update if needed (optional, but good practice would be to refetch or revert)
-    } finally {
-      setIsChangingCategory(false);
-    }
-  }
+        Promise.all([
+            categoriesApi.getCategoriesByProject(projectId),
+            tasksApi.getTasksByProject(projectId),
+        ])
+            .then(([categories, tasks]) => {
 
-  if (!projectId) {
-    return <div style={{ padding: tokens.spacingHorizontalL }}>Select a project to view its Kanban board.</div>;
-  }
+                setFetchedCategories(categories);
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalM }}>
-      {error && <div style={{ color: tokens.colorPaletteRedForeground3 }}>{error}</div>}
-      <div className={styles.kanbanBoard}>
-        {columns.map(col => (
-          <KanbanColumn
-            key={col}
-            title={col}
-            tasks={tasksByColumn[col] || []}
-            usersById={usersById}
-            onDropTask={handleDropTask}
-            onDeleteColumn={handleDeleteColumn}
-            onAddTask={handleAddTask}
-            categoryId={categoriesMap[col]}
-            onTaskClick={async (task) => {
-              // Helper to format date for HTML date input (YYYY-MM-DD)
-              const formatDateForInput = (dateValue: string | null | undefined): string => {
-                if (!dateValue) return '';
-                try {
-                  const date = new Date(dateValue);
-                  if (isNaN(date.getTime())) return '';
-                  return date.toISOString().split('T')[0];
-                } catch {
-                  return '';
-                }
-              };
+                // Direct mapping: for each category, find tasks where task.categoryId === category.id
+                const columnsFromCategories: Column[] = categories.map(category => {
+                    const columnTasks = tasks.filter(task => {
+                        const match = task.categoryId === category.id;
 
-              // Open dialog with clicked task
-              setDialogMode('edit');
-              setDialogForm({
-                title: task.title || '',
-                description: task.description || '',
-                priority: task.priority || 'Low',
-                status: task.status || 'To Do',
-                startDate: formatDateForInput(task.startDate),
-                endDate: formatDateForInput(task.endDate),
-                assignedTo: task.assignedTo || [],
-                createdBy: task.createdBy || '',
-                category: task.category || '',
-                categoryId: task.categoryId || categoriesMap[task.category || ''] || '',
-                projectId: task.projectId || projectId || '',
-                comments: ''
-              });
-              // Persist selected task id in component state instead of window
-              setSelectedTaskId(task._id);
-              setDialogOpen(true);
+                        return match;
+                    }).map(mapTaskResponse);
 
-              // Refetch categories for the current project
-              if (projectId) {
-                setIsLoadingCategories(true);
-                try {
-                  const cats = await categoriesApi.getCategoriesByProject(projectId);
-                  setCategoriesList(cats);
-                } catch (err) {
-                  console.error('Failed to fetch categories:', err);
-                } finally {
-                  setIsLoadingCategories(false);
-                }
-              }
-            }}
-          />
-        ))}
-        <div className={styles.kanbanAddColumn}>
-          {!addingColumn ? (
-            <Button appearance="transparent" onClick={() => setAddingColumn(true)}>+ Add Column</Button>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalXS }}>
-              <Input
-                placeholder="Column name"
-                value={newColumnName}
-                onChange={(e) => setNewColumnName(e.target.value)}
-              />
-              <div style={{ display: 'flex', gap: tokens.spacingHorizontalS }}>
-                <Button appearance="primary" size="small" disabled={!newColumnName.trim()} onClick={handleAddColumn}>Add</Button>
-                <Button size="small" onClick={() => { setAddingColumn(false); setNewColumnName(''); }}>Cancel</Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-      {loading && <Spinner label="Loading tasks" />}
-      {dialogOpen && (
-        <TaskDialog
-          open={dialogOpen}
-          onOpenChange={(o) => setDialogOpen(o)}
-          form={dialogForm}
-          onInputChange={(e) => {
-            const { name, value } = e.target as HTMLInputElement;
-            setDialogForm(prev => ({ ...prev, [name]: value }));
-          }}
-          onSubmit={async (e) => {
-            e.preventDefault();
-            try {
-              if (dialogMode === 'edit' && selectedTaskId) {
-                // Update existing task
-                await tasksApi.patchTask(selectedTaskId, {
-                  title: dialogForm.title,
-                  description: dialogForm.description,
-                  priority: dialogForm.priority,
-                  status: dialogForm.status,
-                  category: dialogForm.category,
-                  startDate: dialogForm.startDate,
-                  endDate: dialogForm.endDate,
-                  assignedTo: dialogForm.assignedTo,
+
+                    return {
+                        id: category.id,
+                        title: category.categoryName,
+                        tasks: columnTasks,
+                    };
                 });
-              } else if (dialogMode === 'add') {
-                // Create new task
-                if (!currentUser?.id) {
-                  setError('User not authenticated. Please log in.');
-                  return;
-                }
-                await tasksApi.createTask({
-                  title: dialogForm.title,
-                  description: dialogForm.description,
-                  priority: dialogForm.priority,
-                  status: dialogForm.status,
-                  category: dialogForm.category,
-                  startDate: dialogForm.startDate,
-                  endDate: dialogForm.endDate,
-                  assignedTo: dialogForm.assignedTo,
-                  createdBy: currentUser.id,
-                  projectId: projectId || '',
-                  comments: dialogForm.comments || ''
-                });
-              }
 
-              // Refresh tasks
-              if (projectId) {
-                const refreshed = await tasksApi.getTasksByProject(projectId);
-                setTasks(refreshed);
-              }
-              setDialogOpen(false);
-            } catch {
-              setError(dialogMode === 'edit' ? 'Failed to update task' : 'Failed to create task');
+                // Find uncategorized tasks (no categoryId)
+                const uncategorized = tasks
+                    .filter(t => !t.categoryId)
+                    .map(mapTaskResponse);
+
+                const cols = uncategorized.length
+                    ? [{ id: 'uncategorized', title: 'Uncategorized', tasks: uncategorized }, ...columnsFromCategories]
+                    : [...columnsFromCategories];
+
+                setColumns(cols);
+            })
+            .catch((e: unknown) => {
+                const message = (e as Error)?.message || 'Failed to load kanban data';
+                console.error(message, e);
+                setError(message);
+            })
+            .finally(() => setLoading(false));
+    }, [projectId]);
+
+    const findColumn = (id: string) => {
+        return columns.find(col => col.id === id);
+    };
+
+    const findTaskColumn = (taskId: string) => {
+        return columns.find(col => col.tasks.some(task => task.id === taskId));
+    };
+
+    const handleDragStart = (event: DragStartEvent) => {
+        const { active } = event;
+        const activeColumn = findTaskColumn(active.id as string);
+        const task = activeColumn?.tasks.find(t => t.id === active.id);
+        if (task) {
+            setActiveTask(task);
+            setActiveFromColumn(activeColumn?.id || null);
+        }
+    };
+
+    const handleDragOver = (event: DragOverEvent) => {
+        const { active, over } = event;
+        if (!over) return;
+
+        const activeId = active.id as string;
+        const overId = over.id as string;
+
+        if (activeId === overId) return;
+
+        const activeColumn = findTaskColumn(activeId);
+        const overColumn = findColumn(overId) || findTaskColumn(overId);
+
+        if (!activeColumn || !overColumn) return;
+        if (activeColumn.id === overColumn.id) return;
+
+        setColumns(cols => {
+            const activeItems = activeColumn.tasks;
+            const overItems = overColumn.tasks;
+
+            const activeIndex = activeItems.findIndex(t => t.id === activeId);
+            const overIndex = overItems.findIndex(t => t.id === overId);
+
+            let newIndex: number;
+            if (overId in cols.reduce((acc, col) => ({ ...acc, [col.id]: true }), {})) {
+                // Dropping over a column
+                newIndex = overItems.length;
+            } else {
+                // Dropping over a task
+                newIndex = overIndex >= 0 ? overIndex : overItems.length;
             }
-          }}
-          assignableUsers={assignableUsers}
-          isLoadingAssignableUsers={isLoadingAssignableUsers}
-          currentUser={currentUser}
-          dialogMode={dialogMode}
-          hideProjectField={true}
-          projects={currentProject ? [currentProject] : []}
-          categories={categoriesList}
-          isLoadingCategories={isLoadingCategories}
-          onCategoryChange={handleCategoryChange}
-          isChangingCategory={isChangingCategory}
-        />
-      )}
-    </div>
-  );
+
+            return cols.map(col => {
+                if (col.id === activeColumn.id) {
+                    return {
+                        ...col,
+                        tasks: col.tasks.filter(t => t.id !== activeId),
+                    };
+                }
+                if (col.id === overColumn.id) {
+                    const newTasks = [...col.tasks];
+                    newTasks.splice(newIndex, 0, activeItems[activeIndex]);
+                    return {
+                        ...col,
+                        tasks: newTasks,
+                    };
+                }
+                return col;
+            });
+        });
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveTask(null);
+        setActiveFromColumn(null);
+
+        if (!over) return;
+
+        const activeId = active.id as string;
+        const overId = over.id as string;
+
+        const activeColumn = findTaskColumn(activeId);
+        const overColumn = findTaskColumn(overId);
+
+        if (!activeColumn || !overColumn) return;
+        const activeIndex = activeColumn.tasks.findIndex(t => t.id === activeId);
+        const overIndex = overColumn.tasks.findIndex(t => t.id === overId);
+
+        // Reorder within same column
+        if (activeColumn.id === overColumn.id && activeIndex !== overIndex) {
+            setColumns(cols =>
+                cols.map(col => {
+                    if (col.id === activeColumn.id) {
+                        return {
+                            ...col,
+                            tasks: arrayMove(col.tasks, activeIndex, overIndex),
+                        };
+                    }
+                    return col;
+                })
+            );
+            return;
+        }
+
+        // Persist category change if dropped to a new column
+        if (projectId && activeFromColumn && overColumn.id !== activeFromColumn) {
+            console.log(`🔄 Task ${activeId} moved from column ${activeFromColumn} to ${overColumn.id}`);
+            void tasksApi.patchTaskCategory(activeId, overColumn.id).catch(err => {
+                console.error('Failed to update task category', err);
+            });
+        }
+    };
+
+    const handleAddTask = (columnId: string) => {
+        // Open MainTask creation dialog
+        const column = columns.find(c => c.id === columnId);
+        setMainTaskForm({
+            title: column?.title ? `${column.title} Task` : '',
+            description: ''
+        });
+        setCreateMainTaskOpen(true);
+    };
+
+    const handleMainTaskInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setMainTaskForm(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleMainTaskSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!mainTaskForm.title.trim()) return;
+
+        setIsSubmittingMainTask(true);
+        setMainTaskSubmitError(null);
+
+        try {
+            const newMainTask = await mainTasksApi.createMainTask({
+                title: mainTaskForm.title,
+                description: mainTaskForm.description,
+                projectId: projectId
+            });
+
+            console.log('Created MainTask:', newMainTask);
+
+            // Reset form and close dialog
+            setMainTaskForm({ title: '', description: '' });
+            setCreateMainTaskOpen(false);
+
+            // TODO: Refresh the kanban board to show the new MainTask as a column
+            // This would require restructuring the board to use MainTasks as columns
+        } catch (error) {
+            setMainTaskSubmitError((error as Error).message || 'Failed to create main task');
+        } finally {
+            setIsSubmittingMainTask(false);
+        }
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleCreateFormInput = (e: any) => {
+        const { name, value } = e.target;
+        // key ensures proper typing
+        const key = name as keyof CreateFormType;
+        const safeValue = Array.isArray(value) ? value : value;
+        setCreateForm(prev => ({ ...prev, [key]: safeValue } as CreateFormType));
+    };
+
+    const handleCreateTaskSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            setIsSubmittingTask(true);
+            const payload: CreateTaskData = {
+                assignedTo: createForm.assignedTo,
+                title: createForm.title,
+                description: createForm.description,
+                priority: createForm.priority,
+                startDate: createForm.startDate,
+                endDate: createForm.endDate,
+                createdBy: createForm.createdBy,
+                projectId: (createForm.projectId && createForm.projectId !== '') ? createForm.projectId : projectId || '',
+                category: createForm.category,
+            };
+
+            const created = await tasksApi.createTask(payload);
+            // Map created task and add to column
+            const newTask = mapTaskResponse(created as TaskResponse);
+            setColumns(cols => {
+                const targetIdx = cols.findIndex(c => c.id === (created.categoryId || created.category));
+                if (targetIdx >= 0) {
+                    const updated = [...cols];
+                    updated[targetIdx] = { ...updated[targetIdx], tasks: [...updated[targetIdx].tasks, newTask] };
+                    return updated;
+                }
+                // fallback: match by title
+                const titleIdx = cols.findIndex(c => c.title === created.category || c.title === newTask.assignee);
+                if (titleIdx >= 0) {
+                    const updated = [...cols];
+                    updated[titleIdx] = { ...updated[titleIdx], tasks: [...updated[titleIdx].tasks, newTask] };
+                    return updated;
+                }
+                // If no matching category, push to uncategorized column or create it
+                const unc = cols.find(c => c.id === 'uncategorized');
+                if (unc) {
+                    return cols.map(c => c.id === 'uncategorized' ? { ...c, tasks: [...c.tasks, newTask] } : c);
+                }
+                return [...cols, { id: 'uncategorized', title: 'Uncategorized', tasks: [newTask] }];
+            });
+        } catch (err) {
+            console.error('Failed to create task', err);
+            setError((err as Error)?.message || 'Failed to create task');
+        } finally {
+            setIsSubmittingTask(false);
+            setCreateTaskOpen(false);
+        }
+    };
+
+    const handleAddCategory = async () => {
+        if (!projectId) {
+            setError('No project selected');
+            return;
+        }
+
+        const name = newCategoryName?.trim();
+        if (!name) return;
+
+        try {
+            setLoading(true);
+            const created = await categoriesApi.createCategory({
+                projectId,
+                categoryName: name,
+                createdBy: user?.id || '',
+            });
+
+            setColumns(cols => [...cols, { id: created.id, title: created.categoryName, tasks: [] }]);
+            setNewCategoryName('');
+            setIsAddingColumn(false);
+        } catch (e: unknown) {
+            const msg = (e as Error)?.message || 'Failed to create category';
+            setError(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteCategory = async (categoryId: string) => {
+        if (!projectId) {
+            setError('No project selected');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            await categoriesApi.deleteCategory(categoryId);
+
+            // Remove column from state
+            setColumns(cols => cols.filter(col => col.id !== categoryId));
+        } catch (e: unknown) {
+            const msg = (e as Error)?.message || 'Failed to delete category';
+            setError(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleTaskClick = async (task: Task) => {
+        console.log('Task clicked:', task);
+        setSelectedTask(task);
+        setIsLoadingEditTask(true);
+        setEditTaskError(null);
+        setEditProject(null);
+
+        // Prefill edit form from task
+        const taskColumn = findTaskColumn(task.id);
+        setEditForm({
+            title: task.title,
+            description: task.description || '',
+            priority: task.priority || 'Low',
+            status: task.status || 'To Do',
+            startDate: task.startDate || '',
+            endDate: task.endDate || '',
+            assignedTo: task.assignedTo || [],
+            createdBy: user?.id || '',
+            category: taskColumn?.title || '',
+            categoryId: taskColumn?.id || undefined,
+            projectId: projectId || '',
+            comments: '',
+        });
+
+        try {
+            // Fetch full task details and members if we have a project
+            if (projectId) {
+                const members = await projectsApi.getProjectMembers(projectId);
+                const mappedUsers: User[] = members.map((member: ProjectMember) => ({
+                    id: member.id,
+                    userName: member.userName,
+                    firstName: member.firstName,
+                    lastName: member.lastName,
+                    middleName: member.middleName ?? '',
+                    contactNumber: '',
+                    birthDate: '',
+                    userIMG: member.userIMG ?? null,
+                    email: member.email,
+                    createdAt: '',
+                    secondaryContactNumber: null,
+                }));
+                setAssignableUsers(mappedUsers);
+
+                // Fetch project details to show project name in edit dialog
+                const project = await projectsApi.getProjectById(projectId);
+                setEditProject(project);
+            }
+        } catch (err) {
+            console.error('Failed to load task details', err);
+            const message = (err as Error)?.message || 'Failed to load task details';
+            setEditTaskError(message);
+        } finally {
+            setIsLoadingEditTask(false);
+            setEditTaskOpen(true);
+        }
+    };
+
+    return (
+        <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+        >
+            {error && (
+                <div style={{ color: 'var(--colorPaletteRedForeground3)' }}>{error}</div>
+            )}
+
+            {loading ? (
+                <div style={{ color: 'var(--colorNeutralForeground3)' }}>Loading kanban…</div>
+            ) : (
+                <div className={styles.kanbanBoardOuter}>
+                    <div className={styles.kanbanBoard}>
+                        {columns.map(column => (
+                            <KanbanColumn
+                                key={column.id}
+                                column={column}
+                                onAddTask={handleAddTask}
+                                onTaskClick={handleTaskClick}
+                                onDeleteColumn={handleDeleteCategory}
+                            />
+                        ))}
+                        <div className={styles.kanbanAddColumn}>
+                            {isAddingColumn ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                                    <Input placeholder="Column name" value={newCategoryName} onChange={(e: ChangeEvent<HTMLInputElement>) => setNewCategoryName(e.target.value)} />
+                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                        <Button appearance="primary" onClick={handleAddCategory} disabled={!newCategoryName.trim()}>Save</Button>
+                                        <Button appearance="subtle" onClick={() => { setIsAddingColumn(false); setNewCategoryName(''); }}>Cancel</Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Button appearance="subtle" onClick={() => setIsAddingColumn(true)}>+ Add column</Button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <DragOverlay>
+                {activeTask ? (
+                    <div style={{ cursor: 'grabbing' }}>
+                        <KanbanCard task={activeTask} />
+                    </div>
+                ) : null}
+            </DragOverlay>
+            <CreateTaskDialog
+                open={createTaskOpen}
+                onOpenChange={(open) => setCreateTaskOpen(open)}
+                form={createForm}
+                onInputChange={handleCreateFormInput}
+                onSubmit={handleCreateTaskSubmit}
+                assignableUsers={assignableUsers}
+                isLoadingAssignableUsers={isLoadingAssignableUsers}
+                assignableUsersError={assignableUsersError}
+                projects={[]}
+                isLoadingProjects={false}
+                categories={fetchedCategories}
+                isLoadingCategories={loading}
+                categoriesError={null}
+                hideProjectField={false}
+                currentUser={user}
+                isSubmitting={isSubmittingTask}
+                submitError={error}
+            />
+            {selectedTask && editForm && (
+                <EditTaskDialog
+                    open={editTaskOpen}
+                    onOpenChange={setEditTaskOpen}
+                    form={editForm}
+                    onInputChange={(e) => {
+                        const { name, value } = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+                        const key = name as keyof EditFormType;
+                        setEditForm(prev => prev ? { ...prev, [key]: value } : prev);
+                    }}
+                    onSubmit={async (e) => {
+                        e.preventDefault();
+                        // TODO: Implement edit task submission
+                    }}
+                    assignableUsers={assignableUsers}
+                    isLoadingAssignableUsers={isLoadingEditTask}
+                    assignableUsersError={editTaskError}
+                    projects={editProject ? [editProject] : projectId ? [{ id: projectId, projectName: projectId, description: '', teamMembers: [] }] : []}
+                    currentUser={user}
+                    categories={fetchedCategories}
+                    isLoadingCategories={loading}
+                    categoriesError={null}
+                    taskId={selectedTask.id}
+                />
+            )}
+
+            {/* MainTask Creation Dialog */}
+            <CreateMainTaskDialog
+                open={createMainTaskOpen}
+                onOpenChange={setCreateMainTaskOpen}
+                form={mainTaskForm}
+                onInputChange={handleMainTaskInputChange}
+                onSubmit={handleMainTaskSubmit}
+                currentUser={user}
+                isSubmitting={isSubmittingMainTask}
+                submitError={mainTaskSubmitError}
+                projectId={projectId}
+            />
+        </DndContext>
+    );
 }
