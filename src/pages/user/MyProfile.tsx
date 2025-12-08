@@ -654,7 +654,7 @@ export default function MyProfile() {
   const username = userCtx?.user?.userName || 'User';
 
   return (
-    <Card className={mergeClasses(s.flexColFill, s.layoutPadding, s.gap)}>
+    <Card className={mergeClasses(s.flexColFill, s.layoutPadding, s.gap, s.componentBorder)}>
       {/* Title Row */}
 
       <h1 className={mergeClasses(s.brand)}>My Profile</h1>

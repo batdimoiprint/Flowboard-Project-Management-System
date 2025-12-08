@@ -20,6 +20,7 @@ export default function UserLayout() {
     const isProfile = normalizedPath === "/home/profile";
     const isProjectRoot = normalizedPath === "/home/project";
     const isProjectWithName = /^\/home\/project\/[^/]+(\/.*)?$/.test(normalizedPath);
+    const isCreate = normalizedPath === "/home/create";
 
     return (
         <main className={mergeClasses(s.userLayout,
@@ -31,19 +32,15 @@ export default function UserLayout() {
 
             <section className={mergeClasses(s.contentsLayout)}>
 
-                {!isProfile && !isProjectRoot && (
+                {!isProfile && !isProjectRoot && !isCreate && (
                     <div className={s.largeGap}>
                         {isHome ? (
                             <HomeHeader />
                         ) : isProjectWithName ? (
-                            <Card  >
-                                <NavigationHeader />
-                                {/* <StatsHeader /> */}
-                            </Card>
+                            <NavigationHeader />
                         ) : (
                             <>
                                 <NavigationHeader />
-                                {/* <StatsHeader /> */}
                             </>
                         )}
 

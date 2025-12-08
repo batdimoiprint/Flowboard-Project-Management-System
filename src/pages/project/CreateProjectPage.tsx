@@ -127,7 +127,7 @@ export default function CreateProjectPage() {
     };
 
     return (
-        <Card className={mergeClasses(s.flexColFill, s.layoutPadding)}>
+        <Card className={mergeClasses(s.componentBorder, s.flexColFill, s.layoutPadding)}>
             {/* Title and Actions Row - flex row space-between */}
             <div className={mergeClasses(s.flexRowFit, s.wFull, s.spaceBetween)}>
                 <h1 className={mergeClasses(s.brand, s.pageTitle)}>Create Project</h1>

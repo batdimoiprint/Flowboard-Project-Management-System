@@ -8,12 +8,14 @@ import type { SubTaskResponse } from './subtasks';
 export interface CreateMainTaskData {
     title: string;
     description?: string;
+    projectId?: string;
 }
 
 export interface MainTaskResponse {
     id: string;
     title: string;
     description?: string;
+    projectId?: string;
     createdAt?: string;
     subTaskIds?: string[];
 }
@@ -25,6 +27,15 @@ export const mainTasksApi = {
      */
     getMainTasks: async (): Promise<MainTaskResponse[]> => {
         const response = await axiosInstance.get<MainTaskResponse[]>('/api/maintasks');
+        return response.data;
+    },
+
+    /**
+     * Get main tasks by project
+     * Backend path: GET /api/maintasks/project/{projectId}
+     */
+    getMainTasksByProject: async (projectId: string): Promise<MainTaskResponse[]> => {
+        const response = await axiosInstance.get<MainTaskResponse[]>(`/api/maintasks/project/${projectId}`);
         return response.data;
     },
 

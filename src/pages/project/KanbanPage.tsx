@@ -29,7 +29,7 @@ export default function KanbanPage() {
     }, [decodedName]);
 
     return (
-        <Card className={mergeClasses(styles.artifCard, styles.layoutPadding, styles.flexColFill, styles.hFull)} style={{ minHeight: '70vh' }}>
+        <Card className={mergeClasses(styles.artifCard, styles.layoutPadding, styles.flexColFill, styles.hFull, styles.componentBorder)} style={{ minHeight: '70vh' }}>
             {projectError && (
                 <div style={{ color: tokens.colorPaletteRedForeground3 }}>{projectError}</div>
             )}

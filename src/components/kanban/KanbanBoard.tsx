@@ -297,7 +297,8 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
         try {
             const newMainTask = await mainTasksApi.createMainTask({
                 title: mainTaskForm.title,
-                description: mainTaskForm.description
+                description: mainTaskForm.description,
+                projectId: projectId
             });
 
             console.log('Created MainTask:', newMainTask);

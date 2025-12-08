@@ -116,7 +116,7 @@ export default function TaskListPage() {
         if (!project?.id) return;
         try {
             setLoadingMainTasks(true);
-            const tasks = await mainTasksApi.getMainTasks();
+            const tasks = await mainTasksApi.getMainTasksByProject(project.id);
             setMainTasks(tasks);
 
             // Load SubTask counts for each MainTask
@@ -193,6 +193,7 @@ export default function TaskListPage() {
             await mainTasksApi.createMainTask({
                 title: mainTaskForm.title,
                 description: mainTaskForm.description,
+                projectId: project?.id,
             });
             setCreateMainTaskOpen(false);
             setMainTaskForm({ title: '', description: '' });
@@ -343,7 +344,7 @@ export default function TaskListPage() {
     if (error || !project) return (<Card style={{ padding: tokens.spacingVerticalXXL }}><div>{error ?? 'Project not found'}</div></Card>);
 
     return (
-        <Card className={mergeClasses(s.artifCard, s.wFull, s.layoutPadding)}>
+        <Card className={mergeClasses(s.artifCard, s.wFull, s.layoutPadding, s.hFull, s.componentBorder)}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: tokens.spacingVerticalL }}>
                 <h1 style={{ margin: 0 }}>{project.projectName} - Tasks</h1>
                 {activeTab === 'mainTasks' && (

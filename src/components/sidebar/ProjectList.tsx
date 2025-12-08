@@ -38,17 +38,34 @@ export default function ProjectList({ openCategories, onNavigateToProjects, refr
             setLoading(true);
             setError("");
             try {
-                // If a user is logged in, fetch projects for that user; otherwise fall back to all projects
-                let data: Project[] = [];
+                let allProjects: Project[] = [];
+
                 if (currentUser?.id) {
-                    data = await projectsApi.getProjectsByUser(currentUser.id);
+                    // Fetch projects created by the user
+                    const createdProjects = await projectsApi.getProjectsByUser(currentUser.id);
+                    if (Array.isArray(createdProjects)) {
+                        allProjects = allProjects.concat(createdProjects);
+                    } else if (createdProjects) {
+                        allProjects.push(createdProjects as Project);
+                    }
+
+                    // Fetch projects where the user is a team member
+                    const memberProjects = await projectsApi.getProjectsAsMember();
+                    if (Array.isArray(memberProjects)) {
+                        allProjects = allProjects.concat(memberProjects);
+                    } else if (memberProjects) {
+                        allProjects.push(memberProjects as Project);
+                    }
+
+                    // Remove duplicates by ID
+                    const uniqueProjects = Array.from(
+                        new Map(allProjects.map((p) => [p.id, p])).values()
+                    );
+                    setProjects(uniqueProjects);
                 } else {
-                    data = await projectsApi.getAllProjects();
+                    const data = await projectsApi.getAllProjects();
+                    setProjects(Array.isArray(data) ? data : data ? [data as Project] : []);
                 }
-                if (!active) return;
-                // backend may return a single project for certain ids; normalize to array
-                if (!data) setProjects([]);
-                else setProjects(Array.isArray(data) ? data : [data as Project]);
             } catch (err) {
                 if (!active) return;
                 setError(err instanceof Error ? err.message : "Unable to load projects");
@@ -89,7 +106,7 @@ export default function ProjectList({ openCategories, onNavigateToProjects, refr
                 <NavSectionHeader>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <span>Projects</span>
-                        <Button aria-label="Create project" appearance="subtle" onClick={(e) => { e.stopPropagation(); navigate('/home/project/create'); }}>
+                        <Button aria-label="Create project" appearance="subtle" onClick={(e) => { e.stopPropagation(); navigate('/home/create'); }}>
                             <AddCircle24Regular />
                         </Button>
                     </div>

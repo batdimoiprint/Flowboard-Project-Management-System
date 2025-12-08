@@ -354,7 +354,7 @@ export default function ProjectPage() {
 
   return (
     <Card
-      className={mergeClasses(styles.artifCard, styles.layoutPadding, styles.wFull)}
+      className={mergeClasses(styles.artifCard, styles.layoutPadding, styles.wFull, styles.hFull, styles.componentBorder)}
       style={{ minHeight: 'calc(100vh - 160px)' }}
     >
       {loading && (

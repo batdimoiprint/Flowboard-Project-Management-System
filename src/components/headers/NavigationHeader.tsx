@@ -1,7 +1,8 @@
-import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Button, Tooltip } from "@fluentui/react-components";
+import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Button, Card, mergeClasses, Tooltip } from "@fluentui/react-components";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Folder20Regular, Board20Regular, TaskListSquareLtr20Regular, Settings20Regular, ChartMultiple20Regular } from '@fluentui/react-icons';
 import React from 'react';
+import { mainLayoutStyles } from "../styles/Styles";
 
 function titleCase(segment: string) {
     // make a friendly label from a path segment
@@ -16,6 +17,7 @@ function titleCase(segment: string) {
 export default function NavigationHeader() {
     const location = useLocation();
     const navigate = useNavigate();
+    const s = mainLayoutStyles()
 
     // Build path segments, remove empty and leading 'home'
     const rawSegments = location.pathname.split('/').filter(Boolean);
@@ -50,7 +52,7 @@ export default function NavigationHeader() {
     const isSettingsPage = segments.length === 2 && segments[0] === 'project' && lastSegment !== 'kanban' && lastSegment !== 'tasks' && lastSegment !== 'analytics';
 
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <Card className={mergeClasses(s.flexRowFill, s.componentBorder)}>
             <Breadcrumb aria-label="Breadcrumb">
                 {crumbs.map((c, idx) => (
                     <React.Fragment key={c.path}>
@@ -117,6 +119,6 @@ export default function NavigationHeader() {
                     )}
                 </div>
             )}
-        </div>
+        </Card>
     );
 }

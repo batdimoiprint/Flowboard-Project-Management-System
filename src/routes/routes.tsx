@@ -64,13 +64,13 @@ export default function AppRoutes() {
                 <Route path="profile" element={<MyProfile />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
 
+                {/* Create Project Page - outside project routes */}
+                <Route path="create" element={<CreateProjectPage />} />
+
                 {/* Project routes */}
                 <Route path="project">
                     {/* Index: Project List Page */}
                     <Route index element={<ProjectListPage />} />
-
-                    {/* Create Project Page */}
-                    <Route path="create" element={<CreateProjectPage />} />
 
                     {/* Dynamic project views */}
                     <Route path=":projectName">
