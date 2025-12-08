@@ -54,7 +54,7 @@ function ProjectTasksDataGrid({ projectId, onRowClick, onAddClick, onFetchComple
             }
 
             const transformedTasks: Task[] = (fetchedTasksArray as TaskResponse[]).map((task: TaskResponse) => {
-                const taskId = task._id || (task as { id?: string })?.id || '';
+                const taskId = (task as { id?: string })?.id || '';
 
                 // Handle assignedTo
                 let assignedToArray: string[] = [];
@@ -74,15 +74,15 @@ function ProjectTasksDataGrid({ projectId, onRowClick, onAddClick, onFetchComple
                     title: task.title,
                     description: task.description,
                     priority: task.priority,
-                    status: task.status,
+                    status: (task as { status?: string }).status || 'To Do',
                     startDate: task.startDate,
                     endDate: task.endDate,
                     createdBy: task.createdBy,
                     createdAt: task.createdAt,
-                    comments: task.comments.map(c => ({
+                    comments: (task.comments || []).map(c => ({
                         authorId: c.authorId,
                         user: c.authorId,
-                        text: c.text || c.content || undefined,
+                        text: c.content || undefined,
                         content: c.content || undefined,
                         createdAt: c.createdAt
                     }))
