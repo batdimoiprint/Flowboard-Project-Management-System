@@ -7,7 +7,7 @@ import Sidebar from "../components/sidebar/Sidebar";
 import HomeHeader from "../components/headers/HomeHeader";
 import { mainLayoutStyles } from "../components/styles/Styles";
 import { useLocation } from "react-router-dom";
-import { Card, mergeClasses } from "@fluentui/react-components";
+import { mergeClasses } from "@fluentui/react-components";
 // import { Card } from "@fluentui/react-components";
 
 
