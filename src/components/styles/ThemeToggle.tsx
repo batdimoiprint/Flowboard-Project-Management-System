@@ -12,7 +12,7 @@ export default function ThemeToggle({ className }: { className?: string }) {
     };
 
     // Initialize theme from localStorage on mount
-    useEffect(() => {
+    useEffect(() => {   
         const stored = localStorage.getItem('darkMode');
         if (stored !== null) {
             setDarkMode(stored === 'true');
