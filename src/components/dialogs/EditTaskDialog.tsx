@@ -1,18 +1,18 @@
 import {
     Avatar,
     AvatarGroup, AvatarGroupItem,
-    Button, Dialog, DialogSurface, DialogTitle, Divider, Dropdown, Field, Input, mergeClasses, Option, Persona, Popover, PopoverSurface, PopoverTrigger, Select, tokens, Tooltip
+    Button, Dialog, DialogSurface, DialogTitle, Divider, Dropdown, Field, Input, Option, Persona, Popover, PopoverSurface, PopoverTrigger, Select, tokens, Tooltip
 } from '@fluentui/react-components';
 import { Calendar } from '@fluentui/react-calendar-compat';
 import {
     CalendarLtr24Regular,
     Delete24Regular, Dismiss24Regular
 } from '@fluentui/react-icons';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { User } from '../apis/auth';
 import type { Project } from '../apis/projects';
 import type { Category } from '../apis/categories';
-import { mainLayoutStyles } from '../styles/Styles';
 
 export interface EditTaskDialogProps {
     open: boolean;
@@ -71,11 +71,6 @@ export default function EditTaskDialog({
     isSubmitting = false,
     submitError,
     createdByUser,
-    comments = [],
-    taskId,
-    onAddComment,
-    isAddingComment = false,
-    commentError = null,
     assignableUsers = [],
     isLoadingAssignableUsers = false,
     assignableUsersError = null,
@@ -87,30 +82,13 @@ export default function EditTaskDialog({
     onCategoryChange,
     isChangingCategory = false
 }: EditTaskDialogProps) {
+    const location = useLocation();
     const [editingTitle, setEditingTitle] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
-    const [newComment, setNewComment] = useState('');
     const [startDatePopoverOpen, setStartDatePopoverOpen] = useState(false);
     const [endDatePopoverOpen, setEndDatePopoverOpen] = useState(false);
-    const styles = mainLayoutStyles();
-    const commentContainerStyle: CSSProperties = {
-        border: `1px solid ${tokens.colorNeutralStroke1}`,
-        borderRadius: tokens.borderRadiusMedium,
-        padding: tokens.spacingVerticalM,
-        maxHeight: 300,
-        overflowY: 'auto',
-        marginBottom: tokens.spacingVerticalM,
-    };
-    const commentTextStyle: CSSProperties = {
-        marginLeft: tokens.spacingHorizontalM,
-        fontSize: tokens.fontSizeBase200,
-        color: tokens.colorNeutralForeground1,
-    };
-    const commentDateStyle: CSSProperties = {
-        fontSize: tokens.fontSizeBase100,
-        marginLeft: 'auto',
-        color: tokens.colorNeutralForeground3,
-    };
+    const [assignDropdownOpen, setAssignDropdownOpen] = useState(false);
+    const isHomePage = location.pathname === '/home';
 
     useEffect(() => {
         if (editingTitle && inputRef.current) {
@@ -147,9 +125,15 @@ export default function EditTaskDialog({
         }
     }
 
-    // Helper to convert YYYY-MM-DD string to Date object
+    // Helper to convert YYYY-MM-DD string or ISO string to Date object
     function parseFormDate(dateStr: string): Date | undefined {
         if (!dateStr) return undefined;
+        // If already an ISO string (contains 'T'), parse directly
+        if (dateStr.includes('T')) {
+            const date = new Date(dateStr);
+            return isNaN(date.getTime()) ? undefined : date;
+        }
+        // Otherwise, assume YYYY-MM-DD format
         const date = new Date(dateStr + 'T00:00:00');
         return isNaN(date.getTime()) ? undefined : date;
     }
@@ -181,17 +165,6 @@ export default function EditTaskDialog({
         } as React.ChangeEvent<HTMLInputElement>;
         onInputChange(syntheticEvent);
         setEndDatePopoverOpen(false);
-    }
-
-    async function handleAddCommentLocal() {
-        if (!newComment.trim() || !taskId) return;
-        if (!onAddComment) return;
-        try {
-            await Promise.resolve(onAddComment(newComment.trim()));
-            setNewComment('');
-        } catch (error: unknown) {
-            console.error('Failed to add comment via parent handler:', error);
-        }
     }
 
     return (
@@ -261,95 +234,119 @@ export default function EditTaskDialog({
                         </div>
                         <Divider vertical style={{ height: 40 }} />
 
-                        {/* Assigned to section with avatars - show tooltip with names */}
-                        {form.assignedTo && form.assignedTo.length > 0 && (
-                            <>
-                                <Tooltip
-                                    content={form.assignedTo.map((userId) => {
-                                        const user = assignableUsers.find(u => u.id === userId);
-                                        return user ? `${user.firstName} ${user.lastName}` : 'Unknown';
-                                    }).join(', ')}
-                                    relationship="label"
-                                >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                                        <AvatarGroup layout="stack">
-                                            {form.assignedTo.map((userId) => {
+                        {/* Combined Assigned to section with avatars and dropdown */}
+                        <Popover
+                            open={assignDropdownOpen}
+                            onOpenChange={(_, data) => setAssignDropdownOpen(data.open)}
+                        >
+                            <PopoverTrigger disableButtonEnhancement>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                    {form.assignedTo && form.assignedTo.length > 0 ? (
+                                        <Tooltip
+                                            content={form.assignedTo.map((userId) => {
                                                 const user = assignableUsers.find(u => u.id === userId);
-                                                return (
-                                                    <AvatarGroupItem key={userId} name={user ? `${user.firstName} ${user.lastName}` : 'Unknown'}>
-                                                        <Avatar
-                                                            name={user ? `${user.firstName} ${user.lastName}` : 'Unknown'}
-                                                            image={user?.userIMG ? { src: user.userIMG } : undefined}
-                                                            size={32}
-                                                            color="colorful"
-                                                        />
-                                                    </AvatarGroupItem>
-                                                );
-                                            })}
-                                        </AvatarGroup>
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>Assigned to</span>
-                                            <span style={{ fontSize: tokens.fontSizeBase300, fontWeight: 500 }}>
-                                                {form.assignedTo.length} member{form.assignedTo.length !== 1 ? 's' : ''}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </Tooltip>
-                                <Divider vertical style={{ height: 40 }} />
-                            </>
-                        )}
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, flex: '0 1 auto' }}>
-                            <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3, marginBottom: 4 }}>
-                                Assign members
-                            </span>
-                            <Dropdown
-                                id="assign-member-dropdown"
-                                placeholder={isLoadingAssignableUsers ? 'Loading project members…' : 'Select members'}
-                                style={{ minWidth: 180, maxWidth: 280 }}
-                                listbox={{ style: { minWidth: 320 } }}
-                                multiselect={true}
-                                selectedOptions={form.assignedTo}
-                                onOptionSelect={handleAssignedUserSelect}
-                                disabled={isLoadingAssignableUsers || assignableUsers.length === 0}
-                            >
-                                {isLoadingAssignableUsers && (
-                                    <Option value="loading" disabled text="Loading">
-                                        Loading project members…
-                                    </Option>
-                                )}
-                                {!isLoadingAssignableUsers && assignableUsers.length === 0 && (
-                                    <Option value="no-users" disabled text="No users">
-                                        No project members available
-                                    </Option>
-                                )}
-                                {assignableUsers.map(assignableUser => (
-                                    <Option key={assignableUser.id} value={assignableUser.id} text={`${assignableUser.firstName} ${assignableUser.lastName}`}>
-                                        <Persona
-                                            avatar={{
-                                                color: 'colorful',
-                                                image: assignableUser.userIMG ? { src: assignableUser.userIMG } : undefined,
-                                            }}
-                                            name={`${assignableUser.firstName} ${assignableUser.lastName}`}
-                                            secondaryText={assignableUser.email}
+                                                return user ? `${user.firstName} ${user.lastName}` : 'Unknown';
+                                            }).join(', ')}
+                                            relationship="label"
+                                        >
+                                            <div>
+                                                <AvatarGroup layout="stack">
+                                                    {form.assignedTo.map((userId) => {
+                                                        const user = assignableUsers.find(u => u.id === userId);
+                                                        return (
+                                                            <AvatarGroupItem key={userId} name={user ? `${user.firstName} ${user.lastName}` : 'Unknown'}>
+                                                                <Avatar
+                                                                    name={user ? `${user.firstName} ${user.lastName}` : 'Unknown'}
+                                                                    image={user?.userIMG ? { src: user.userIMG } : undefined}
+                                                                    size={32}
+                                                                    color="colorful"
+                                                                />
+                                                            </AvatarGroupItem>
+                                                        );
+                                                    })}
+                                                </AvatarGroup>
+                                            </div>
+                                        </Tooltip>
+                                    ) : (
+                                        <Avatar
+                                            name="Unassigned"
+                                            size={32}
+                                            color="neutral"
+                                            icon={<span style={{ fontSize: 18 }}>+</span>}
                                         />
-                                    </Option>
-                                ))}
-                            </Dropdown>
-                            {assignableUsersError && (
-                                <span style={{ color: tokens.colorPaletteRedForeground3, fontSize: tokens.fontSizeBase100 }}>
-                                    {assignableUsersError}
-                                </span>
-                            )}
-                        </div>
+                                    )}
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>
+                                            {form.assignedTo && form.assignedTo.length > 0 ? 'Assigned to' : 'Assign members'}
+                                        </span>
+                                        <span style={{ fontSize: tokens.fontSizeBase300, fontWeight: 500 }}>
+                                            {form.assignedTo && form.assignedTo.length > 0
+                                                ? `${form.assignedTo.length} member${form.assignedTo.length !== 1 ? 's' : ''}`
+                                                : 'Click to assign'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </PopoverTrigger>
+                            <PopoverSurface>
+                                <div style={{ padding: tokens.spacingVerticalM, minWidth: 320, maxWidth: 400 }}>
+                                    <div style={{ marginBottom: tokens.spacingVerticalS, fontWeight: tokens.fontWeightSemibold }}>
+                                        Assign members
+                                    </div>
+                                    <Dropdown
+                                        id="assign-member-dropdown"
+                                        placeholder={isLoadingAssignableUsers ? 'Loading…' : 'Select members'}
+                                        style={{ width: '100%' }}
+                                        listbox={{ style: { minWidth: 320 } }}
+                                        multiselect={true}
+                                        selectedOptions={form.assignedTo}
+                                        onOptionSelect={handleAssignedUserSelect}
+                                        disabled={isLoadingAssignableUsers || assignableUsers.length === 0}
+                                    >
+                                        {isLoadingAssignableUsers && (
+                                            <Option value="loading" disabled text="Loading">
+                                                Loading project members…
+                                            </Option>
+                                        )}
+                                        {!isLoadingAssignableUsers && assignableUsers.length === 0 && (
+                                            <Option value="no-users" disabled text="No users">
+                                                No project members available
+                                            </Option>
+                                        )}
+                                        {assignableUsers.map(assignableUser => (
+                                            <Option key={assignableUser.id} value={assignableUser.id} text={`${assignableUser.firstName} ${assignableUser.lastName}`}>
+                                                <Persona
+                                                    avatar={{
+                                                        color: 'colorful',
+                                                        image: assignableUser.userIMG ? { src: assignableUser.userIMG } : undefined,
+                                                    }}
+                                                    name={`${assignableUser.firstName} ${assignableUser.lastName}`}
+                                                    secondaryText={assignableUser.email}
+                                                />
+                                            </Option>
+                                        ))}
+                                    </Dropdown>
+                                    {assignableUsersError && (
+                                        <div style={{ color: tokens.colorPaletteRedForeground3, fontSize: tokens.fontSizeBase100, marginTop: tokens.spacingVerticalXS }}>
+                                            {assignableUsersError}
+                                        </div>
+                                    )}
+                                </div>
+                            </PopoverSurface>
+                        </Popover>
 
-                        {/* Project info display in edit mode */}
-                        {form.projectId && (
+                        {/* Project info display in edit mode - only show on /home page */}
+                        {isHomePage && form.projectId && (
                             <>
                                 <Divider vertical style={{ height: 40 }} />
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, maxWidth: 200 }}>
                                     <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>Project</span>
-                                    <span style={{ fontSize: tokens.fontSizeBase300, fontWeight: 500 }}>
+                                    <span style={{
+                                        fontSize: tokens.fontSizeBase300,
+                                        fontWeight: 500,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                    }}>
                                         {projects.find(p => p.id === form.projectId)?.projectName || form.projectId}
                                     </span>
                                 </div>
@@ -402,30 +399,7 @@ export default function EditTaskDialog({
                             </div>
                         </>
 
-                        {/* Date info display in edit mode */}
-                        {(form.startDate || form.endDate) && (
-                            <>
-                                <Divider vertical style={{ height: 40 }} />
-                                <div style={{ display: 'flex', gap: 16 }}>
-                                    {form.startDate && (
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>Start Date</span>
-                                            <span style={{ fontSize: tokens.fontSizeBase300, fontWeight: 500 }}>
-                                                {new Date(form.startDate).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {form.endDate && (
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <span style={{ fontSize: tokens.fontSizeBase100, color: tokens.colorNeutralForeground3 }}>Due Date</span>
-                                            <span style={{ fontSize: tokens.fontSizeBase300, fontWeight: 500 }}>
-                                                {new Date(form.endDate).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            </>
-                        )}
+
                     </div>
                     {/* Row 3: Description */}
                     <Field label="Description" style={{ marginBottom: 16 }}>
@@ -458,7 +432,7 @@ export default function EditTaskDialog({
                                 <PopoverTrigger disableButtonEnhancement>
                                     <Input
                                         name="startDate"
-                                        value={form.startDate ? new Date(form.startDate + 'T00:00:00').toLocaleDateString() : ''}
+                                        value={form.startDate ? (parseFormDate(form.startDate)?.toLocaleDateString() || '') : ''}
                                         placeholder="Select start date"
                                         readOnly
                                         contentAfter={<CalendarLtr24Regular style={{ cursor: 'pointer' }} />}
@@ -483,7 +457,7 @@ export default function EditTaskDialog({
                                 <PopoverTrigger disableButtonEnhancement>
                                     <Input
                                         name="endDate"
-                                        value={form.endDate ? new Date(form.endDate + 'T00:00:00').toLocaleDateString() : ''}
+                                        value={form.endDate ? (parseFormDate(form.endDate)?.toLocaleDateString() || '') : ''}
                                         placeholder="Select due date"
                                         readOnly
                                         contentAfter={<CalendarLtr24Regular style={{ cursor: 'pointer' }} />}
@@ -502,78 +476,7 @@ export default function EditTaskDialog({
                             </Popover>
                         </Field>
                     </div>
-                    {/* Row 6: Comments */}
-                    <Field label="Comments" style={{ marginBottom: 16 }}>
-                        {/* Existing Comments */}
-                        {comments && comments.length > 0 && (
-                            <div style={commentContainerStyle}>
-                                {comments.map((comment, index) => {
-                                    const commentText = comment.text || comment.content || '';
-                                    const commentDate = comment.createdAt ? new Date(comment.createdAt) : null;
-                                    const formattedDate = commentDate && !isNaN(commentDate.getTime())
-                                        ? commentDate.toLocaleString(undefined, {
-                                            year: 'numeric',
-                                            month: 'short',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        })
-                                        : '';
 
-                                    return (
-                                        <div key={index} style={{ marginBottom: index < comments.length - 1 ? tokens.spacingVerticalM : 0, paddingBottom: index < comments.length - 1 ? tokens.spacingVerticalM : 0, borderBottom: index < comments.length - 1 ? `1px solid ${tokens.colorNeutralStroke2}` : 'none' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalS, marginBottom: tokens.spacingVerticalXS }}>
-                                                <Avatar
-                                                    name={comment.authorUser ? `${comment.authorUser.firstName} ${comment.authorUser.lastName}` : 'User'}
-                                                    size={24}
-                                                    color="colorful"
-                                                    image={comment.authorUser?.userIMG ? { src: comment.authorUser.userIMG } : undefined}
-                                                />
-                                                <span style={{ color: tokens.colorBrandForegroundLink }}>
-                                                    {comment.authorUser ? `${comment.authorUser.firstName} ${comment.authorUser.lastName}` : 'User'}
-                                                </span>
-                                                {formattedDate && (
-                                                    <span style={commentDateStyle}>
-                                                        {formattedDate}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {commentText && (
-                                                <div style={commentTextStyle}>
-                                                    {commentText}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                                <Divider className={styles.layoutPadding} />
-                                {/* Add New Comment */}
-                                <div className={mergeClasses(styles.flexRowFill, styles.spaceBetween, styles.layoutPadding)}>
-                                    <Input
-                                        placeholder="Add a comment..."
-                                        value={newComment}
-                                        onChange={(e) => setNewComment(e.target.value)}
-                                    />
-                                    {commentError && (
-                                        <div style={{ color: 'red', fontSize: 12, marginBottom: 8 }}>
-                                            {commentError}
-                                        </div>
-                                    )}
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                        <Button
-                                            appearance="primary"
-                                            size="small"
-                                            onClick={handleAddCommentLocal}
-                                            disabled={!newComment.trim() || isAddingComment}
-                                        >
-                                            {isAddingComment ? 'Adding...' : 'Add Comment'}
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                    </Field>
                     {/* Error message */}
                     {submitError && (
                         <div style={{ color: 'red', marginTop: 8 }}>

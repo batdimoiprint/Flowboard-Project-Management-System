@@ -20,6 +20,11 @@ export const categoriesApi = {
         return response.data;
     },
 
+    updateCategory: async (categoryId: string, categoryData: Partial<Omit<Category, 'id'>>): Promise<Category> => {
+        const response = await axiosInstance.put<Category>(`/api/categories/${categoryId}`, categoryData);
+        return response.data;
+    },
+
     deleteCategory: async (categoryId: string): Promise<void> => {
         await axiosInstance.delete(`/api/categories/${categoryId}`);
     }

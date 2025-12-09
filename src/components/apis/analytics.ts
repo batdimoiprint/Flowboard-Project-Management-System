@@ -9,6 +9,24 @@ export interface AnalyticsSummary {
     tasksPending: number;
     tasksOverdue: number;
     activeProjects: number;
+    tasksInProgress: number;
+    tasksToDo: number;
+    tasksBlocked: number;
+    tasksByStatus: Record<string, number>;
+    tasksByPriority: Record<string, number>;
+}
+
+export interface TaskProgress {
+    totalTasks: number;
+    completedTasks: number;
+    inProgressTasks: number;
+    toDoTasks: number;
+    blockedTasks: number;
+    overdueTasks: number;
+    completionPercentage: number;
+    inProgressPercentage: number;
+    remainingTasks: number;
+    statusBreakdown: Record<string, number>;
 }
 
 export interface ProjectStats {
@@ -60,8 +78,9 @@ export const analyticsApi = {
     /**
      * Get overall system summary statistics
      */
-    async getSummary(): Promise<AnalyticsSummary> {
-        const response = await axiosInstance.get('/api/analytics/summary');
+    async getSummary(projectId?: string): Promise<AnalyticsSummary> {
+        const params = projectId ? `?projectId=${projectId}` : '';
+        const response = await axiosInstance.get(`/api/analytics/summary${params}`);
         return response.data;
     },
 
@@ -86,6 +105,25 @@ export const analyticsApi = {
      */
     async getTasksTimeline(days: number = 30): Promise<TimelineDataPoint[]> {
         const response = await axiosInstance.get(`/api/analytics/tasks/timeline?days=${days}`);
+        return response.data;
+    },
+
+    /**
+     * Get task progress statistics
+     */
+    async getTaskProgress(projectId?: string, userId?: string): Promise<TaskProgress> {
+        const params = new URLSearchParams();
+        if (projectId) params.append('projectId', projectId);
+        if (userId) params.append('userId', userId);
+        const response = await axiosInstance.get(`/api/analytics/progress${params.toString() ? '?' + params.toString() : ''}`);
+        return response.data;
+    },
+
+    /**
+     * Get current user's task progress
+     */
+    async getMyProgress(): Promise<TaskProgress> {
+        const response = await axiosInstance.get('/api/analytics/my-progress');
         return response.data;
     },
 

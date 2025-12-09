@@ -1,4 +1,4 @@
-import { Card, tokens, mergeClasses, DataGrid, DataGridHeader, DataGridRow, DataGridHeaderCell, DataGridBody, DataGridCell, TableCellLayout, createTableColumn, Button, Spinner, TabList, Tab } from '@fluentui/react-components';
+import { Card, tokens, mergeClasses, DataGrid, DataGridHeader, DataGridRow, DataGridHeaderCell, DataGridBody, DataGridCell, createTableColumn, Button, Spinner, TabList, Tab, Avatar, Badge, makeStyles } from '@fluentui/react-components';
 import type { TableColumnDefinition, SelectTabEvent, SelectTabData } from '@fluentui/react-components';
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -15,6 +15,52 @@ import EditMainTaskDialog from '../../components/dialogs/EditMainTaskDialog';
 import EditTaskDialog from '../../components/dialogs/EditTaskDialog';
 import { Add24Regular } from '@fluentui/react-icons';
 
+const useGridStyles = makeStyles({
+    grid: {
+        border: `1px solid ${tokens.colorNeutralStroke2}`,
+        borderRadius: tokens.borderRadiusMedium,
+        backgroundColor: tokens.colorNeutralBackground1,
+    },
+    headerCell: {
+        backgroundColor: tokens.colorNeutralBackground2,
+        color: tokens.colorNeutralForeground1,
+        fontWeight: tokens.fontWeightSemibold,
+        padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
+        borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+        letterSpacing: '0.01em',
+    },
+    cell: {
+        padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
+    },
+});
+
+const priorityPillStyles: Record<string, { bg: string; color: string; border: string }> = {
+    Important: {
+        bg: tokens.colorPaletteRedBackground3,
+        color: tokens.colorPaletteRedForeground2,
+        border: tokens.colorPaletteRedBorderActive,
+    },
+    Medium: {
+        bg: tokens.colorPaletteGoldBackground2,
+        color: tokens.colorPaletteGoldForeground2,
+        border: tokens.colorPaletteGoldBorderActive,
+    },
+    Low: {
+        bg: tokens.colorPaletteTealBackground2,
+        color: tokens.colorPaletteTealForeground2,
+        border: tokens.colorPaletteTealBorderActive,
+    },
+};
+
+const getPillColors = (value: string, map: Record<string, { bg: string; color: string; border: string }>) => {
+    const fallback = {
+        bg: tokens.colorNeutralBackground3,
+        color: tokens.colorNeutralForeground2,
+        border: tokens.colorNeutralStroke2,
+    };
+    return map[value] ?? fallback;
+};
+
 export default function TaskListPage() {
     const { projectName } = useParams<{ projectName: string }>();
     const titleSlug = projectName ? decodeURIComponent(projectName) : '';
@@ -22,6 +68,7 @@ export default function TaskListPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const s = mainLayoutStyles();
+    const gridStyles = useGridStyles();
     const { user } = useUser();
 
     // Filter state
@@ -33,8 +80,8 @@ export default function TaskListPage() {
     const [subTaskCounts, setSubTaskCounts] = useState<Record<string, number>>({});
 
     // SubTask state
-    const [subTasks, setSubTasks] = useState<SubTaskResponse[]>([]);
     const [loadingSubTasks, setLoadingSubTasks] = useState(false);
+    const [subTasksWithUsers, setSubTasksWithUsers] = useState<(SubTaskResponse & { assignedToUsers?: User[] })[]>([]);
 
     // Dialog state
     const [createMainTaskOpen, setCreateMainTaskOpen] = useState(false);
@@ -144,7 +191,36 @@ export default function TaskListPage() {
         try {
             setLoadingSubTasks(true);
             const tasks = await subTasksApi.getSubTasksByProject(project.id);
-            setSubTasks(tasks);
+
+            // Fetch user details for assignedTo
+            const userIds = new Set<string>();
+            tasks.forEach(task => {
+                task.assignedTo?.forEach(id => {
+                    if (id) userIds.add(id);
+                });
+            });
+
+            const userPromises = Array.from(userIds).map(id =>
+                usersApi.getUserById(id).catch(err => {
+                    console.error(`Failed to fetch user ${id}:`, err);
+                    return null;
+                })
+            );
+            const users = await Promise.all(userPromises);
+
+            const userMap = new Map<string, User>();
+            users.forEach((user, index) => {
+                if (user) {
+                    userMap.set(Array.from(userIds)[index], user);
+                }
+            });
+
+            const tasksWithUsers = tasks.map(task => ({
+                ...task,
+                assignedToUsers: task.assignedTo?.map(id => userMap.get(id)).filter(Boolean) as User[] | undefined,
+            }));
+
+            setSubTasksWithUsers(tasksWithUsers);
         } catch (err) {
             console.error('Failed to load subtasks:', err);
         } finally {
@@ -172,7 +248,7 @@ export default function TaskListPage() {
             title: subTask.title || '',
             description: subTask.description || '',
             priority: subTask.priority || 'Low',
-            status: 'To Do',
+            status: subTask.status || 'To Do',
             startDate: subTask.startDate ? new Date(subTask.startDate).toISOString().split('T')[0] : '',
             endDate: subTask.endDate ? new Date(subTask.endDate).toISOString().split('T')[0] : '',
             assignedTo: subTask.assignedTo || [],
@@ -251,23 +327,18 @@ export default function TaskListPage() {
             columnId: 'title',
             compare: (a, b) => a.title.localeCompare(b.title),
             renderHeaderCell: () => 'Title',
-            renderCell: (item) => <TableCellLayout>{item.title}</TableCellLayout>,
+            renderCell: (item) => item.title,
         }),
         createTableColumn<MainTaskResponse>({
             columnId: 'description',
             renderHeaderCell: () => 'Description',
-            renderCell: (item) => (
-                <TableCellLayout>
-                    {item.description ? item.description.substring(0, 50) + (item.description.length > 50 ? '...' : '') : '-'}
-                </TableCellLayout>
-            ),
+            renderCell: (item) =>
+                item.description ? item.description.substring(0, 50) + (item.description.length > 50 ? '...' : '') : '-',
         }),
         createTableColumn<MainTaskResponse>({
             columnId: 'subTasks',
             renderHeaderCell: () => 'SubTasks',
-            renderCell: (item) => (
-                <TableCellLayout>{subTaskCounts[item.id] || 0}</TableCellLayout>
-            ),
+            renderCell: (item) => subTaskCounts[item.id] || 0,
         }),
         createTableColumn<MainTaskResponse>({
             columnId: 'createdAt',
@@ -277,54 +348,75 @@ export default function TaskListPage() {
                 return dateA - dateB;
             },
             renderHeaderCell: () => 'Created',
-            renderCell: (item) => (
-                <TableCellLayout>
-                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-'}
-                </TableCellLayout>
-            ),
+            renderCell: (item) =>
+                item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-',
         }),
     ];
 
     // DataGrid columns for SubTasks
-    const subTaskColumns: TableColumnDefinition<SubTaskResponse>[] = [
-        createTableColumn<SubTaskResponse>({
+    const subTaskColumns: TableColumnDefinition<SubTaskResponse & { assignedToUsers?: User[] }>[] = [
+        createTableColumn<SubTaskResponse & { assignedToUsers?: User[] }>({
             columnId: 'title',
             compare: (a, b) => (a.title || '').localeCompare(b.title || ''),
             renderHeaderCell: () => 'Title',
-            renderCell: (item) => <TableCellLayout>{item.title || '-'}</TableCellLayout>,
+            renderCell: (item) => item.title || '-',
         }),
-        createTableColumn<SubTaskResponse>({
+        createTableColumn<SubTaskResponse & { assignedToUsers?: User[] }>({
             columnId: 'description',
             renderHeaderCell: () => 'Description',
-            renderCell: (item) => (
-                <TableCellLayout>
-                    {item.description ? item.description.substring(0, 50) + (item.description.length > 50 ? '...' : '') : '-'}
-                </TableCellLayout>
-            ),
+            renderCell: (item) =>
+                item.description ? item.description.substring(0, 50) + (item.description.length > 50 ? '...' : '') : '-',
         }),
-        createTableColumn<SubTaskResponse>({
+        createTableColumn<SubTaskResponse & { assignedToUsers?: User[] }>({
             columnId: 'priority',
             compare: (a, b) => (a.priority || '').localeCompare(b.priority || ''),
             renderHeaderCell: () => 'Priority',
-            renderCell: (item) => <TableCellLayout>{item.priority || '-'}</TableCellLayout>,
-        }),
-        createTableColumn<SubTaskResponse>({
-            columnId: 'category',
-            renderHeaderCell: () => 'Category',
-            renderCell: (item) => <TableCellLayout>{item.category || '-'}</TableCellLayout>,
-        }),
-        createTableColumn<SubTaskResponse>({
-            columnId: 'assignedTo',
-            renderHeaderCell: () => 'Assigned',
             renderCell: (item) => (
-                <TableCellLayout>
-                    {item.assignedTo && item.assignedTo.length > 0
-                        ? `${item.assignedTo.length} member${item.assignedTo.length !== 1 ? 's' : ''}`
-                        : '-'}
-                </TableCellLayout>
+                <Badge
+                    appearance="tint"
+                    size="large"
+                    style={(() => {
+                        const colors = getPillColors(item.priority || 'Low', priorityPillStyles);
+                        return {
+                            backgroundColor: colors.bg,
+                            color: colors.color,
+                            borderColor: colors.border,
+                            paddingInline: tokens.spacingHorizontalS,
+                        };
+                    })()}
+                >
+                    {item.priority || '-'}
+                </Badge>
             ),
         }),
-        createTableColumn<SubTaskResponse>({
+        createTableColumn<SubTaskResponse & { assignedToUsers?: User[] }>({
+            columnId: 'category',
+            renderHeaderCell: () => 'Category',
+            renderCell: (item) => item.category || '-',
+        }),
+        createTableColumn<SubTaskResponse & { assignedToUsers?: User[] }>({
+            columnId: 'assignedTo',
+            renderHeaderCell: () => 'Assigned To',
+            renderCell: (item) => (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {item.assignedToUsers && item.assignedToUsers.length > 0 ? (
+                        item.assignedToUsers.map((user) => (
+                            <Avatar
+                                key={user.id}
+                                name={`${user.firstName} ${user.lastName}`}
+                                size={32}
+                                color="colorful"
+                                image={{ src: user.userIMG || undefined }}
+                                title={`${user.firstName} ${user.lastName}`}
+                            />
+                        ))
+                    ) : (
+                        <span>Unassigned</span>
+                    )}
+                </div>
+            ),
+        }),
+        createTableColumn<SubTaskResponse & { assignedToUsers?: User[] }>({
             columnId: 'createdAt',
             compare: (a, b) => {
                 const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -332,11 +424,8 @@ export default function TaskListPage() {
                 return dateA - dateB;
             },
             renderHeaderCell: () => 'Created',
-            renderCell: (item) => (
-                <TableCellLayout>
-                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-'}
-                </TableCellLayout>
-            ),
+            renderCell: (item) =>
+                item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-',
         }),
     ];
 
@@ -379,73 +468,77 @@ export default function TaskListPage() {
                         No main tasks yet. Create one to get started!
                     </div>
                 ) : (
-                    <DataGrid
-                        items={mainTasks}
-                        columns={mainTaskColumns}
-                        sortable
-                        size="small"
-                        style={{ minWidth: '100%' }}
-                    >
-                        <DataGridHeader>
-                            <DataGridRow>
-                                {({ renderHeaderCell }) => (
-                                    <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
-                                )}
-                            </DataGridRow>
-                        </DataGridHeader>
-                        <DataGridBody<MainTaskResponse>>
-                            {({ item, rowId }) => (
-                                <DataGridRow<MainTaskResponse>
-                                    key={rowId}
-                                    onClick={() => handleMainTaskRowClick(item)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    {({ renderCell }) => (
-                                        <DataGridCell>{renderCell(item)}</DataGridCell>
+                    <div className={s.dataGridScrollable}>
+                        <DataGrid
+                            items={mainTasks}
+                            columns={mainTaskColumns}
+                            sortable
+                            size="small"
+                            className={gridStyles.grid}
+                        >
+                            <DataGridHeader>
+                                <DataGridRow>
+                                    {({ renderHeaderCell }) => (
+                                        <DataGridHeaderCell className={gridStyles.headerCell}>{renderHeaderCell()}</DataGridHeaderCell>
                                     )}
                                 </DataGridRow>
-                            )}
-                        </DataGridBody>
-                    </DataGrid>
+                            </DataGridHeader>
+                            <DataGridBody<MainTaskResponse>>
+                                {({ item, rowId }) => (
+                                    <DataGridRow<MainTaskResponse>
+                                        key={rowId}
+                                        onClick={() => handleMainTaskRowClick(item)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        {({ renderCell }) => (
+                                            <DataGridCell className={gridStyles.cell}>{renderCell(item)}</DataGridCell>
+                                        )}
+                                    </DataGridRow>
+                                )}
+                            </DataGridBody>
+                        </DataGrid>
+                    </div>
                 )
             ) : (
                 loadingSubTasks ? (
                     <div style={{ display: 'flex', justifyContent: 'center', padding: tokens.spacingVerticalXXL }}>
                         <Spinner label="Loading subtasks..." />
                     </div>
-                ) : subTasks.length === 0 ? (
+                ) : subTasksWithUsers.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: tokens.spacingVerticalXXL, color: tokens.colorNeutralForeground3 }}>
                         No subtasks in this project yet.
                     </div>
                 ) : (
-                    <DataGrid
-                        items={subTasks}
-                        columns={subTaskColumns}
-                        sortable
-                        size="small"
-                        style={{ minWidth: '100%' }}
-                    >
-                        <DataGridHeader>
-                            <DataGridRow>
-                                {({ renderHeaderCell }) => (
-                                    <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
-                                )}
-                            </DataGridRow>
-                        </DataGridHeader>
-                        <DataGridBody<SubTaskResponse>>
-                            {({ item, rowId }) => (
-                                <DataGridRow<SubTaskResponse>
-                                    key={rowId}
-                                    onClick={() => handleSubTaskRowClick(item)}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    {({ renderCell }) => (
-                                        <DataGridCell>{renderCell(item)}</DataGridCell>
+                    <div className={s.dataGridScrollable}>
+                        <DataGrid
+                            items={subTasksWithUsers}
+                            columns={subTaskColumns}
+                            sortable
+                            size="small"
+                            className={gridStyles.grid}
+                        >
+                            <DataGridHeader>
+                                <DataGridRow>
+                                    {({ renderHeaderCell }) => (
+                                        <DataGridHeaderCell className={gridStyles.headerCell}>{renderHeaderCell()}</DataGridHeaderCell>
                                     )}
                                 </DataGridRow>
-                            )}
-                        </DataGridBody>
-                    </DataGrid>
+                            </DataGridHeader>
+                            <DataGridBody<SubTaskResponse & { assignedToUsers?: User[] }>>
+                                {({ item, rowId }) => (
+                                    <DataGridRow<SubTaskResponse & { assignedToUsers?: User[] }>
+                                        key={rowId}
+                                        onClick={() => handleSubTaskRowClick(item)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        {({ renderCell }) => (
+                                            <DataGridCell className={gridStyles.cell}>{renderCell(item)}</DataGridCell>
+                                        )}
+                                    </DataGridRow>
+                                )}
+                            </DataGridBody>
+                        </DataGrid>
+                    </div>
                 )
             )}
 
@@ -527,6 +620,7 @@ export default function TaskListPage() {
                                 title: subTaskForm.title,
                                 description: subTaskForm.description,
                                 priority: subTaskForm.priority,
+                                status: subTaskForm.status,
                                 projectId: subTaskForm.projectId,
                                 mainTaskId: selectedSubTask.mainTaskId,
                                 category: subTaskForm.category,

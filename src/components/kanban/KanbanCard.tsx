@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Avatar, Badge, Card, Text } from '@fluentui/react-components';
+import { Avatar, AvatarGroup, AvatarGroupItem, Badge, Card, Text, Tooltip, tokens } from '@fluentui/react-components';
 import { mainLayoutStyles } from '../styles/Styles';
 import { useState, useEffect } from 'react';
 import { usersApi, type User } from '../apis/users';
@@ -25,7 +25,7 @@ interface KanbanCardProps {
 
 export default function KanbanCard({ task, onClick }: KanbanCardProps) {
     const styles = mainLayoutStyles();
-    const [assigneeUser, setAssigneeUser] = useState<User | null>(null);
+    const [assignedUsers, setAssignedUsers] = useState<User[]>([]);
 
     const {
         attributes,
@@ -42,28 +42,82 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
         opacity: isDragging ? 0.5 : 1,
     };
 
-    // Fetch assignee user data when task.assignee changes
+    // Fetch all assigned users data
     useEffect(() => {
-        if (!task.assignee) {
-            setAssigneeUser(null);
+        const userIds = task.assignedTo || (task.assignee ? [task.assignee] : []);
+        if (userIds.length === 0) {
+            setAssignedUsers([]);
             return;
         }
 
-        usersApi.getUserById(task.assignee)
-            .then(user => setAssigneeUser(user))
+        Promise.all(userIds.map(userId =>
+            usersApi.getUserById(userId).catch(err => {
+                console.error(`Failed to load user ${userId}:`, err);
+                return null;
+            })
+        ))
+            .then(users => setAssignedUsers(users.filter((u): u is User => u !== null)))
             .catch(err => {
-                console.error(`Failed to load user ${task.assignee}:`, err);
-                setAssigneeUser(null);
+                console.error('Failed to load assigned users:', err);
+                setAssignedUsers([]);
             });
-    }, [task.assignee]);
+    }, [task.assignedTo, task.assignee]);
 
-    const getPriorityColor = (priority?: string) => {
-        switch (priority) {
-            case 'High': return 'danger';
-            case 'Medium': return 'warning';
-            case 'Low': return 'success';
-            default: return 'informative';
-        }
+    const priorityStyles: Record<string, { bg: string; color: string; border: string }> = {
+        Important: {
+            bg: tokens.colorPaletteRedBackground3,
+            color: tokens.colorPaletteRedForeground2,
+            border: tokens.colorPaletteRedBorderActive,
+        },
+        Medium: {
+            bg: tokens.colorPaletteGoldBackground2,
+            color: tokens.colorPaletteGoldForeground2,
+            border: tokens.colorPaletteGoldBorderActive,
+        },
+        Low: {
+            bg: tokens.colorPaletteTealBackground2,
+            color: tokens.colorPaletteTealForeground2,
+            border: tokens.colorPaletteTealBorderActive,
+        },
+    };
+
+    const statusStyles: Record<string, { bg: string; color: string; border: string }> = {
+        'To Do': {
+            bg: tokens.colorPaletteSteelBackground2,
+            color: tokens.colorPaletteSteelForeground2,
+            border: tokens.colorPaletteSteelBorderActive,
+        },
+        'In Progress': {
+            bg: tokens.colorPaletteBlueBackground2,
+            color: tokens.colorPaletteBlueForeground2,
+            border: tokens.colorPaletteBlueBorderActive,
+        },
+        'Done': {
+            bg: tokens.colorPaletteGreenBackground2,
+            color: tokens.colorPaletteGreenForeground2,
+            border: tokens.colorPaletteGreenBorderActive,
+        },
+        'Blocked': {
+            bg: tokens.colorPaletteRedBackground3,
+            color: tokens.colorPaletteRedForeground2,
+            border: tokens.colorPaletteRedBorderActive,
+        },
+    };
+
+    const getPriorityStyle = (priority?: string) => {
+        return priority && priorityStyles[priority] ? priorityStyles[priority] : {
+            bg: tokens.colorNeutralBackground3,
+            color: tokens.colorNeutralForeground2,
+            border: tokens.colorNeutralStroke1,
+        };
+    };
+
+    const getStatusStyle = (status?: string) => {
+        return status && statusStyles[status] ? statusStyles[status] : {
+            bg: tokens.colorNeutralBackground3,
+            color: tokens.colorNeutralForeground2,
+            border: tokens.colorNeutralStroke1,
+        };
     };
 
     return (
@@ -84,8 +138,27 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
             )}
 
             <div className={styles.kanbanTaskMetaRow}>
+                {task.status && (
+                    <Badge
+                        appearance="filled"
+                        style={{
+                            backgroundColor: getStatusStyle(task.status).bg,
+                            color: getStatusStyle(task.status).color,
+                            borderColor: getStatusStyle(task.status).border,
+                        }}
+                    >
+                        {task.status}
+                    </Badge>
+                )}
                 {task.priority && (
-                    <Badge appearance="filled" color={getPriorityColor(task.priority)}>
+                    <Badge
+                        appearance="filled"
+                        style={{
+                            backgroundColor: getPriorityStyle(task.priority).bg,
+                            color: getPriorityStyle(task.priority).color,
+                            borderColor: getPriorityStyle(task.priority).border,
+                        }}
+                    >
                         {task.priority}
                     </Badge>
                 )}
@@ -96,14 +169,27 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
                 )}
             </div>
 
-            {task.assignee && (
+            {assignedUsers.length > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px' }}>
-                    <Avatar
-                        name={assigneeUser ? `${assigneeUser.firstName} ${assigneeUser.lastName}` : 'User'}
-                        size={24}
-                        color="colorful"
-                        image={assigneeUser?.userIMG ? { src: assigneeUser.userIMG } : undefined}
-                    />
+                    <Tooltip
+                        content={assignedUsers.map(u => `${u.firstName} ${u.lastName}`).join(', ')}
+                        relationship="label"
+                    >
+                        <div>
+                            <AvatarGroup size={24} layout="stack">
+                                {assignedUsers.slice(0, 3).map(user => (
+                                    <AvatarGroupItem key={user.id} name={`${user.firstName} ${user.lastName}`}>
+                                        <Avatar
+                                            name={`${user.firstName} ${user.lastName}`}
+                                            size={24}
+                                            color="colorful"
+                                            image={user.userIMG ? { src: user.userIMG } : undefined}
+                                        />
+                                    </AvatarGroupItem>
+                                ))}
+                            </AvatarGroup>
+                        </div>
+                    </Tooltip>
                 </div>
             )}
         </Card>

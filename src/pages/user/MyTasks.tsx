@@ -209,6 +209,8 @@ export default function MyTasks() {
                 updates.description = value;
             } else if (fieldName === 'priority' && typeof value === 'string') {
                 updates.priority = value;
+            } else if (fieldName === 'status' && typeof value === 'string') {
+                updates.status = value;
             } else if (fieldName === 'categoryId' && typeof value === 'string') {
                 updates.categoryId = value;
             } else if (fieldName === 'assignedTo' && Array.isArray(value)) {

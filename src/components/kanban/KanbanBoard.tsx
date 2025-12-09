@@ -23,6 +23,7 @@ import { tasksApi, type TaskResponse, type CreateTaskData } from '../apis/tasks'
 import { mainTasksApi } from '../apis/maintasks';
 import { projectsApi, type ProjectMember, type Project } from '../apis/projects';
 import type { User } from '../apis/auth';
+import { subTasksApi, type UpdateSubTaskData } from '../apis/subtasks';
 
 interface KanbanBoardProps {
     projectId?: string;
@@ -402,6 +403,29 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
         }
     };
 
+    const handleUpdateCategory = async (categoryId: string, newTitle: string) => {
+        if (!projectId) {
+            setError('No project selected');
+            return;
+        }
+
+        try {
+            await categoriesApi.updateCategory(categoryId, {
+                categoryName: newTitle,
+                projectId,
+                createdBy: user?.id || '',
+            });
+
+            // Update column title in state
+            setColumns(cols => cols.map(col =>
+                col.id === categoryId ? { ...col, title: newTitle } : col
+            ));
+        } catch (e: unknown) {
+            const msg = (e as Error)?.message || 'Failed to update category';
+            setError(msg);
+        }
+    };
+
     const handleDeleteCategory = async (categoryId: string) => {
         if (!projectId) {
             setError('No project selected');
@@ -419,6 +443,67 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
             setError(msg);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleFieldUpdate = async (taskId: string, fieldName: string, value: unknown) => {
+        if (!taskId) return;
+
+        // If the new value is empty, skip calling the backend
+        if (value === '' || (Array.isArray(value) && value.length === 0)) return;
+
+        try {
+            const updates: Partial<UpdateSubTaskData> = {};
+
+            if (fieldName === 'title' && typeof value === 'string') {
+                updates.title = value;
+            } else if (fieldName === 'description' && typeof value === 'string') {
+                updates.description = value;
+            } else if (fieldName === 'priority' && typeof value === 'string') {
+                updates.priority = value;
+            } else if (fieldName === 'status' && typeof value === 'string') {
+                updates.status = value;
+            } else if (fieldName === 'categoryId' && typeof value === 'string') {
+                updates.categoryId = value;
+            } else if (fieldName === 'assignedTo' && Array.isArray(value)) {
+                updates.assignedTo = value as string[];
+            } else if (fieldName === 'startDate' && typeof value === 'string') {
+                updates.startDate = value;
+            } else if (fieldName === 'endDate' && typeof value === 'string') {
+                updates.endDate = value;
+            } else {
+                return;
+            }
+
+            await subTasksApi.patchSubTask(taskId, updates);
+
+            // Update local state to reflect changes
+            setColumns(cols => cols.map(col => ({
+                ...col,
+                tasks: col.tasks.map(t => {
+                    if (t.id === taskId) {
+                        return {
+                            ...t,
+                            ...(fieldName === 'title' && { title: value as string }),
+                            ...(fieldName === 'description' && { description: value as string }),
+                            ...(fieldName === 'priority' && { priority: value as Task['priority'] }),
+                            ...(fieldName === 'status' && { status: value as string }),
+                            ...(fieldName === 'assignedTo' && { assignedTo: value as string[] }),
+                            ...(fieldName === 'startDate' && { startDate: value as string }),
+                            ...(fieldName === 'endDate' && { endDate: value as string }),
+                        };
+                    }
+                    return t;
+                })
+            })));
+
+            // Update edit form if it's the currently selected task
+            if (selectedTask?.id === taskId) {
+                setEditForm(prev => prev ? { ...prev, [fieldName]: value } : prev);
+            }
+        } catch (err) {
+            console.error('Failed to update task field:', err);
+            setEditTaskError((err as Error)?.message || 'Failed to update task');
         }
     };
 
@@ -493,6 +578,49 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
 
             {loading ? (
                 <div style={{ color: 'var(--colorNeutralForeground3)' }}>Loading kanban…</div>
+            ) : columns.length === 0 ? (
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '400px',
+                    gap: '16px',
+                    color: 'var(--colorNeutralForeground3)',
+                    textAlign: 'center'
+                }}>
+                    <div style={{ fontSize: '18px', fontWeight: 500 }}>
+                        Nothing here yet
+                    </div>
+                    <div style={{ fontSize: '14px', marginBottom: '8px' }}>
+                        Get started by creating your first column
+                    </div>
+                    <Button appearance="primary" onClick={() => setIsAddingColumn(true)}>
+                        + Create Column
+                    </Button>
+                    {isAddingColumn && (
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                            width: '300px',
+                            marginTop: '16px',
+                            padding: '16px',
+                            border: '1px solid var(--colorNeutralStroke1)',
+                            borderRadius: '8px'
+                        }}>
+                            <Input
+                                placeholder="Column name"
+                                value={newCategoryName}
+                                onChange={(e: ChangeEvent<HTMLInputElement>) => setNewCategoryName(e.target.value)}
+                            />
+                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                <Button appearance="primary" onClick={handleAddCategory} disabled={!newCategoryName.trim()}>Save</Button>
+                                <Button appearance="subtle" onClick={() => { setIsAddingColumn(false); setNewCategoryName(''); }}>Cancel</Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             ) : (
                 <div className={styles.kanbanBoardOuter}>
                     <div className={styles.kanbanBoard}>
@@ -503,6 +631,7 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                                 onAddTask={handleAddTask}
                                 onTaskClick={handleTaskClick}
                                 onDeleteColumn={handleDeleteCategory}
+                                onUpdateColumn={handleUpdateCategory}
                             />
                         ))}
                         <div className={styles.kanbanAddColumn}>
@@ -557,10 +686,19 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                         const { name, value } = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
                         const key = name as keyof EditFormType;
                         setEditForm(prev => prev ? { ...prev, [key]: value } : prev);
+
+                        // Immediately update for selects and dates
+                        const target = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+                        const isSelect = target.tagName === 'SELECT';
+                        const isDate = 'type' in target && (target as HTMLInputElement).type === 'date';
+
+                        if (isSelect || isDate) {
+                            handleFieldUpdate(selectedTask.id, name, value);
+                        }
                     }}
                     onSubmit={async (e) => {
                         e.preventDefault();
-                        // TODO: Implement edit task submission
+                        setEditTaskOpen(false);
                     }}
                     assignableUsers={assignableUsers}
                     isLoadingAssignableUsers={isLoadingEditTask}
@@ -571,6 +709,14 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                     isLoadingCategories={loading}
                     categoriesError={null}
                     taskId={selectedTask.id}
+                    onCategoryChange={async (categoryId: string) => {
+                        await handleFieldUpdate(selectedTask.id, 'categoryId', categoryId);
+                        // Update category name in form
+                        const category = fetchedCategories.find(c => c.id === categoryId);
+                        if (category) {
+                            setEditForm(prev => prev ? { ...prev, categoryId, category: category.categoryName } : prev);
+                        }
+                    }}
                 />
             )}
 

@@ -4,30 +4,36 @@ import { mainLayoutStyles } from '../../components/styles/Styles';
 import { analyticsApi, type AnalyticsSummary } from '../../components/apis/analytics';
 import StatCard, { StatCardSkeleton } from '../../components/analytics/StatCard';
 import {
-    PersonRegular,
     FolderRegular,
     TaskListSquareLtrRegular,
     CheckmarkCircleRegular,
     ClockRegular,
     ErrorCircleRegular,
 } from '@fluentui/react-icons';
+import { DonutChart, VerticalBarChart } from '@fluentui/react-charting';
+import type { TaskProgress } from '../../components/apis/analytics';
 
 export default function AnalyticsPage() {
     const styles = mainLayoutStyles();
     const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
+    const [myProgress, setMyProgress] = useState<TaskProgress | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        loadSummary();
+        loadData();
     }, []);
 
-    async function loadSummary() {
+    async function loadData() {
         setLoading(true);
         setError(null);
         try {
-            const data = await analyticsApi.getSummary();
-            setSummary(data);
+            const [summaryData, progressData] = await Promise.all([
+                analyticsApi.getSummary(),
+                analyticsApi.getMyProgress()
+            ]);
+            setSummary(summaryData);
+            setMyProgress(progressData);
         } catch (err) {
             console.error('Failed to load analytics:', err);
             setError(err instanceof Error ? err.message : 'Failed to load analytics');
@@ -83,12 +89,6 @@ export default function AnalyticsPage() {
                                 }}
                             >
                                 <StatCard
-                                    title="Total Users"
-                                    value={summary.totalUsers}
-                                    icon={<PersonRegular />}
-                                    color="brand"
-                                />
-                                <StatCard
                                     title="Total Projects"
                                     value={summary.totalProjects}
                                     icon={<FolderRegular />}
@@ -142,23 +142,335 @@ export default function AnalyticsPage() {
                                 />
                             </div>
 
-                            {/* Placeholder for future charts/graphs */}
+                            {/* Task Status & Completion Combined Card */}
                             <div style={{ marginTop: tokens.spacingVerticalXXL }}>
                                 <Card
                                     className={styles.artifCard}
                                     style={{
                                         padding: tokens.spacingVerticalXL,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        minHeight: '200px',
                                     }}
                                 >
-                                    <Text style={{ color: tokens.colorNeutralForeground3 }}>
-                                        Additional analytics visualizations coming soon...
+                                    <Text
+                                        style={{
+                                            fontSize: tokens.fontSizeBase400,
+                                            fontWeight: tokens.fontWeightSemibold,
+                                            marginBottom: tokens.spacingVerticalL,
+                                        }}
+                                    >
+                                        Task Status & Completion Overview
                                     </Text>
+                                    <div style={{ display: 'flex', gap: tokens.spacingHorizontalXXL, flexWrap: 'wrap' }}>
+                                        {/* Overall Completion Donut */}
+                                        <div style={{ flex: '1 1 300px', minWidth: '300px' }}>
+                                            <Text
+                                                style={{
+                                                    fontSize: tokens.fontSizeBase300,
+                                                    fontWeight: tokens.fontWeightSemibold,
+                                                    marginBottom: tokens.spacingVerticalM,
+                                                    display: 'block',
+                                                }}
+                                            >
+                                                Overall Completion Rate
+                                            </Text>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalL }}>
+                                                <DonutChart
+                                                    data={{
+                                                        chartTitle: 'Completion',
+                                                        chartData: [
+                                                            {
+                                                                legend: 'Completed',
+                                                                data: summary.tasksCompleted,
+                                                                color: tokens.colorPaletteGreenBackground3,
+                                                            },
+                                                            {
+                                                                legend: 'Remaining',
+                                                                data: summary.tasksPending,
+                                                                color: tokens.colorNeutralBackground5,
+                                                            },
+                                                        ],
+                                                    }}
+                                                    innerRadius={60}
+                                                    valueInsideDonut={
+                                                        summary.totalSubTasks > 0
+                                                            ? `${Math.round((summary.tasksCompleted / summary.totalSubTasks) * 100)}%`
+                                                            : '0%'
+                                                    }
+                                                    hideLabels={true}
+                                                    styles={{
+                                                        root: { maxWidth: '250px' },
+                                                    }}
+                                                />
+                                                <div>
+                                                    <div style={{ marginBottom: tokens.spacingVerticalM }}>
+                                                        <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                                                            Total Tasks
+                                                        </Text>
+                                                        <Text style={{ fontSize: tokens.fontSizeBase500, fontWeight: tokens.fontWeightSemibold, display: 'block' }}>
+                                                            {summary.totalSubTasks}
+                                                        </Text>
+                                                    </div>
+                                                    <div style={{ marginBottom: tokens.spacingVerticalM }}>
+                                                        <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                                                            Completed
+                                                        </Text>
+                                                        <Text style={{ fontSize: tokens.fontSizeBase500, fontWeight: tokens.fontWeightSemibold, color: tokens.colorPaletteGreenForeground1, display: 'block' }}>
+                                                            {summary.tasksCompleted}
+                                                        </Text>
+                                                    </div>
+                                                    <div>
+                                                        <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                                                            Remaining
+                                                        </Text>
+                                                        <Text style={{ fontSize: tokens.fontSizeBase500, fontWeight: tokens.fontWeightSemibold, display: 'block' }}>
+                                                            {summary.tasksPending}
+                                                        </Text>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Status Breakdown Donut */}
+                                        <div style={{ flex: '1 1 300px', minWidth: '300px' }}>
+                                            <Text
+                                                style={{
+                                                    fontSize: tokens.fontSizeBase300,
+                                                    fontWeight: tokens.fontWeightSemibold,
+                                                    marginBottom: tokens.spacingVerticalM,
+                                                    display: 'block',
+                                                }}
+                                            >
+                                                Task Status Distribution
+                                            </Text>
+                                            <DonutChart
+                                                data={{
+                                                    chartTitle: 'Status',
+                                                    chartData: [
+                                                        {
+                                                            legend: 'Completed',
+                                                            data: summary.tasksCompleted,
+                                                            color: tokens.colorPaletteGreenBackground3,
+                                                        },
+                                                        {
+                                                            legend: 'In Progress',
+                                                            data: summary.tasksInProgress,
+                                                            color: tokens.colorPaletteBlueBorderActive,
+                                                        },
+                                                        {
+                                                            legend: 'To Do',
+                                                            data: summary.tasksToDo,
+                                                            color: tokens.colorNeutralBackground5,
+                                                        },
+                                                        {
+                                                            legend: 'Blocked',
+                                                            data: summary.tasksBlocked,
+                                                            color: tokens.colorPaletteRedBackground3,
+                                                        },
+                                                        {
+                                                            legend: 'Overdue',
+                                                            data: summary.tasksOverdue,
+                                                            color: tokens.colorPaletteRedForeground1,
+                                                        },
+                                                    ].filter(item => item.data > 0),
+                                                }}
+                                                innerRadius={60}
+                                                valueInsideDonut={`${summary.totalSubTasks}`}
+                                                hideLabels={false}
+                                            />
+                                        </div>
+                                    </div>
                                 </Card>
                             </div>
+
+                            {/* My Task Progress Section */}
+                            {myProgress && myProgress.totalTasks > 0 && (
+                                <>
+                                    <div style={{ marginTop: tokens.spacingVerticalXXL }}>
+                                        <Text
+                                            style={{
+                                                fontSize: tokens.fontSizeBase500,
+                                                fontWeight: tokens.fontWeightSemibold,
+                                                marginBottom: tokens.spacingVerticalM,
+                                                display: 'block',
+                                            }}
+                                        >
+                                            My Task Progress
+                                        </Text>
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+                                            gap: tokens.spacingHorizontalL,
+                                        }}
+                                    >
+                                        {/* My Progress Overview */}
+                                        <Card
+                                            className={styles.artifCard}
+                                            style={{
+                                                padding: tokens.spacingVerticalXL,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: tokens.spacingVerticalL,
+                                            }}
+                                        >
+                                            <Text
+                                                style={{
+                                                    fontSize: tokens.fontSizeBase400,
+                                                    fontWeight: tokens.fontWeightSemibold,
+                                                }}
+                                            >
+                                                My Task Completion
+                                            </Text>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXL }}>
+                                                <DonutChart
+                                                    data={{
+                                                        chartTitle: 'My Tasks',
+                                                        chartData: [
+                                                            {
+                                                                legend: 'Completed',
+                                                                data: myProgress.completedTasks,
+                                                                color: tokens.colorPaletteGreenBackground3,
+                                                            },
+                                                            {
+                                                                legend: 'Remaining',
+                                                                data: myProgress.remainingTasks,
+                                                                color: tokens.colorNeutralBackground5,
+                                                            },
+                                                        ],
+                                                    }}
+                                                    innerRadius={60}
+                                                    valueInsideDonut={`${Math.round(myProgress.completionPercentage)}%`}
+                                                    hideLabels={true}
+                                                    styles={{ root: { maxWidth: '250px' } }}
+                                                />
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalS }}>
+                                                        <div>
+                                                            <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                                                                Total Assigned
+                                                            </Text>
+                                                            <Text style={{ fontSize: tokens.fontSizeBase500, fontWeight: tokens.fontWeightSemibold, display: 'block' }}>
+                                                                {myProgress.totalTasks}
+                                                            </Text>
+                                                        </div>
+                                                        <div>
+                                                            <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                                                                Completed
+                                                            </Text>
+                                                            <Text style={{ fontSize: tokens.fontSizeBase500, fontWeight: tokens.fontWeightSemibold, color: tokens.colorPaletteGreenForeground1, display: 'block' }}>
+                                                                {myProgress.completedTasks}
+                                                            </Text>
+                                                        </div>
+                                                        <div>
+                                                            <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                                                                Remaining
+                                                            </Text>
+                                                            <Text style={{ fontSize: tokens.fontSizeBase500, fontWeight: tokens.fontWeightSemibold, display: 'block' }}>
+                                                                {myProgress.remainingTasks}
+                                                            </Text>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </Card>
+
+                                        {/* Status Breakdown */}
+                                        <Card
+                                            className={styles.artifCard}
+                                            style={{
+                                                padding: tokens.spacingVerticalXL,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: tokens.spacingVerticalL,
+                                            }}
+                                        >
+                                            <Text
+                                                style={{
+                                                    fontSize: tokens.fontSizeBase400,
+                                                    fontWeight: tokens.fontWeightSemibold,
+                                                }}
+                                            >
+                                                My Tasks by Status
+                                            </Text>
+                                            <VerticalBarChart
+                                                data={Object.entries(myProgress.statusBreakdown).map(([status, count]) => ({
+                                                    x: status,
+                                                    y: count,
+                                                    color: status.toLowerCase() === 'done' || status.toLowerCase() === 'completed'
+                                                        ? tokens.colorPaletteGreenBackground3
+                                                        : status.toLowerCase() === 'in progress'
+                                                            ? tokens.colorPaletteBlueBorderActive
+                                                            : status.toLowerCase() === 'blocked'
+                                                                ? tokens.colorPaletteRedBackground3
+                                                                : tokens.colorNeutralBackground5,
+                                                }))}
+                                                height={200}
+                                            />
+                                        </Card>
+
+                                        {/* Quick Stats Grid */}
+                                        <Card
+                                            className={styles.artifCard}
+                                            style={{
+                                                padding: tokens.spacingVerticalXL,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: tokens.spacingVerticalM,
+                                            }}
+                                        >
+                                            <Text
+                                                style={{
+                                                    fontSize: tokens.fontSizeBase400,
+                                                    fontWeight: tokens.fontWeightSemibold,
+                                                    marginBottom: tokens.spacingVerticalS,
+                                                }}
+                                            >
+                                                Task Status Summary
+                                            </Text>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: tokens.spacingVerticalL }}>
+                                                <div>
+                                                    <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                                                        In Progress
+                                                    </Text>
+                                                    <div style={{ display: 'flex', alignItems: 'baseline', gap: tokens.spacingHorizontalXS }}>
+                                                        <Text style={{ fontSize: tokens.fontSizeBase600, fontWeight: tokens.fontWeightSemibold, color: tokens.colorPaletteBlueForeground2 }}>
+                                                            {myProgress.inProgressTasks}
+                                                        </Text>
+                                                        <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                                                            ({Math.round(myProgress.inProgressPercentage)}%)
+                                                        </Text>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                                                        To Do
+                                                    </Text>
+                                                    <Text style={{ fontSize: tokens.fontSizeBase600, fontWeight: tokens.fontWeightSemibold, display: 'block' }}>
+                                                        {myProgress.toDoTasks}
+                                                    </Text>
+                                                </div>
+                                                <div>
+                                                    <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                                                        Blocked
+                                                    </Text>
+                                                    <Text style={{ fontSize: tokens.fontSizeBase600, fontWeight: tokens.fontWeightSemibold, color: tokens.colorPaletteRedForeground1, display: 'block' }}>
+                                                        {myProgress.blockedTasks}
+                                                    </Text>
+                                                </div>
+                                                <div>
+                                                    <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                                                        Overdue
+                                                    </Text>
+                                                    <Text style={{ fontSize: tokens.fontSizeBase600, fontWeight: tokens.fontWeightSemibold, color: tokens.colorPaletteRedForeground1, display: 'block' }}>
+                                                        {myProgress.overdueTasks}
+                                                    </Text>
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    </div>
+                                </>
+                            )}
                         </>
                     ) : null}
                 </div>
