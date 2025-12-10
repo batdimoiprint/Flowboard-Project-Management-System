@@ -161,6 +161,15 @@ export const subTasksApi = {
     },
 
     /**
+     * Update category of a subtask
+     * Backend path: PATCH /api/subtasks/{id}/category
+     */
+    updateCategory: async (subTaskId: string, categoryData: { categoryId?: string; category?: string }): Promise<{ message: string }> => {
+        const response = await axiosInstance.patch<{ message: string }>(`/api/subtasks/${subTaskId}/category`, categoryData);
+        return response.data;
+    },
+
+    /**
      * Delete a subtask
      * Backend path: DELETE /api/subtasks/{id}
      */

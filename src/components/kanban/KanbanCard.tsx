@@ -1,9 +1,8 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Avatar, AvatarGroup, AvatarGroupItem, Badge, Card, Text, Tooltip, tokens } from '@fluentui/react-components';
+import { Badge, Card, Text, tokens } from '@fluentui/react-components';
+import { Calendar16Regular } from '@fluentui/react-icons';
 import { mainLayoutStyles } from '../styles/Styles';
-import { useState, useEffect } from 'react';
-import { usersApi, type User } from '../apis/users';
 
 export interface Task {
     id: string;
@@ -25,7 +24,6 @@ interface KanbanCardProps {
 
 export default function KanbanCard({ task, onClick }: KanbanCardProps) {
     const styles = mainLayoutStyles();
-    const [assignedUsers, setAssignedUsers] = useState<User[]>([]);
 
     const {
         attributes,
@@ -41,27 +39,6 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
         transition,
         opacity: isDragging ? 0.5 : 1,
     };
-
-    // Fetch all assigned users data
-    useEffect(() => {
-        const userIds = task.assignedTo || (task.assignee ? [task.assignee] : []);
-        if (userIds.length === 0) {
-            setAssignedUsers([]);
-            return;
-        }
-
-        Promise.all(userIds.map(userId =>
-            usersApi.getUserById(userId).catch(err => {
-                console.error(`Failed to load user ${userId}:`, err);
-                return null;
-            })
-        ))
-            .then(users => setAssignedUsers(users.filter((u): u is User => u !== null)))
-            .catch(err => {
-                console.error('Failed to load assigned users:', err);
-                setAssignedUsers([]);
-            });
-    }, [task.assignedTo, task.assignee]);
 
     const priorityStyles: Record<string, { bg: string; color: string; border: string }> = {
         Important: {
@@ -163,35 +140,12 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
                     </Badge>
                 )}
                 {task.dueDate && (
-                    <Text size={200} className={styles.kanbanSmallBadge}>
-                        {new Date(task.dueDate).toLocaleDateString()}
-                    </Text>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2 }}>
+                        <Calendar16Regular style={{ fontSize: '14px' }} />
+                        <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                    </div>
                 )}
             </div>
-
-            {assignedUsers.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px' }}>
-                    <Tooltip
-                        content={assignedUsers.map(u => `${u.firstName} ${u.lastName}`).join(', ')}
-                        relationship="label"
-                    >
-                        <div>
-                            <AvatarGroup size={24} layout="stack">
-                                {assignedUsers.slice(0, 3).map(user => (
-                                    <AvatarGroupItem key={user.id} name={`${user.firstName} ${user.lastName}`}>
-                                        <Avatar
-                                            name={`${user.firstName} ${user.lastName}`}
-                                            size={24}
-                                            color="colorful"
-                                            image={user.userIMG ? { src: user.userIMG } : undefined}
-                                        />
-                                    </AvatarGroupItem>
-                                ))}
-                            </AvatarGroup>
-                        </div>
-                    </Tooltip>
-                </div>
-            )}
         </Card>
     );
 }

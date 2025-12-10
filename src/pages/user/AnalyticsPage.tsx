@@ -14,7 +14,8 @@ import {
 import { DonutChart, VerticalBarChart } from '@fluentui/react-charting';
 import type { TaskProgress } from '../../components/apis/analytics';
 import { useParams } from 'react-router-dom';
-import { projectsApi } from '../../components/apis/projects';
+import { projectsApi, type Project, type ProjectMember } from '../../components/apis/projects';
+import ProjectReportGenerator from '../../components/analytics/ProjectReportGenerator';
 
 export default function AnalyticsPage() {
     const styles = mainLayoutStyles();
@@ -24,6 +25,8 @@ export default function AnalyticsPage() {
     const [myProgress, setMyProgress] = useState<TaskProgress | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [projectDetails, setProjectDetails] = useState<Project | null>(null);
+    const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
 
     const isProjectView = !!projectName;
 
@@ -44,8 +47,14 @@ export default function AnalyticsPage() {
                         return;
                     }
 
-                    const stats = await analyticsApi.getProjectStats(project.id);
+                    const [stats, members] = await Promise.all([
+                        analyticsApi.getProjectStats(project.id),
+                        projectsApi.getProjectMembers(project.id),
+                    ]);
+
                     setProjectStats(stats);
+                    setProjectDetails(project);
+                    setProjectMembers(members);
                 } else {
                     // Global analytics
                     const [summaryData, progressData] = await Promise.all([
@@ -54,6 +63,8 @@ export default function AnalyticsPage() {
                     ]);
                     setSummary(summaryData);
                     setMyProgress(progressData);
+                    setProjectDetails(null);
+                    setProjectMembers([]);
                 }
             } catch (err) {
                 console.error('Failed to load analytics:', err);
@@ -72,7 +83,7 @@ export default function AnalyticsPage() {
                 style={{ height: '100%', maxHeight: '100%', padding: tokens.spacingVerticalXL, overflow: 'auto' }}
             >
                 <div className={mergeClasses(styles.flexColFit, styles.gap)} style={{ overflow: 'auto' }}>
-                    <div className={mergeClasses(styles.flexRowFit, styles.spaceBetween)}>
+                    <div className={mergeClasses(styles.flexRowFill, styles.fullWidth, styles.spaceBetween,)}>
                         <Text
                             style={{
                                 fontSize: tokens.fontSizeBase500,
@@ -81,6 +92,14 @@ export default function AnalyticsPage() {
                         >
                             {isProjectView ? `${projectStats?.projectName || 'Project'} - Project Analytics` : 'Analytics Dashboard'}
                         </Text>
+                        {isProjectView && projectStats && (
+                            <ProjectReportGenerator
+                                projectStats={projectStats}
+                                projectMembers={projectMembers}
+                                projectOwnerId={projectDetails?.createdBy}
+                                appearance="primary"
+                            />
+                        )}
                     </div>
 
                     {error && (
@@ -166,7 +185,7 @@ export default function AnalyticsPage() {
                                 />
                             </div>
 
-                            {/* Task Status & Completion Combined Card */}
+                            {/* Task Overview - Combined Card */}
                             <div style={{ marginTop: tokens.spacingVerticalXXL }}>
                                 <Card
                                     className={styles.artifCard}
@@ -183,9 +202,9 @@ export default function AnalyticsPage() {
                                     >
                                         Task Overview
                                     </Text>
-                                    <div style={{ display: 'flex', gap: tokens.spacingHorizontalXXL, flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: tokens.spacingHorizontalXXL }}>
                                         {/* Completion Rate Donut */}
-                                        <div style={{ flex: '1 1 300px', minWidth: '300px' }}>
+                                        <div>
                                             <Text
                                                 style={{
                                                     fontSize: tokens.fontSizeBase300,
@@ -250,8 +269,11 @@ export default function AnalyticsPage() {
                                         </div>
 
                                         {/* Status Distribution Donut */}
-                                        {Object.keys(projectStats.tasksByStatus).length > 0 && (
-                                            <div style={{ flex: '1 1 300px', minWidth: '300px' }}>
+                                        {/* Tasks by Status removed per request - keep layout for other charts */}
+
+                                        {/* Priority Distribution */}
+                                        {Object.keys(projectStats.tasksByPriority).length > 0 && (
+                                            <div>
                                                 <Text
                                                     style={{
                                                         fontSize: tokens.fontSizeBase300,
@@ -260,96 +282,49 @@ export default function AnalyticsPage() {
                                                         display: 'block',
                                                     }}
                                                 >
-                                                    Tasks by Status
+                                                    Tasks by Priority
                                                 </Text>
-                                                <DonutChart
-                                                    data={{
-                                                        chartTitle: 'Status',
-                                                        chartData: Object.entries(projectStats.tasksByStatus).map(([status, count]) => ({
-                                                            legend: status,
-                                                            data: count,
-                                                            color: status.toLowerCase() === 'done' || status.toLowerCase() === 'completed'
-                                                                ? tokens.colorPaletteGreenBackground3
-                                                                : status.toLowerCase() === 'in progress'
-                                                                    ? tokens.colorPaletteBlueBorderActive
-                                                                    : status.toLowerCase() === 'blocked'
-                                                                        ? tokens.colorPaletteRedBackground3
-                                                                        : tokens.colorNeutralBackground5,
-                                                        })),
+                                                <VerticalBarChart
+                                                    data={Object.entries(projectStats.tasksByPriority).map(([priority, count]) => ({
+                                                        x: priority.charAt(0).toUpperCase() + priority.slice(1),
+                                                        y: count,
+                                                        color: priority.toLowerCase() === 'high'
+                                                            ? tokens.colorPaletteRedBackground3
+                                                            : priority.toLowerCase() === 'medium'
+                                                                ? tokens.colorPaletteYellowBackground3
+                                                                : tokens.colorPaletteGreenBackground3,
+                                                    }))}
+                                                    height={250}
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Category Distribution */}
+                                        {projectStats.tasksByCategory.length > 0 && (
+                                            <div>
+                                                <Text
+                                                    style={{
+                                                        fontSize: tokens.fontSizeBase300,
+                                                        fontWeight: tokens.fontWeightSemibold,
+                                                        marginBottom: tokens.spacingVerticalM,
+                                                        display: 'block',
                                                     }}
-                                                    innerRadius={60}
-                                                    valueInsideDonut={`${projectStats.subTaskCount}`}
-                                                    hideLabels={false}
+                                                >
+                                                    Tasks by Category
+                                                </Text>
+                                                <VerticalBarChart
+                                                    data={projectStats.tasksByCategory.map((cat) => ({
+                                                        x: cat.categoryName,
+                                                        y: cat.totalTasks,
+                                                        color: tokens.colorBrandBackground,
+                                                    }))}
+                                                    height={250}
                                                 />
                                             </div>
                                         )}
                                     </div>
                                 </Card>
                             </div>
-
-                            {/* Priority Distribution */}
-                            {Object.keys(projectStats.tasksByPriority).length > 0 && (
-                                <div style={{ marginTop: tokens.spacingVerticalXXL }}>
-                                    <Card
-                                        className={styles.artifCard}
-                                        style={{
-                                            padding: tokens.spacingVerticalXL,
-                                        }}
-                                    >
-                                        <Text
-                                            style={{
-                                                fontSize: tokens.fontSizeBase400,
-                                                fontWeight: tokens.fontWeightSemibold,
-                                                marginBottom: tokens.spacingVerticalL,
-                                            }}
-                                        >
-                                            Tasks by Priority
-                                        </Text>
-                                        <VerticalBarChart
-                                            data={Object.entries(projectStats.tasksByPriority).map(([priority, count]) => ({
-                                                x: priority.charAt(0).toUpperCase() + priority.slice(1),
-                                                y: count,
-                                                color: priority.toLowerCase() === 'high'
-                                                    ? tokens.colorPaletteRedBackground3
-                                                    : priority.toLowerCase() === 'medium'
-                                                        ? tokens.colorPaletteYellowBackground3
-                                                        : tokens.colorPaletteGreenBackground3,
-                                            }))}
-                                            height={250}
-                                        />
-                                    </Card>
-                                </div>
-                            )}
-
-                            {/* Category Distribution */}
-                            {projectStats.tasksByCategory.length > 0 && (
-                                <div style={{ marginTop: tokens.spacingVerticalXXL }}>
-                                    <Card
-                                        className={styles.artifCard}
-                                        style={{
-                                            padding: tokens.spacingVerticalXL,
-                                        }}
-                                    >
-                                        <Text
-                                            style={{
-                                                fontSize: tokens.fontSizeBase400,
-                                                fontWeight: tokens.fontWeightSemibold,
-                                                marginBottom: tokens.spacingVerticalL,
-                                            }}
-                                        >
-                                            Tasks by Category
-                                        </Text>
-                                        <VerticalBarChart
-                                            data={projectStats.tasksByCategory.map((cat) => ({
-                                                x: cat.categoryName,
-                                                y: cat.totalTasks,
-                                                color: tokens.colorBrandBackground,
-                                            }))}
-                                            height={250}
-                                        />
-                                    </Card>
-                                </div>
-                            )}
                         </>
                     ) : summary ? (
                         <>
@@ -576,76 +551,7 @@ export default function AnalyticsPage() {
                                             gap: tokens.spacingHorizontalL,
                                         }}
                                     >
-                                        {/* My Progress Overview */}
-                                        <Card
-                                            className={styles.artifCard}
-                                            style={{
-                                                padding: tokens.spacingVerticalXL,
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: tokens.spacingVerticalL,
-                                            }}
-                                        >
-                                            <Text
-                                                style={{
-                                                    fontSize: tokens.fontSizeBase400,
-                                                    fontWeight: tokens.fontWeightSemibold,
-                                                }}
-                                            >
-                                                My Task Completion
-                                            </Text>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacingHorizontalXL }}>
-                                                <DonutChart
-                                                    data={{
-                                                        chartTitle: 'My Tasks',
-                                                        chartData: [
-                                                            {
-                                                                legend: 'Completed',
-                                                                data: myProgress.completedTasks,
-                                                                color: tokens.colorPaletteGreenBackground3,
-                                                            },
-                                                            {
-                                                                legend: 'Remaining',
-                                                                data: myProgress.remainingTasks,
-                                                                color: tokens.colorNeutralBackground5,
-                                                            },
-                                                        ],
-                                                    }}
-                                                    innerRadius={60}
-                                                    valueInsideDonut={`${Math.round(myProgress.completionPercentage)}%`}
-                                                    hideLabels={true}
-                                                    styles={{ root: { maxWidth: '250px' } }}
-                                                />
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalS }}>
-                                                        <div>
-                                                            <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
-                                                                Total Assigned
-                                                            </Text>
-                                                            <Text style={{ fontSize: tokens.fontSizeBase500, fontWeight: tokens.fontWeightSemibold, display: 'block' }}>
-                                                                {myProgress.totalTasks}
-                                                            </Text>
-                                                        </div>
-                                                        <div>
-                                                            <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
-                                                                Completed
-                                                            </Text>
-                                                            <Text style={{ fontSize: tokens.fontSizeBase500, fontWeight: tokens.fontWeightSemibold, color: tokens.colorPaletteGreenForeground1, display: 'block' }}>
-                                                                {myProgress.completedTasks}
-                                                            </Text>
-                                                        </div>
-                                                        <div>
-                                                            <Text style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
-                                                                Remaining
-                                                            </Text>
-                                                            <Text style={{ fontSize: tokens.fontSizeBase500, fontWeight: tokens.fontWeightSemibold, display: 'block' }}>
-                                                                {myProgress.remainingTasks}
-                                                            </Text>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </Card>
+
 
                                         {/* Status Breakdown */}
                                         <Card
@@ -746,7 +652,7 @@ export default function AnalyticsPage() {
                         </>
                     ) : null}
                 </div>
-            </Card>
-        </div>
+            </Card >
+        </div >
     );
 }

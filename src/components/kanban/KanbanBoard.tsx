@@ -55,7 +55,7 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
 
     // MainTask dialog state
     const [createMainTaskOpen, setCreateMainTaskOpen] = useState(false);
-    const [mainTaskForm, setMainTaskForm] = useState({ title: '', description: '' });
+    const [mainTaskForm, setMainTaskForm] = useState({ title: '', description: '', startDate: '', endDate: '' });
     const [isSubmittingMainTask, setIsSubmittingMainTask] = useState(false);
     const [mainTaskSubmitError, setMainTaskSubmitError] = useState<string | null>(null);
 
@@ -92,7 +92,7 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 8,
+                distance: 4,
             },
         })
     );
@@ -174,6 +174,13 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
         const { active } = event;
         const activeColumn = findTaskColumn(active.id as string);
         const task = activeColumn?.tasks.find(t => t.id === active.id);
+        const activeColName = activeColumn ? (fetchedCategories.find(c => c.id === activeColumn.id)?.categoryName || activeColumn.title) : undefined;
+        console.log('[DragStart]', {
+            activeId: active.id,
+            activeColumn: activeColumn?.id,
+            activeColumnName: activeColName,
+            task
+        });
         if (task) {
             setActiveTask(task);
             setActiveFromColumn(activeColumn?.id || null);
@@ -191,58 +198,47 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
 
         const activeColumn = findTaskColumn(activeId);
         const overColumn = findColumn(overId) || findTaskColumn(overId);
-
-        if (!activeColumn || !overColumn) return;
-        if (activeColumn.id === overColumn.id) return;
-
-        setColumns(cols => {
-            const activeItems = activeColumn.tasks;
-            const overItems = overColumn.tasks;
-
-            const activeIndex = activeItems.findIndex(t => t.id === activeId);
-            const overIndex = overItems.findIndex(t => t.id === overId);
-
-            let newIndex: number;
-            if (overId in cols.reduce((acc, col) => ({ ...acc, [col.id]: true }), {})) {
-                // Dropping over a column
-                newIndex = overItems.length;
-            } else {
-                // Dropping over a task
-                newIndex = overIndex >= 0 ? overIndex : overItems.length;
-            }
-
-            return cols.map(col => {
-                if (col.id === activeColumn.id) {
-                    return {
-                        ...col,
-                        tasks: col.tasks.filter(t => t.id !== activeId),
-                    };
-                }
-                if (col.id === overColumn.id) {
-                    const newTasks = [...col.tasks];
-                    newTasks.splice(newIndex, 0, activeItems[activeIndex]);
-                    return {
-                        ...col,
-                        tasks: newTasks,
-                    };
-                }
-                return col;
-            });
+        const activeColName = activeColumn ? (fetchedCategories.find(c => c.id === activeColumn.id)?.categoryName || activeColumn.title) : undefined;
+        const overColName = overColumn ? (fetchedCategories.find(c => c.id === overColumn.id)?.categoryName || overColumn.title) : undefined;
+        console.log('[DragOver]', {
+            activeId,
+            overId,
+            activeColumn: activeColumn?.id,
+            activeColumnName: activeColName,
+            overColumn: overColumn?.id,
+            overColumnName: overColName
         });
+
+        // Only visual feedback, no state updates during drag over
+        // State updates will happen in handleDragEnd
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
+        const draggedFromColumn = activeFromColumn;
         setActiveTask(null);
         setActiveFromColumn(null);
 
-        if (!over) return;
+        if (!over) {
+            console.log('[DragEnd] No drop target');
+            return;
+        }
 
         const activeId = active.id as string;
         const overId = over.id as string;
 
         const activeColumn = findTaskColumn(activeId);
-        const overColumn = findTaskColumn(overId);
+        const overColumn = findColumn(overId) || findTaskColumn(overId);
+        const activeColName = activeColumn ? (fetchedCategories.find(c => c.id === activeColumn.id)?.categoryName || activeColumn.title) : undefined;
+        const overColName = overColumn ? (fetchedCategories.find(c => c.id === overColumn.id)?.categoryName || overColumn.title) : undefined;
+        console.log('[DragEnd]', {
+            activeId,
+            overId,
+            activeColumn: activeColumn?.id,
+            activeColumnName: activeColName,
+            overColumn: overColumn?.id,
+            overColumnName: overColName
+        });
 
         if (!activeColumn || !overColumn) return;
         const activeIndex = activeColumn.tasks.findIndex(t => t.id === activeId);
@@ -264,12 +260,46 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
             return;
         }
 
-        // Persist category change if dropped to a new column
-        if (projectId && activeFromColumn && overColumn.id !== activeFromColumn) {
-            console.log(`🔄 Task ${activeId} moved from column ${activeFromColumn} to ${overColumn.id}`);
-            void tasksApi.patchTaskCategory(activeId, overColumn.id).catch(err => {
-                console.error('Failed to update task category', err);
+        // Move task between columns
+        if (activeColumn.id !== overColumn.id) {
+            const task = activeColumn.tasks[activeIndex];
+
+            setColumns(cols => {
+                return cols.map(col => {
+                    if (col.id === activeColumn.id) {
+                        // Remove from source column
+                        return {
+                            ...col,
+                            tasks: col.tasks.filter(t => t.id !== activeId),
+                        };
+                    }
+                    if (col.id === overColumn.id) {
+                        // Add to target column
+                        const newTasks = [...col.tasks];
+                        const insertIndex = overIndex >= 0 ? overIndex : newTasks.length;
+                        newTasks.splice(insertIndex, 0, task);
+                        return {
+                            ...col,
+                            tasks: newTasks,
+                        };
+                    }
+                    return col;
+                });
             });
+
+            // Persist category change if dropped to a new column
+            if (projectId && draggedFromColumn && overColumn.id !== draggedFromColumn) {
+                const newCategoryId = overColumn.id === 'uncategorized' ? '' : overColumn.id;
+                const newCategoryName = overColumn.title;
+                console.log(`🔄 Task ${activeId} moved from column ${draggedFromColumn} (${activeColName}) to ${overColumn.id} (${overColName})`);
+
+                void subTasksApi.updateCategory(activeId, {
+                    categoryId: newCategoryId,
+                    category: newCategoryName
+                }).catch(err => {
+                    console.error('Failed to update task category', err);
+                });
+            }
         }
     };
 
@@ -278,13 +308,19 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
         const column = columns.find(c => c.id === columnId);
         setMainTaskForm({
             title: column?.title ? `${column.title} Task` : '',
-            description: ''
+            description: '',
+            startDate: '',
+            endDate: ''
         });
         setCreateMainTaskOpen(true);
     };
 
     const handleMainTaskInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
+        setMainTaskForm(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleMainTaskDateChange = (name: 'startDate' | 'endDate', value: string) => {
         setMainTaskForm(prev => ({ ...prev, [name]: value }));
     };
 
@@ -305,7 +341,7 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
             console.log('Created MainTask:', newMainTask);
 
             // Reset form and close dialog
-            setMainTaskForm({ title: '', description: '' });
+            setMainTaskForm({ title: '', description: '', startDate: '', endDate: '' });
             setCreateMainTaskOpen(false);
 
             // TODO: Refresh the kanban board to show the new MainTask as a column
@@ -724,6 +760,7 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                 onOpenChange={setCreateMainTaskOpen}
                 form={mainTaskForm}
                 onInputChange={handleMainTaskInputChange}
+                onDateChange={handleMainTaskDateChange}
                 onSubmit={handleMainTaskSubmit}
                 currentUser={user}
                 isSubmitting={isSubmittingMainTask}

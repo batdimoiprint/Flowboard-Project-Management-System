@@ -59,7 +59,9 @@ const useGridStyles = makeStyles({
     },
 });
 
-function MyTasksDataGrid({ onRowClick, onAddClick, onFetchComplete, refreshSignal }: MyTasksDataGridProps) {
+function MyTasksDataGrid({ onRowClick,
+    //  onAddClick, 
+    onFetchComplete, refreshSignal }: MyTasksDataGridProps) {
     const styles = mainLayoutStyles();
     const gridStyles = useGridStyles();
     const [tasks, setTasks] = useState<Task[]>([]);
@@ -292,11 +294,7 @@ function MyTasksDataGrid({ onRowClick, onAddClick, onFetchComplete, refreshSigna
                 </div>
 
                 <div className={mergeClasses(styles.flexRowFit, styles.alignCenter)} style={{ gap: tokens.spacingHorizontalM, marginBottom: tokens.spacingVerticalS, flexWrap: 'wrap' }}>
-                    <Button appearance="primary" onClick={() => {
-                        onAddClick?.();
-                    }}>
-                        Add Task
-                    </Button>
+
                     <Input
                         placeholder="Search tasks..."
                         type="search"

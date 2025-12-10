@@ -17,13 +17,9 @@ import {
   DialogBody,
   DialogActions,
   DialogContent,
-  Dropdown,
-  Option,
   Input,
   Textarea,
   mergeClasses,
-  Radio,
-  RadioGroup,
 } from '@fluentui/react-components';
 import { AddCircle20Regular, FolderOpen24Regular, Edit20Regular, Checkmark20Regular, Dismiss20Regular } from '@fluentui/react-icons';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
@@ -60,22 +56,6 @@ const resolveDisplayName = (user: User | null, fallbackId: string) => {
 };
 
 // Permissions are no longer shown in the members table
-
-const formatDate = (iso?: string) => {
-  if (!iso) {
-    return '—';
-  }
-  const parsed = new Date(iso);
-  if (Number.isNaN(parsed.getTime())) {
-    return '—';
-  }
-  return parsed.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: '2-digit',
-  });
-};
-
 // Visual badges removed - not displayed in the members table
 
 function ProjectGlyph() {
@@ -114,15 +94,26 @@ export default function ProjectPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<string>('Member');
   const [actionLoading, setActionLoading] = useState(false);
   const [addClientDialogOpen, setAddClientDialogOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isEditingProject, setIsEditingProject] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
 
   const refreshProject = () => setRefreshTrigger(prev => prev + 1);
+
+  // Filter users based on search query (email or username)
+  const filteredUsers = useMemo(() => {
+    if (!userSearchQuery.trim()) return allUsers;
+    const query = userSearchQuery.toLowerCase();
+    return allUsers.filter((user) =>
+      user.email?.toLowerCase().includes(query) ||
+      user.userName?.toLowerCase().includes(query) ||
+      `${user.firstName} ${user.lastName}`.toLowerCase().includes(query)
+    );
+  }, [allUsers, userSearchQuery]);
 
   useEffect(() => {
     let active = true;
@@ -248,13 +239,8 @@ export default function ProjectPage() {
     setActionLoading(true);
     try {
       await projectsApi.addProjectMembers(project.id, [selectedUserId]);
-      // Assign role/permission if specified
-      if (selectedRole !== 'Member' && selectedRole) {
-        await projectsApi.updateProjectMemberPermissions(project.id, selectedUserId, selectedRole);
-      }
       setInviteDialogOpen(false);
       setSelectedUserId('');
-      setSelectedRole('Member');
       refreshProject();
     } catch (err) {
       console.error('Failed to invite member:', err);
@@ -416,22 +402,21 @@ export default function ProjectPage() {
               <ProjectGlyph />
               <div style={{ flex: 1 }}>
                 {isEditingProject ? (
-                  <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalS }}>
                     <Input
                       value={editedName}
                       onChange={(e) => setEditedName(e.target.value)}
                       placeholder="Project name"
                       size="large"
-                      style={{ marginBottom: tokens.spacingVerticalS, fontSize: tokens.fontSizeHero700, fontWeight: 600 }}
+                      style={{ fontSize: tokens.fontSizeHero700, fontWeight: 600 }}
                     />
                     <Textarea
                       value={editedDescription}
                       onChange={(e) => setEditedDescription(e.target.value)}
                       placeholder="Project description"
                       resize="vertical"
-                      style={{ marginBottom: tokens.spacingVerticalS }}
                     />
-                  </>
+                  </div>
                 ) : (
                   <>
                     <h1 className={styles.pageTitle}>
@@ -499,7 +484,6 @@ export default function ProjectPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHeaderCell>Member Name</TableHeaderCell>
-                    <TableHeaderCell>Joined At</TableHeaderCell>
                     <TableHeaderCell>Email</TableHeaderCell>
                     <TableHeaderCell>Actions</TableHeaderCell>
                   </TableRow>
@@ -514,13 +498,6 @@ export default function ProjectPage() {
                             <div style={{ fontWeight: 600 }}>{member.displayName}</div>
                             <div style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>{member.role}</div>
                           </div>
-                        </div>
-                      </TableCell>
-                      {/* Permission access not shown */}
-                      <TableCell>
-                        <div className={styles.personaRow} style={{ gap: tokens.spacingHorizontalXXS }}>
-
-                          <span>{formatDate(member.joinedAt)}</span>
                         </div>
                       </TableCell>
                       <TableCell>{member.email}</TableCell>
@@ -544,7 +521,7 @@ export default function ProjectPage() {
             {isOwner && (
               <div style={{ display: 'flex', gap: tokens.spacingHorizontalS }}>
                 <Button appearance="secondary" icon={<AddCircle20Regular />} onClick={openInviteDialog}>
-                  Invite Member
+                  Add Member
                 </Button>
                 <Button appearance="primary" icon={<AddCircle20Regular />} onClick={openAddClientDialog}>
                   Add Client
@@ -556,33 +533,55 @@ export default function ProjectPage() {
       )}
 
       {/* Invite Member Dialog */}
-      <Dialog open={inviteDialogOpen} onOpenChange={(_, data) => { setInviteDialogOpen(data.open); if (!data.open) { setSelectedUserId(''); setSelectedRole('Member'); } }}>
-        <DialogSurface>
+      <Dialog open={inviteDialogOpen} onOpenChange={(_, data) => { setInviteDialogOpen(data.open); if (!data.open) { setSelectedUserId(''); setUserSearchQuery(''); } }}>
+        <DialogSurface style={{ maxWidth: '600px', width: '90vw' }}>
           <DialogBody>
-            <DialogTitle>Invite Member to Project</DialogTitle>
-            <DialogContent style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalM }}>
-              <Dropdown
-                placeholder="Select a user"
-                value={allUsers.find((u) => u.id === selectedUserId)?.userName || ''}
-                onOptionSelect={(_, data) => setSelectedUserId(data.optionValue || '')}
-              >
-                {allUsers.map((user) => (
-                  <Option key={user.id} value={user.id} text={`${user.firstName} ${user.lastName} (${user.email})`}>
-                    {user.firstName} {user.lastName} ({user.email})
-                  </Option>
-                ))}
-              </Dropdown>
-              <div>
-                <label style={{ display: 'block', marginBottom: tokens.spacingVerticalXS, fontWeight: tokens.fontWeightSemibold }}>Role</label>
-                <RadioGroup value={selectedRole} onChange={(_, data) => setSelectedRole(data.value)}>
-                  <Radio value="Member" label="Member (View and edit tasks)" />
-                  <Radio value="Editor" label="Editor (Full project edit access)" />
-                  <Radio value="Viewer" label="Viewer (Read-only access)" />
-                </RadioGroup>
-              </div>
+            <DialogTitle>Add Member to Project</DialogTitle>
+            <DialogContent style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalM, minHeight: '200px' }}>
+              <Input
+                placeholder="Search by email or username..."
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
+              />
+              {userSearchQuery && filteredUsers.length > 0 && (
+                <div style={{
+                  flex: 1,
+                  backgroundColor: tokens.colorNeutralBackground1,
+                  border: `1px solid ${tokens.colorNeutralStroke2}`,
+                  borderRadius: tokens.borderRadiusMedium,
+                  maxHeight: '400px',
+                  overflowY: 'auto',
+                }}>
+                  {filteredUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      onClick={() => {
+                        setSelectedUserId(user.id);
+                        setUserSearchQuery(`${user.firstName} ${user.lastName}`);
+                      }}
+                      style={{
+                        padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalL}`,
+                        cursor: 'pointer',
+                        backgroundColor: selectedUserId === user.id ? tokens.colorBrandBackground2 : 'transparent',
+                        color: selectedUserId === user.id ? tokens.colorBrandForeground1 : tokens.colorNeutralForeground1,
+                        borderBottom: `1px solid ${tokens.colorNeutralStroke3}`,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = tokens.colorNeutralBackground2;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = selectedUserId === user.id ? tokens.colorBrandBackground2 : 'transparent';
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: '4px' }}>{user.firstName} {user.lastName}</div>
+                      <div style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>{user.email}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </DialogContent>
             <DialogActions>
-              <Button appearance="secondary" onClick={() => { setInviteDialogOpen(false); setSelectedUserId(''); setSelectedRole('Member'); }}>
+              <Button appearance="secondary" onClick={() => { setInviteDialogOpen(false); setSelectedUserId(''); setUserSearchQuery(''); }}>
                 Cancel
               </Button>
               <Button appearance="primary" onClick={handleInviteMember} disabled={!selectedUserId || actionLoading}>
@@ -593,31 +592,60 @@ export default function ProjectPage() {
         </DialogSurface>
       </Dialog>
 
-      {/* Add Client Dialog */}
-      <Dialog open={addClientDialogOpen} onOpenChange={(_, data) => { setAddClientDialogOpen(data.open); if (!data.open) setSelectedUserId(''); }}>
-        <DialogSurface>
+      <Dialog open={addClientDialogOpen} onOpenChange={(_, data) => { setAddClientDialogOpen(data.open); if (!data.open) { setSelectedUserId(''); setUserSearchQuery(''); } }}>
+        <DialogSurface style={{ maxWidth: '600px', width: '90vw' }}>
           <DialogBody>
             <DialogTitle>Add Client to Project</DialogTitle>
-            <DialogContent>
-              <Dropdown
-                placeholder="Select a client"
-                value={allUsers.find((u) => u.id === selectedUserId)?.userName || ''}
-                onOptionSelect={(_, data) => setSelectedUserId(data.optionValue || '')}
-              >
-                {allUsers.map((user) => (
-                  <Option key={user.id} value={user.id} text={`${user.firstName} ${user.lastName} (${user.email})`}>
-                    {user.firstName} {user.lastName} ({user.email})
-                  </Option>
-                ))}
-              </Dropdown>
-              <div style={{ marginTop: tokens.spacingVerticalM, padding: tokens.spacingVerticalS, backgroundColor: tokens.colorNeutralBackground3, borderRadius: tokens.borderRadiusMedium }}>
+            <DialogContent style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalM, minHeight: '400px' }}>
+              <Input
+                placeholder="Search by email or username..."
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
+              />
+              {userSearchQuery && filteredUsers.length > 0 && (
+                <div style={{
+                  flex: 1,
+                  backgroundColor: tokens.colorNeutralBackground1,
+                  border: `1px solid ${tokens.colorNeutralStroke2}`,
+                  borderRadius: tokens.borderRadiusMedium,
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                }}>
+                  {filteredUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      onClick={() => {
+                        setSelectedUserId(user.id);
+                        setUserSearchQuery(`${user.firstName} ${user.lastName}`);
+                      }}
+                      style={{
+                        padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalL}`,
+                        cursor: 'pointer',
+                        backgroundColor: selectedUserId === user.id ? tokens.colorBrandBackground2 : 'transparent',
+                        color: selectedUserId === user.id ? tokens.colorBrandForeground1 : tokens.colorNeutralForeground1,
+                        borderBottom: `1px solid ${tokens.colorNeutralStroke3}`,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = tokens.colorNeutralBackground2;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = selectedUserId === user.id ? tokens.colorBrandBackground2 : 'transparent';
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: '4px' }}>{user.firstName} {user.lastName}</div>
+                      <div style={{ fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>{user.email}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ padding: tokens.spacingVerticalM, backgroundColor: tokens.colorNeutralBackground3, borderRadius: tokens.borderRadiusMedium }}>
                 <p style={{ margin: 0, fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2 }}>
                   Clients will have limited access and can only view analytics for this project.
                 </p>
               </div>
             </DialogContent>
             <DialogActions>
-              <Button appearance="secondary" onClick={() => { setAddClientDialogOpen(false); setSelectedUserId(''); }}>
+              <Button appearance="secondary" onClick={() => { setAddClientDialogOpen(false); setSelectedUserId(''); setUserSearchQuery(''); }}>
                 Cancel
               </Button>
               <Button appearance="primary" onClick={handleAddClient} disabled={!selectedUserId || actionLoading}>

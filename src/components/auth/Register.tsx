@@ -495,7 +495,7 @@ export default function Register() {
                     <Input
                         id="middleName"
                         type="text"
-                        placeholder="A"
+                        placeholder="Austin"
                         autoComplete="additional-name"
                         {...register('middleName', {
                             required: 'Middle name is required',
@@ -812,7 +812,6 @@ export default function Register() {
                     <Input
                         id="userName"
                         type="text"
-                        placeholder="jdoe"
                         autoComplete="username"
                         {...register('userName', {
                             required: 'Username is required',
@@ -854,7 +853,6 @@ export default function Register() {
                     <Input
                         id="password"
                         type="password"
-                        placeholder="P@ssw0rd!"
                         autoComplete="new-password"
                         {...register('password', {
                             required: 'Password is required',
@@ -924,7 +922,7 @@ export default function Register() {
                 )}
 
                 {/* Navigation Buttons */}
-                <div className={styles.actionsRight} style={{ marginTop: '24px' }}>
+                <div className={styles.actionsRight} style={{ marginTop: '24px', marginInline: '24px' }}>
                     {currentStep === 1 ? (
                         <Button
                             appearance="secondary"

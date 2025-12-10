@@ -21,6 +21,7 @@ import {
     TableCellLayout,
     createTableColumn
 } from '@fluentui/react-components';
+import { DatePicker } from '@fluentui/react-datepicker-compat';
 import type { TableColumnDefinition } from '@fluentui/react-components';
 import {
     Dismiss24Regular,
@@ -39,8 +40,11 @@ export interface CreateMainTaskDialogProps {
     form: {
         title: string;
         description: string;
+        startDate: string;
+        endDate: string;
     };
     onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    onDateChange: (name: 'startDate' | 'endDate', value: string) => void;
     onSubmit: (e: React.FormEvent) => void;
     currentUser?: User | null;
     isSubmitting?: boolean;
@@ -61,6 +65,7 @@ export default function CreateMainTaskDialog({
     onOpenChange,
     form,
     onInputChange,
+    onDateChange,
     onSubmit,
     isSubmitting = false,
     submitError,
@@ -333,6 +338,28 @@ export default function CreateMainTaskDialog({
                                 {userInfo ? `${userInfo.firstName} ${userInfo.lastName}` : 'User'}
                             </span>
                         </div>
+                    </div>
+
+                    {/* Row 4: Start and End Dates */}
+                    <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+                        <Field label="Start Date" style={{ flex: '1 1 200px' }}>
+                            <DatePicker
+                                placeholder="mm/dd/yyyy"
+                                value={form.startDate ? new Date(form.startDate) : null}
+                                onSelectDate={(date) => onDateChange('startDate', date ? date.toISOString().split('T')[0] : '')}
+                                size="medium"
+                                style={{ width: '100%' }}
+                            />
+                        </Field>
+                        <Field label="End Date" style={{ flex: '1 1 200px' }}>
+                            <DatePicker
+                                placeholder="mm/dd/yyyy"
+                                value={form.endDate ? new Date(form.endDate) : null}
+                                onSelectDate={(date) => onDateChange('endDate', date ? date.toISOString().split('T')[0] : '')}
+                                size="medium"
+                                style={{ width: '100%' }}
+                            />
+                        </Field>
                     </div>
 
                     {/* Row 4: SubTasks Section */}

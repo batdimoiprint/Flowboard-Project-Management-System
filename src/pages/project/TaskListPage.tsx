@@ -1,4 +1,4 @@
-import { Card, tokens, mergeClasses, DataGrid, DataGridHeader, DataGridRow, DataGridHeaderCell, DataGridBody, DataGridCell, createTableColumn, Button, Spinner, TabList, Tab, Avatar, Badge, makeStyles } from '@fluentui/react-components';
+import { Card, tokens, mergeClasses, DataGrid, DataGridHeader, DataGridRow, DataGridHeaderCell, DataGridBody, DataGridCell, createTableColumn, Button, Spinner, TabList, Tab, Avatar, Badge, makeStyles, Dropdown, Option } from '@fluentui/react-components';
 import type { TableColumnDefinition, SelectTabEvent, SelectTabData } from '@fluentui/react-components';
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -83,11 +83,16 @@ export default function TaskListPage() {
     const [loadingSubTasks, setLoadingSubTasks] = useState(false);
     const [subTasksWithUsers, setSubTasksWithUsers] = useState<(SubTaskResponse & { assignedToUsers?: User[] })[]>([]);
 
+    // SubTask filters (status, priority, category)
+    const [filterStatus, setFilterStatus] = useState<string[]>([]);
+    const [filterPriority, setFilterPriority] = useState<string[]>([]);
+    const [filterCategory, setFilterCategory] = useState<string[]>([]);
+
     // Dialog state
     const [createMainTaskOpen, setCreateMainTaskOpen] = useState(false);
     const [editMainTaskOpen, setEditMainTaskOpen] = useState(false);
     const [selectedMainTask, setSelectedMainTask] = useState<MainTaskResponse | null>(null);
-    const [mainTaskForm, setMainTaskForm] = useState({ title: '', description: '' });
+    const [mainTaskForm, setMainTaskForm] = useState({ title: '', description: '', startDate: '', endDate: '' });
     const [isSubmittingMainTask, setIsSubmittingMainTask] = useState(false);
 
     // SubTask dialog state
@@ -229,7 +234,7 @@ export default function TaskListPage() {
     };
 
     const handleAddMainTask = () => {
-        setMainTaskForm({ title: '', description: '' });
+        setMainTaskForm({ title: '', description: '', startDate: '', endDate: '' });
         setCreateMainTaskOpen(true);
     };
 
@@ -237,7 +242,9 @@ export default function TaskListPage() {
         setSelectedMainTask(mainTask);
         setMainTaskForm({
             title: mainTask.title,
-            description: mainTask.description || ''
+            description: mainTask.description || '',
+            startDate: mainTask.startDate ? mainTask.startDate.split('T')[0] : '',
+            endDate: mainTask.endDate ? mainTask.endDate.split('T')[0] : ''
         });
         setEditMainTaskOpen(true);
     };
@@ -270,9 +277,11 @@ export default function TaskListPage() {
                 title: mainTaskForm.title,
                 description: mainTaskForm.description,
                 projectId: project?.id,
+                startDate: mainTaskForm.startDate || null,
+                endDate: mainTaskForm.endDate || null,
             });
             setCreateMainTaskOpen(false);
-            setMainTaskForm({ title: '', description: '' });
+            setMainTaskForm({ title: '', description: '', startDate: '', endDate: '' });
             loadMainTasks();
         } catch (err) {
             console.error('Failed to create main task:', err);
@@ -303,7 +312,8 @@ export default function TaskListPage() {
                 }
             }
 
-            if (unique.length === 0) {
+            // If we're in a project context, only use project members; do not fall back to all users
+            if (unique.length === 0 && !project?.id) {
                 try {
                     const allUsers = await usersApi.getAllUsers();
                     unique = allUsers;
@@ -336,6 +346,26 @@ export default function TaskListPage() {
                 item.description ? item.description.substring(0, 50) + (item.description.length > 50 ? '...' : '') : '-',
         }),
         createTableColumn<MainTaskResponse>({
+            columnId: 'startDate',
+            compare: (a, b) => {
+                const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+                const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+                return dateA - dateB;
+            },
+            renderHeaderCell: () => 'Start Date',
+            renderCell: (item) => item.startDate ? new Date(item.startDate).toLocaleDateString() : '-',
+        }),
+        createTableColumn<MainTaskResponse>({
+            columnId: 'endDate',
+            compare: (a, b) => {
+                const dateA = a.endDate ? new Date(a.endDate).getTime() : 0;
+                const dateB = b.endDate ? new Date(b.endDate).getTime() : 0;
+                return dateA - dateB;
+            },
+            renderHeaderCell: () => 'End Date',
+            renderCell: (item) => item.endDate ? new Date(item.endDate).toLocaleDateString() : '-',
+        }),
+        createTableColumn<MainTaskResponse>({
             columnId: 'subTasks',
             renderHeaderCell: () => 'SubTasks',
             renderCell: (item) => subTaskCounts[item.id] || 0,
@@ -352,6 +382,19 @@ export default function TaskListPage() {
                 item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-',
         }),
     ];
+
+    // Compute available filter options from subtasks
+    const statusOptions = Array.from(new Set(subTasksWithUsers.map(t => t.status).filter(Boolean))) as string[];
+    const priorityOptions = Array.from(new Set(subTasksWithUsers.map(t => t.priority).filter(Boolean))) as string[];
+    const categoryOptions = Array.from(new Set(subTasksWithUsers.map(t => t.category).filter(Boolean))) as string[];
+
+    // Filtered subtasks
+    const filteredSubTasks = subTasksWithUsers.filter(task => {
+        if (filterStatus.length > 0 && !filterStatus.includes(task.status ?? '')) return false;
+        if (filterPriority.length > 0 && !filterPriority.includes(task.priority ?? '')) return false;
+        if (filterCategory.length > 0 && !filterCategory.includes(task.category ?? '')) return false;
+        return true;
+    });
 
     // DataGrid columns for SubTasks
     const subTaskColumns: TableColumnDefinition<SubTaskResponse & { assignedToUsers?: User[] }>[] = [
@@ -509,36 +552,73 @@ export default function TaskListPage() {
                         No subtasks in this project yet.
                     </div>
                 ) : (
-                    <div className={s.dataGridScrollable}>
-                        <DataGrid
-                            items={subTasksWithUsers}
-                            columns={subTaskColumns}
-                            sortable
-                            size="small"
-                            className={gridStyles.grid}
-                        >
-                            <DataGridHeader>
-                                <DataGridRow>
-                                    {({ renderHeaderCell }) => (
-                                        <DataGridHeaderCell className={gridStyles.headerCell}>{renderHeaderCell()}</DataGridHeaderCell>
-                                    )}
-                                </DataGridRow>
-                            </DataGridHeader>
-                            <DataGridBody<SubTaskResponse & { assignedToUsers?: User[] }>>
-                                {({ item, rowId }) => (
-                                    <DataGridRow<SubTaskResponse & { assignedToUsers?: User[] }>
-                                        key={rowId}
-                                        onClick={() => handleSubTaskRowClick(item)}
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        {({ renderCell }) => (
-                                            <DataGridCell className={gridStyles.cell}>{renderCell(item)}</DataGridCell>
+                    <>
+                        <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+                            <Dropdown
+                                multiselect
+                                placeholder="Status"
+                                selectedOptions={filterStatus}
+                                onOptionSelect={(_, data) => setFilterStatus(data.selectedOptions as string[])}
+                                style={{ minWidth: 120 }}
+                            >
+                                {statusOptions.map(status => (
+                                    <Option key={status} value={status}>{status}</Option>
+                                ))}
+                            </Dropdown>
+                            <Dropdown
+                                multiselect
+                                placeholder="Priority"
+                                selectedOptions={filterPriority}
+                                onOptionSelect={(_, data) => setFilterPriority(data.selectedOptions as string[])}
+                                style={{ minWidth: 120 }}
+                            >
+                                {priorityOptions.map(priority => (
+                                    <Option key={priority} value={priority}>{priority}</Option>
+                                ))}
+                            </Dropdown>
+                            <Dropdown
+                                multiselect
+                                placeholder="Category"
+                                selectedOptions={filterCategory}
+                                onOptionSelect={(_, data) => setFilterCategory(data.selectedOptions as string[])}
+                                style={{ minWidth: 120 }}
+                            >
+                                {categoryOptions.map(category => (
+                                    <Option key={category} value={category}>{category}</Option>
+                                ))}
+                            </Dropdown>
+                        </div>
+                        <div className={s.dataGridScrollable}>
+                            <DataGrid
+                                items={filteredSubTasks}
+                                columns={subTaskColumns}
+                                sortable
+                                size="small"
+                                className={gridStyles.grid}
+                            >
+                                <DataGridHeader>
+                                    <DataGridRow>
+                                        {({ renderHeaderCell }) => (
+                                            <DataGridHeaderCell className={gridStyles.headerCell}>{renderHeaderCell()}</DataGridHeaderCell>
                                         )}
                                     </DataGridRow>
-                                )}
-                            </DataGridBody>
-                        </DataGrid>
-                    </div>
+                                </DataGridHeader>
+                                <DataGridBody<SubTaskResponse & { assignedToUsers?: User[] }>>
+                                    {({ item, rowId }) => (
+                                        <DataGridRow<SubTaskResponse & { assignedToUsers?: User[] }>
+                                            key={rowId}
+                                            onClick={() => handleSubTaskRowClick(item)}
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            {({ renderCell }) => (
+                                                <DataGridCell className={gridStyles.cell}>{renderCell(item)}</DataGridCell>
+                                            )}
+                                        </DataGridRow>
+                                    )}
+                                </DataGridBody>
+                            </DataGrid>
+                        </div>
+                    </>
                 )
             )}
 
@@ -550,6 +630,7 @@ export default function TaskListPage() {
                     const { name, value } = e.target;
                     setMainTaskForm(prev => ({ ...prev, [name]: value }));
                 }}
+                onDateChange={(name, value) => setMainTaskForm(prev => ({ ...prev, [name]: value }))}
                 onSubmit={handleMainTaskSubmit}
                 isSubmitting={isSubmittingMainTask}
                 submitError={null}
@@ -573,6 +654,7 @@ export default function TaskListPage() {
                         const { name, value } = e.target;
                         setMainTaskForm(prev => ({ ...prev, [name]: value }));
                     }}
+                    onDateChange={(name, value) => setMainTaskForm(prev => ({ ...prev, [name]: value }))}
                     onDeleteClick={async () => {
                         if (!confirm('Delete this main task and all its subtasks?')) return;
                         try {
@@ -597,6 +679,10 @@ export default function TaskListPage() {
                     categories={categories}
                     isLoadingCategories={isLoadingCategories}
                     onSubTaskCreated={() => {
+                        loadMainTasks();
+                        if (activeTab === 'subTasks') loadSubTasks();
+                    }}
+                    onMainTaskUpdated={() => {
                         loadMainTasks();
                         if (activeTab === 'subTasks') loadSubTasks();
                     }}

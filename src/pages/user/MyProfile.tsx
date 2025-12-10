@@ -716,12 +716,6 @@ export default function MyProfile() {
             )} />
           </div>
           <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="province">Province</Label>
-            <Controller control={control} name="province" render={({ field }) => (
-              <Input id="province" type="text" disabled={!isEditing} size="small" {...field} />
-            )} />
-          </div>
-          <div className={mergeClasses(s.formField)}>
             <Label htmlFor="cityMunicipality">City/Municipality</Label>
             <Controller control={control} name="cityMunicipality" render={({ field }) => (
               <Input id="cityMunicipality" type="text" disabled={!isEditing} size="small" {...field} />
@@ -742,18 +736,6 @@ export default function MyProfile() {
               <Input id="streetAddress" type="text" disabled={!isEditing} size="small" {...field} />
             )} />
           </div>
-          <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="zipCode">Zip Code</Label>
-            <Controller
-              control={control}
-              name="zipCode"
-              rules={{ pattern: { value: /^[0-9]{4}$/, message: 'Zip code must be 4 digits' } }}
-              render={({ field }) => (
-                <Input id="zipCode" type="text" disabled={!isEditing} size="small" {...field} />
-              )}
-            />
-            {errors.zipCode && <Text className={mergeClasses(s.errorText)}>{errors.zipCode.message}</Text>}
-          </div>
         </div>
 
         {/* Secondary Address Information (Optional) */}
@@ -763,12 +745,6 @@ export default function MyProfile() {
             <Label htmlFor="secondaryRegion">Region</Label>
             <Controller control={control} name="secondaryRegion" render={({ field }) => (
               <Input id="secondaryRegion" type="text" disabled={!isEditing} size="small" {...field} />
-            )} />
-          </div>
-          <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="secondaryProvince">Province</Label>
-            <Controller control={control} name="secondaryProvince" render={({ field }) => (
-              <Input id="secondaryProvince" type="text" disabled={!isEditing} size="small" {...field} />
             )} />
           </div>
           <div className={mergeClasses(s.formField)}>
@@ -791,18 +767,6 @@ export default function MyProfile() {
             <Controller control={control} name="secondaryStreetAddress" render={({ field }) => (
               <Input id="secondaryStreetAddress" type="text" disabled={!isEditing} size="small" {...field} />
             )} />
-          </div>
-          <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="secondaryZipCode">Zip Code</Label>
-            <Controller
-              control={control}
-              name="secondaryZipCode"
-              rules={{ pattern: { value: /^[0-9]{4}$/, message: 'Zip code must be 4 digits' } }}
-              render={({ field }) => (
-                <Input id="secondaryZipCode" type="text" disabled={!isEditing} size="small" {...field} />
-              )}
-            />
-            {errors.secondaryZipCode && <Text className={mergeClasses(s.errorText)}>{errors.secondaryZipCode.message}</Text>}
           </div>
         </div>
       </form>
