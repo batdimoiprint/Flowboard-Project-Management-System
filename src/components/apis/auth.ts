@@ -15,6 +15,7 @@ export interface User {
     address?: AddressData | null;
     secondaryAddress?: AddressData | null;
     createdAt: string;
+    role?: string;
 }
 
 export interface LoginRequest {

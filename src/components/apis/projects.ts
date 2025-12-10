@@ -104,4 +104,9 @@ export const projectsApi = {
         const response = await axiosInstance.delete<Project>(`/api/projects/${projectId}/leave`);
         return response.data;
     },
+
+    updateProjectMemberPermissions: async (projectId: string, userId: string, role: string): Promise<Project> => {
+        const response = await axiosInstance.put<Project>(`/api/projects/${projectId}/member/${userId}/permissions`, { role });
+        return response.data;
+    },
 };

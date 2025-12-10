@@ -22,6 +22,8 @@ import {
   Input,
   Textarea,
   mergeClasses,
+  Radio,
+  RadioGroup,
 } from '@fluentui/react-components';
 import { AddCircle20Regular, FolderOpen24Regular, Edit20Regular, Checkmark20Regular, Dismiss20Regular } from '@fluentui/react-icons';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
@@ -112,7 +114,9 @@ export default function ProjectPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<string>('Member');
   const [actionLoading, setActionLoading] = useState(false);
+  const [addClientDialogOpen, setAddClientDialogOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isEditingProject, setIsEditingProject] = useState(false);
   const [editedName, setEditedName] = useState('');
@@ -244,14 +248,52 @@ export default function ProjectPage() {
     setActionLoading(true);
     try {
       await projectsApi.addProjectMembers(project.id, [selectedUserId]);
+      // Assign role/permission if specified
+      if (selectedRole !== 'Member' && selectedRole) {
+        await projectsApi.updateProjectMemberPermissions(project.id, selectedUserId, selectedRole);
+      }
       setInviteDialogOpen(false);
       setSelectedUserId('');
+      setSelectedRole('Member');
       refreshProject();
     } catch (err) {
       console.error('Failed to invite member:', err);
       alert('Failed to invite member');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleAddClient = async () => {
+    if (!selectedUserId || !project?.id) return;
+    setActionLoading(true);
+    try {
+      // Add user as client to the project
+      await projectsApi.addProjectMembers(project.id, [selectedUserId]);
+      // Set their role as Client
+      await projectsApi.updateProjectMemberPermissions(project.id, selectedUserId, 'Client');
+      setAddClientDialogOpen(false);
+      setSelectedUserId('');
+      refreshProject();
+    } catch (err) {
+      console.error('Failed to add client:', err);
+      alert('Failed to add client');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openAddClientDialog = async () => {
+    try {
+      const users = await usersApi.getAllUsers();
+      // Filter out current members and manager
+      const memberIds = new Set([...(project?.teamMembers ?? []), project?.createdBy]);
+      const availableUsers = users.filter((u) => !memberIds.has(u.id));
+      setAllUsers(availableUsers);
+      setAddClientDialogOpen(true);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+      alert('Failed to load users');
     }
   };
 
@@ -500,9 +542,12 @@ export default function ProjectPage() {
               </Table>
             )}
             {isOwner && (
-              <div>
+              <div style={{ display: 'flex', gap: tokens.spacingHorizontalS }}>
                 <Button appearance="secondary" icon={<AddCircle20Regular />} onClick={openInviteDialog}>
                   Invite Member
+                </Button>
+                <Button appearance="primary" icon={<AddCircle20Regular />} onClick={openAddClientDialog}>
+                  Add Client
                 </Button>
               </div>
             )}
@@ -511,29 +556,72 @@ export default function ProjectPage() {
       )}
 
       {/* Invite Member Dialog */}
-      <Dialog open={inviteDialogOpen} onOpenChange={(_, data) => setInviteDialogOpen(data.open)}>
+      <Dialog open={inviteDialogOpen} onOpenChange={(_, data) => { setInviteDialogOpen(data.open); if (!data.open) { setSelectedUserId(''); setSelectedRole('Member'); } }}>
         <DialogSurface>
           <DialogBody>
             <DialogTitle>Invite Member to Project</DialogTitle>
-            <DialogContent>
+            <DialogContent style={{ display: 'flex', flexDirection: 'column', gap: tokens.spacingVerticalM }}>
               <Dropdown
                 placeholder="Select a user"
                 value={allUsers.find((u) => u.id === selectedUserId)?.userName || ''}
                 onOptionSelect={(_, data) => setSelectedUserId(data.optionValue || '')}
               >
                 {allUsers.map((user) => (
-                  <Option key={user.id} value={user.id} text={`${user.userName} (${user.email})`}>
-                    {user.userName} ({user.email})
+                  <Option key={user.id} value={user.id} text={`${user.firstName} ${user.lastName} (${user.email})`}>
+                    {user.firstName} {user.lastName} ({user.email})
                   </Option>
                 ))}
               </Dropdown>
+              <div>
+                <label style={{ display: 'block', marginBottom: tokens.spacingVerticalXS, fontWeight: tokens.fontWeightSemibold }}>Role</label>
+                <RadioGroup value={selectedRole} onChange={(_, data) => setSelectedRole(data.value)}>
+                  <Radio value="Member" label="Member (View and edit tasks)" />
+                  <Radio value="Editor" label="Editor (Full project edit access)" />
+                  <Radio value="Viewer" label="Viewer (Read-only access)" />
+                </RadioGroup>
+              </div>
             </DialogContent>
             <DialogActions>
-              <Button appearance="secondary" onClick={() => setInviteDialogOpen(false)}>
+              <Button appearance="secondary" onClick={() => { setInviteDialogOpen(false); setSelectedUserId(''); setSelectedRole('Member'); }}>
                 Cancel
               </Button>
               <Button appearance="primary" onClick={handleInviteMember} disabled={!selectedUserId || actionLoading}>
                 {actionLoading ? 'Inviting...' : 'Invite'}
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
+
+      {/* Add Client Dialog */}
+      <Dialog open={addClientDialogOpen} onOpenChange={(_, data) => { setAddClientDialogOpen(data.open); if (!data.open) setSelectedUserId(''); }}>
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>Add Client to Project</DialogTitle>
+            <DialogContent>
+              <Dropdown
+                placeholder="Select a client"
+                value={allUsers.find((u) => u.id === selectedUserId)?.userName || ''}
+                onOptionSelect={(_, data) => setSelectedUserId(data.optionValue || '')}
+              >
+                {allUsers.map((user) => (
+                  <Option key={user.id} value={user.id} text={`${user.firstName} ${user.lastName} (${user.email})`}>
+                    {user.firstName} {user.lastName} ({user.email})
+                  </Option>
+                ))}
+              </Dropdown>
+              <div style={{ marginTop: tokens.spacingVerticalM, padding: tokens.spacingVerticalS, backgroundColor: tokens.colorNeutralBackground3, borderRadius: tokens.borderRadiusMedium }}>
+                <p style={{ margin: 0, fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2 }}>
+                  Clients will have limited access and can only view analytics for this project.
+                </p>
+              </div>
+            </DialogContent>
+            <DialogActions>
+              <Button appearance="secondary" onClick={() => { setAddClientDialogOpen(false); setSelectedUserId(''); }}>
+                Cancel
+              </Button>
+              <Button appearance="primary" onClick={handleAddClient} disabled={!selectedUserId || actionLoading}>
+                {actionLoading ? 'Adding...' : 'Add Client'}
               </Button>
             </DialogActions>
           </DialogBody>
