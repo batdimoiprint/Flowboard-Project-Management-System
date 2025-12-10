@@ -22,7 +22,7 @@ export default function Footer() {
                 {/* Privacy Policy */}
                 <a href="#" className={styles.footerLink}>
                     <img 
-                        src="/public/images/privacy.jfif" 
+                        src="/public/images/privacy.png" 
                         alt="Icon" 
                         className={mergeClasses(styles.footerIcon, darkMode && styles.footerIconDark)}
                     />
@@ -32,7 +32,7 @@ export default function Footer() {
                 {/* Cookie Policy */}
                 <a href="#" className={styles.footerLink}>
                     <img 
-                        src="/public/images/cookie.jfif" 
+                        src="/public/images/cookie.png" 
                         alt="Icon" 
                         className={mergeClasses(styles.footerIcon, darkMode && styles.footerIconDark)}
                     />
@@ -42,7 +42,7 @@ export default function Footer() {
                 {/* About */}
                 <a href="#" className={styles.footerLink}>
                     <img 
-                        src="/public/images/about.jfif" 
+                        src="/public/images/about.png" 
                         alt="Icon" 
                         className={mergeClasses(styles.footerIcon, darkMode && styles.footerIconDark)}
                     />
@@ -52,7 +52,7 @@ export default function Footer() {
                 {/* FAQ */}
                 <a href="#" className={styles.footerLink}>
                     <img 
-                        src="/public/images/faqu.jfif" 
+                        src="/public/images/faqu.png" 
                         alt="Icon" 
                         className={mergeClasses(styles.footerIcon, darkMode && styles.footerIconDark)}
                     />

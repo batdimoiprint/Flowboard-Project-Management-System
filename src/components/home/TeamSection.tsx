@@ -7,24 +7,24 @@ export default function TeamSection() {
     // Team member data
     const teamMembers = [
         { name: "Sean Andrei Tagle", role: "Project Manager", image: "/public/images/sean.png" },
-        { name: "Kenny Reyes", role: "Full Stack Developer", image: "/public/images/kenny.jfif" },
-        { name: "Julianna Laurencio", role: "Backend Developer", image: "/public/images/laurencio.jfif" },
-        { name: "Samie Jumuad", role: "Backend Developer", image: "/public/images/samie.jfif" },
-        { name: "Marcel Angelo B. Boborol", role: "Backend Developer", image: "/public/images/marcel.jfif" },
-        { name: "Jhan Anthony Alejo", role: "Documentation Specialist", image: "/public/images/alejo.jfif" },
-        { name: "Erica Balili", role: "Documentation Specialist", image: "/public/images/balili.jfif" },
-        { name: "Aaron Cañada", role: "Documentation Specialist", image: "/public/images/aaron.jfif" },
-        { name: "Wiljhon Suico", role: "Database Designer", image: "/public/images/wiljohn.jfif" },
+        { name: "Kenny Reyes", role: "Full Stack Developer", image: "/public/images/reyes.jpg" },
+        { name: "Marcel Angelo B. Boborol", role: "Backend Developer", image: "/public/images/boborol.jpg" },
+        { name: "Samie Jumuad", role: "Backend Developer", image: "/public/images/jumuad.jpg" },
+        { name: "Julianna Laurencio", role: "Backend Developer", image: "/public/images/laurencio.jpg" },
+        { name: "Jhan Anthony Alejo", role: "Documentation Specialist", image: "/public/images/alejo.jpg" },
+        { name: "Aaron Cañada", role: "Documentation Specialist", image: "/public/images/ako.jpg" },
+        { name: "Erica Balili", role: "Documentation Specialist", image: "/public/images/balili.jpg" },
+        { name: "Wiljhon Suico", role: "Database Designer", image: "/public/images/suico.jpg" },
     ];
 
-    // Animation delay classes
+    // Animation delay classes for 3x3 grid
     const delayClasses = [
         styles.delay100,
         styles.delay200,
         styles.delay300,
-        styles.delay400,
-        styles.delay500,
-        styles.delay600,
+        styles.delay100,
+        styles.delay200,
+        styles.delay300,
         styles.delay100,
         styles.delay200,
         styles.delay300,
@@ -40,7 +40,7 @@ export default function TeamSection() {
                 </div>
             </div>
 
-            {/* Transparent container for team cards */}
+            {/* Team cards grid */}
             <div className={styles.teamCardsContainer}>
                 <div className={styles.teamGrid}>
                     {teamMembers.map((member, index) => (

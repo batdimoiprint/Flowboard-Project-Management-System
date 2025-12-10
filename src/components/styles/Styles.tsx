@@ -832,19 +832,20 @@ export const mainLayoutStyles = makeStyles({
 		borderRadius: '0',
 	},
 
-	///////////////////////////
-	// Team Section (with animations)
-	///////////////////////////
-	teamSection: {
+
+///////////////////////////
+// Team Section (with animations)
+///////////////////////////
+teamSection: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    padding: `${tokens.spacingVerticalXXL} ${tokens.spacingHorizontalL}`,
+    padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalS}`,
     backgroundColor: 'transparent',
     width: '100%',
     maxWidth: '100%',
     boxSizing: 'border-box',
-    gap: tokens.spacingVerticalXXL,
+    gap: tokens.spacingVerticalXXS,
 },
 
 teamLabelContainer: {
@@ -857,7 +858,7 @@ teamLabelContainer: {
     flexDirection: 'column',
     alignItems: 'center',
     padding: `${tokens.spacingVerticalXXL} ${tokens.spacingHorizontalXL}`,
-    marginBottom: tokens.spacingVerticalXL,
+    marginBottom: tokens.spacingVerticalXXS,
     boxSizing: 'border-box',
     animationName: {
         from: { opacity: 0, transform: 'scale(0.95)' },
@@ -903,21 +904,23 @@ teamSubtitle: {
 
 teamGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(5, minmax(200px, 220px))',
-    gridAutoRows: 'minmax(320px, auto)',
-    gap: `${tokens.spacingVerticalL} ${tokens.spacingHorizontalL}`,
+    gridTemplateColumns: 'repeat(3, minmax(200px, 250px))', // 3 columns for 3x3 layout
+    gridAutoRows: 'minmax(340px, auto)', // Keeping the taller card height
+    gap: `${tokens.spacingVerticalL} ${tokens.spacingHorizontalXXL}`,
     width: 'fit-content',
     maxWidth: '100%',
     boxSizing: 'border-box',
     justifyContent: 'center',
-    '@media (max-width: 1300px)': {
+    // Responsive behavior for 3-column layout
+    '@media (max-width: 1100px)': {
         gridTemplateColumns: 'repeat(3, minmax(200px, 220px))',
     },
     '@media (max-width: 900px)': {
         gridTemplateColumns: 'repeat(2, minmax(200px, 220px))',
     },
-    '@media (max-width: 600px)': {
+    '@media (max-width: 650px)': {
         gridTemplateColumns: '1fr',
+        maxWidth: '350px',
     },
 },
 
@@ -930,7 +933,8 @@ teamCard: {
     boxShadow: tokens.shadow4,
     padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalM}`,
     gap: tokens.spacingVerticalM,
-    height: '320px',
+    height: '340px', // Keeping the taller rectangular shape
+    minHeight: '340px',
     transition: 'transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.3s ease',
     boxSizing: 'border-box',
     width: '100%',
@@ -944,7 +948,6 @@ teamCard: {
     '&:hover': {
         transform: 'translateY(-15px) scale(1.05)',
         boxShadow: tokens.shadow16,
-        animation: '$bounce 0.6s ease-in-out',
     },
     // Bounce animation keyframes
     '@keyframes bounce': {
@@ -959,8 +962,8 @@ teamCard: {
 
 teamImageContainer: {
     width: '95%',
-    height: '220px',
-    borderRadius: '0',
+    height: '240px', // Keeping the taller image container
+    borderRadius: '16px',
     overflow: 'hidden',
     backgroundColor: tokens.colorNeutralBackground3,
     display: 'flex',
@@ -978,7 +981,7 @@ teamImage: {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    borderRadius: '0',
+    borderRadius: '16px',
     transition: 'transform 0.3s ease',
     '&:hover': {
         transform: 'scale(1.05)',
@@ -993,6 +996,8 @@ teamInfo: {
     gap: tokens.spacingVerticalXXS,
     width: '100%',
     padding: `0 ${tokens.spacingHorizontalS}`,
+    flex: 1,
+    justifyContent: 'center',
 },
 
 teamMemberName: {
@@ -1001,6 +1006,11 @@ teamMemberName: {
     color: tokens.colorNeutralForeground1,
     textAlign: 'center',
     lineHeight: '1.2',
+    fontSize: tokens.fontSizeBase500,
+    wordBreak: 'break-word',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    maxWidth: '100%',
 },
 
 teamMemberRole: {
@@ -1008,6 +1018,11 @@ teamMemberRole: {
     color: tokens.colorNeutralForeground2,
     textAlign: 'center',
     lineHeight: '1.3',
+    fontSize: tokens.fontSizeBase200,
+    wordBreak: 'break-word',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    maxWidth: '100%',
 },
 
 	///////////////////////////
@@ -1016,7 +1031,7 @@ teamMemberRole: {
 	ctaSection: {
 		width: '100%',
 		maxWidth: '100%',
-		marginTop: tokens.spacingVerticalXXL,
+		marginTop: tokens.spacingVerticalXXS,
 		marginBottom: tokens.spacingVerticalXXL,
 		position: 'relative',
 		overflow: 'hidden',
