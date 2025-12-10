@@ -471,7 +471,7 @@ export default function MyProfile() {
   const username = userCtx?.user?.userName || 'User';
 
   return (
-    <Card className={mergeClasses(s.flexColFill, s.layoutPadding, s.gap, s.componentBorder)}>
+    <Card className={mergeClasses(s.flexColFill, s.layoutPadding, s.gap, s.componentBorder)} style={{ overflow: 'auto' }}>
       {/* Title Row */}
 
       <h1 className={mergeClasses(s.brand)}>My Profile</h1>
@@ -716,26 +716,11 @@ export default function MyProfile() {
             )} />
           </div>
           <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="regionCode">Code</Label>
-            <Controller control={control} name="regionCode" render={({ field }) => (
-              <Input id="regionCode" type="text" disabled={!isEditing} size="small" {...field} />
-            )} />
-          </div>
-          <div className={mergeClasses(s.formField)}>
             <Label htmlFor="province">Province</Label>
             <Controller control={control} name="province" render={({ field }) => (
               <Input id="province" type="text" disabled={!isEditing} size="small" {...field} />
             )} />
           </div>
-          <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="provinceCode">Code</Label>
-            <Controller control={control} name="provinceCode" render={({ field }) => (
-              <Input id="provinceCode" type="text" disabled={!isEditing} size="small" {...field} />
-            )} />
-          </div>
-        </div>
-
-        <div className={mergeClasses(s.formRow)}>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="cityMunicipality">City/Municipality</Label>
             <Controller control={control} name="cityMunicipality" render={({ field }) => (
@@ -743,21 +728,9 @@ export default function MyProfile() {
             )} />
           </div>
           <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="cityMunicipalityCode">Code</Label>
-            <Controller control={control} name="cityMunicipalityCode" render={({ field }) => (
-              <Input id="cityMunicipalityCode" type="text" disabled={!isEditing} size="small" {...field} />
-            )} />
-          </div>
-          <div className={mergeClasses(s.formField)}>
             <Label htmlFor="barangay">Barangay</Label>
             <Controller control={control} name="barangay" render={({ field }) => (
               <Input id="barangay" type="text" disabled={!isEditing} size="small" {...field} />
-            )} />
-          </div>
-          <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="barangayCode">Code</Label>
-            <Controller control={control} name="barangayCode" render={({ field }) => (
-              <Input id="barangayCode" type="text" disabled={!isEditing} size="small" {...field} />
             )} />
           </div>
         </div>
@@ -793,26 +766,11 @@ export default function MyProfile() {
             )} />
           </div>
           <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="secondaryRegionCode">Code</Label>
-            <Controller control={control} name="secondaryRegionCode" render={({ field }) => (
-              <Input id="secondaryRegionCode" type="text" disabled={!isEditing} size="small" {...field} />
-            )} />
-          </div>
-          <div className={mergeClasses(s.formField)}>
             <Label htmlFor="secondaryProvince">Province</Label>
             <Controller control={control} name="secondaryProvince" render={({ field }) => (
               <Input id="secondaryProvince" type="text" disabled={!isEditing} size="small" {...field} />
             )} />
           </div>
-          <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="secondaryProvinceCode">Code</Label>
-            <Controller control={control} name="secondaryProvinceCode" render={({ field }) => (
-              <Input id="secondaryProvinceCode" type="text" disabled={!isEditing} size="small" {...field} />
-            )} />
-          </div>
-        </div>
-
-        <div className={mergeClasses(s.formRow)}>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="secondaryCityMunicipality">City/Municipality</Label>
             <Controller control={control} name="secondaryCityMunicipality" render={({ field }) => (
@@ -820,21 +778,9 @@ export default function MyProfile() {
             )} />
           </div>
           <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="secondaryCityMunicipalityCode">Code</Label>
-            <Controller control={control} name="secondaryCityMunicipalityCode" render={({ field }) => (
-              <Input id="secondaryCityMunicipalityCode" type="text" disabled={!isEditing} size="small" {...field} />
-            )} />
-          </div>
-          <div className={mergeClasses(s.formField)}>
             <Label htmlFor="secondaryBarangay">Barangay</Label>
             <Controller control={control} name="secondaryBarangay" render={({ field }) => (
               <Input id="secondaryBarangay" type="text" disabled={!isEditing} size="small" {...field} />
-            )} />
-          </div>
-          <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="secondaryBarangayCode">Code</Label>
-            <Controller control={control} name="secondaryBarangayCode" render={({ field }) => (
-              <Input id="secondaryBarangayCode" type="text" disabled={!isEditing} size="small" {...field} />
             )} />
           </div>
         </div>
