@@ -93,9 +93,14 @@ export default function ProjectList({ openCategories, onNavigateToProjects, refr
             .slice(0, RECENT_LIMIT);
     }, [projects]);
 
-    const handleProjectClick = (projectName: string) => {
-        const slug = buildSlug(projectName);
-        navigate(`/home/project/${slug}/kanban`);
+    const handleProjectClick = (project: Project) => {
+        const slug = buildSlug(project.projectName);
+        // Check if user is a client in this project
+        const userRole = project.permissions?.[currentUser?.id || ''];
+        const isClient = userRole === 'Client';
+        // Redirect clients to analytics, others to kanban
+        const targetPath = isClient ? 'analytics' : 'kanban';
+        navigate(`/home/project/${slug}/${targetPath}`);
     };
 
     return (
@@ -147,7 +152,7 @@ export default function ProjectList({ openCategories, onNavigateToProjects, refr
                             key={project.id}
                             value={project.id}
                             className={mergeClasses(s.navSubItem)}
-                            onClick={() => handleProjectClick(project.projectName)}
+                            onClick={() => handleProjectClick(project)}
                         >
                             {project.projectName}
                         </NavSubItem>

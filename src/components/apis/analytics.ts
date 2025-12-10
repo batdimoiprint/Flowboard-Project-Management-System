@@ -32,11 +32,19 @@ export interface TaskProgress {
 export interface ProjectStats {
     projectId: string;
     projectName: string;
-    totalTasks: number;
-    completedTasks: number;
-    pendingTasks: number;
-    overdueTasks: number;
-    teamSize: number;
+    memberCount: number;
+    mainTaskCount: number;
+    subTaskCount: number;
+    completedSubTasks: number;
+    overdueSubTasks: number;
+    tasksByPriority: Record<string, number>;
+    tasksByStatus: Record<string, number>;
+    completionRate: number;
+    tasksByCategory: Array<{
+        categoryName: string;
+        totalTasks: number;
+        completedTasks: number;
+    }>;
 }
 
 export interface UserOverview {

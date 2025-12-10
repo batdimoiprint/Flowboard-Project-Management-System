@@ -47,8 +47,19 @@ export default function NavigationHeader() {
                 return;
             }
             try {
-                const project = await projectsApi.getProjectById(projectName);
+                // Decode project name from URL and find matching project
+                const decodedName = decodeURIComponent(projectName).replace(/-/g, ' ');
+                const projects = await projectsApi.getProjectsAsMember();
+                const project = projects.find(p => p.projectName.toLowerCase() === decodedName.toLowerCase());
+
+                if (!project) {
+                    console.warn('NavigationHeader - Project not found:', decodedName);
+                    setUserProjectRole(null);
+                    return;
+                }
+
                 const role = project.permissions?.[user.id] || 'Member';
+                console.log('NavigationHeader - Project:', project.projectName, 'User ID:', user.id, 'Role:', role, 'Permissions:', project.permissions);
                 setUserProjectRole(role);
             } catch (err) {
                 console.error('Failed to fetch project role:', err);
