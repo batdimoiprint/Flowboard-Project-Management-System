@@ -29,16 +29,16 @@ export default function KanbanPage() {
     }, [decodedName]);
 
     return (
-        <Card className={mergeClasses(styles.artifCard, styles.layoutPadding, styles.flexColFill, styles.hFull, styles.componentBorder)} style={{ minHeight: '70vh' }}>
+        <Card className={mergeClasses(styles.artifCard, styles.layoutPadding, styles.flexColFill, styles.hFull, styles.componentBorder)} style={{ maxWidth: '161.5vh' }}>
             {projectError && (
                 <div style={{ color: tokens.colorPaletteRedForeground3 }}>{projectError}</div>
             )}
             {loadingProject ? (
                 <div style={{ color: tokens.colorNeutralForeground3 }}>Resolving project…</div>
             ) : (
-                <div className={mergeClasses(styles.flexColFill)} style={{ overflow: 'hidden' }}>
-                    <KanbanBoard projectId={projectId} />
-                </div>
+
+                <KanbanBoard projectId={projectId} />
+
             )}
         </Card>
     );

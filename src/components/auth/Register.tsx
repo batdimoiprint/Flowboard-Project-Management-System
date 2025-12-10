@@ -60,7 +60,7 @@ export default function Register() {
     const [isNCR, setIsNCR] = useState(false);
 
     // Address dropdown states - Secondary
-    const [showSecondaryAddress, setShowSecondaryAddress] = useState(false);
+    // const [showSecondaryAddress, setShowSecondaryAddress] = useState(false);
     const [secondaryProvinces, setSecondaryProvinces] = useState<Province[]>([]);
     const [secondaryCities, setSecondaryCities] = useState<CityMunicipality[]>([]);
     const [secondaryBarangays, setSecondaryBarangays] = useState<Barangay[]>([]);
@@ -69,7 +69,7 @@ export default function Register() {
     const [loadingSecondaryBarangays, setLoadingSecondaryBarangays] = useState(false);
     const [isSecondaryNCR, setIsSecondaryNCR] = useState(false);
 
-    const { register, handleSubmit, watch, control, setValue, trigger, formState: { errors } } = useForm<RegisterFormInputs>({
+    const { register, handleSubmit, watch, control, setValue, trigger, clearErrors, reset, getValues, formState: { errors, touchedFields, isSubmitted } } = useForm<RegisterFormInputs>({
         mode: 'onBlur',
         reValidateMode: 'onBlur',
         defaultValues: {
@@ -301,7 +301,12 @@ export default function Register() {
     const handleNext = async () => {
         const isValid = await validateCurrentStep();
         if (isValid && currentStep < STEPS.length) {
-            setCurrentStep(currentStep + 1);
+            // Clear errors for the next step to avoid showing premature validation errors
+            const nextStep = currentStep + 1;
+            if (nextStep === 3) {
+                clearErrors(['userName', 'email', 'password', 'verifyPassword']);
+            }
+            setCurrentStep(nextStep);
         }
     };
 
@@ -310,6 +315,27 @@ export default function Register() {
             setCurrentStep(currentStep - 1);
         }
     };
+
+    // Clear any errors for the active step when changing steps so stale errors don't show
+    useEffect(() => {
+        switch (currentStep) {
+            case 1:
+                clearErrors(['firstName', 'middleName', 'lastName', 'contactNumber', 'birthDate']);
+                reset(getValues(), { keepValues: true, keepTouched: false, keepDirty: true, keepErrors: false });
+                break;
+            case 2:
+                clearErrors(['address.regionCode', 'address.provinceCode', 'address.cityMunicipalityCode', 'address.barangayCode', 'address.streetAddress']);
+                reset(getValues(), { keepValues: true, keepTouched: false, keepDirty: true, keepErrors: false });
+                break;
+            case 3:
+                clearErrors(['userName', 'email', 'password', 'verifyPassword']);
+                // Reset touched state for the step fields so they don't immediately show errors
+                reset(getValues(), { keepValues: true, keepTouched: false, keepDirty: true, keepErrors: false });
+                break;
+            default:
+                break;
+        }
+    }, [currentStep, clearErrors, reset, getValues]);
 
     const onSubmit = async (data: RegisterFormInputs) => {
         setFormError('');
@@ -327,7 +353,7 @@ export default function Register() {
             email: data.email,
             password: data.password,
             address: data.address,
-            secondaryAddress: showSecondaryAddress ? data.secondaryAddress : null
+            // secondaryAddress: showSecondaryAddress ? data.secondaryAddress : null
         };
 
         try {
@@ -460,7 +486,7 @@ export default function Register() {
                             }
                         })}
                     />
-                    {errors.firstName && (
+                    {errors.firstName && (touchedFields.firstName || isSubmitted) && (
                         <Text className={styles.errorText}>{errors.firstName.message}</Text>
                     )}
                 </div>
@@ -481,7 +507,7 @@ export default function Register() {
                             }
                         })}
                     />
-                    {errors.middleName && (
+                    {errors.middleName && (touchedFields.middleName || isSubmitted) && (
                         <Text className={styles.errorText}>{errors.middleName.message}</Text>
                     )}
                 </div>
@@ -502,7 +528,7 @@ export default function Register() {
                             }
                         })}
                     />
-                    {errors.lastName && (
+                    {errors.lastName && (touchedFields.lastName || isSubmitted) && (
                         <Text className={styles.errorText}>{errors.lastName.message}</Text>
                     )}
                 </div>
@@ -515,15 +541,21 @@ export default function Register() {
                         type="tel"
                         placeholder="+639123456789"
                         autoComplete="tel"
+                        maxLength={13}
                         {...register('contactNumber', {
                             required: 'Contact number is required',
+                            maxLength: { value: 13, message: 'Contact number must not exceed 13 characters' },
                             pattern: {
                                 value: /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/,
                                 message: 'Please enter a valid phone number'
                             }
                         })}
+                        onInput={(e: React.FormEvent<HTMLInputElement>) => {
+                            const input = e.currentTarget;
+                            input.value = input.value.replace(/[^0-9+]/g, '');
+                        }}
                     />
-                    {errors.contactNumber && (
+                    {errors.contactNumber && (touchedFields.contactNumber || isSubmitted) && (
                         <Text className={styles.errorText}>{errors.contactNumber.message}</Text>
                     )}
                 </div>
@@ -534,14 +566,20 @@ export default function Register() {
                         type="tel"
                         placeholder="+639123456789"
                         autoComplete="tel"
+                        maxLength={13}
                         {...register('secondaryContactNumber', {
+                            maxLength: { value: 13, message: 'Contact number must not exceed 13 characters' },
                             pattern: {
                                 value: /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/,
                                 message: 'Please enter a valid phone number'
                             }
                         })}
+                        onInput={(e: React.FormEvent<HTMLInputElement>) => {
+                            const input = e.currentTarget;
+                            input.value = input.value.replace(/[^0-9+]/g, '');
+                        }}
                     />
-                    {errors.secondaryContactNumber && (
+                    {errors.secondaryContactNumber && (touchedFields.secondaryContactNumber || isSubmitted) && (
                         <Text className={styles.errorText}>{errors.secondaryContactNumber.message}</Text>
                     )}
                 </div>
@@ -575,7 +613,7 @@ export default function Register() {
                             />
                         )}
                     />
-                    {errors.birthDate && (
+                    {errors.birthDate && (touchedFields.birthDate || isSubmitted) && (
                         <Text className={styles.errorText}>{errors.birthDate.message}</Text>
                     )}
                 </div>
@@ -631,7 +669,7 @@ export default function Register() {
                                 </Dropdown>
                             )}
                         />
-                        {!isSecondary && errors.address?.regionCode && (
+                        {!isSecondary && errors.address?.regionCode && (touchedFields.address?.regionCode || isSubmitted) && (
                             <Text className={styles.errorText}>{errors.address.regionCode.message}</Text>
                         )}
                     </div>
@@ -659,7 +697,7 @@ export default function Register() {
                                 </Dropdown>
                             )}
                         />
-                        {!isSecondary && !currentIsNCR && errors.address?.provinceCode && (
+                        {!isSecondary && !currentIsNCR && errors.address?.provinceCode && (touchedFields.address?.provinceCode || isSubmitted) && (
                             <Text className={styles.errorText}>{errors.address.provinceCode.message}</Text>
                         )}
                     </div>
@@ -687,7 +725,7 @@ export default function Register() {
                                 </Dropdown>
                             )}
                         />
-                        {!isSecondary && errors.address?.cityMunicipalityCode && (
+                        {!isSecondary && errors.address?.cityMunicipalityCode && (touchedFields.address?.cityMunicipalityCode || isSubmitted) && (
                             <Text className={styles.errorText}>{errors.address.cityMunicipalityCode.message}</Text>
                         )}
                     </div>
@@ -718,7 +756,7 @@ export default function Register() {
                                 </Dropdown>
                             )}
                         />
-                        {!isSecondary && errors.address?.barangayCode && (
+                        {!isSecondary && errors.address?.barangayCode && (touchedFields.address?.barangayCode || isSubmitted) && (
                             <Text className={styles.errorText}>{errors.address.barangayCode.message}</Text>
                         )}
                     </div>
@@ -733,7 +771,7 @@ export default function Register() {
                                 maxLength: { value: 200, message: 'Street address must not exceed 200 characters' }
                             })}
                         />
-                        {!isSecondary && errors.address?.streetAddress && (
+                        {!isSecondary && errors.address?.streetAddress && (touchedFields.address?.streetAddress || isSubmitted) && (
                             <Text className={styles.errorText}>{errors.address.streetAddress.message}</Text>
                         )}
                     </div>
@@ -753,7 +791,7 @@ export default function Register() {
 
     const renderAddressStep = () => (
         <div className={styles.section}>
-            <div className={styles.sectionTitle}>Primary Address</div>
+            <div className={styles.sectionTitle}>Address</div>
             {loadingRegions ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '16px' }}>
                     <Spinner size="small" />
@@ -761,23 +799,6 @@ export default function Register() {
                 </div>
             ) : (
                 renderAddressFields(false)
-            )}
-
-            <div style={{ marginTop: '24px' }}>
-                <Button
-                    appearance="subtle"
-                    onClick={() => setShowSecondaryAddress(!showSecondaryAddress)}
-                    type="button"
-                >
-                    {showSecondaryAddress ? '- Remove Secondary Address' : '+ Add Secondary Address'}
-                </Button>
-            </div>
-
-            {showSecondaryAddress && (
-                <div style={{ marginTop: '16px' }}>
-                    <div className={styles.sectionTitle}>Secondary Address</div>
-                    {renderAddressFields(true)}
-                </div>
             )}
         </div>
     );
@@ -803,7 +824,7 @@ export default function Register() {
                             }
                         })}
                     />
-                    {errors.userName && (
+                    {errors.userName && (touchedFields.userName || isSubmitted) && (
                         <Text className={styles.errorText}>{errors.userName.message}</Text>
                     )}
                 </div>
@@ -822,7 +843,7 @@ export default function Register() {
                             }
                         })}
                     />
-                    {errors.email && (
+                    {errors.email && (touchedFields.email || isSubmitted) && (
                         <Text className={styles.errorText}>{errors.email.message}</Text>
                     )}
                 </div>
@@ -847,7 +868,7 @@ export default function Register() {
                             }
                         })}
                     />
-                    {errors.password && (
+                    {errors.password && (touchedFields.password || isSubmitted) && (
                         <Text className={styles.errorText}>{errors.password.message}</Text>
                     )}
                 </div>
@@ -863,7 +884,7 @@ export default function Register() {
                             validate: (value) => value === watch('password') || 'Passwords do not match'
                         })}
                     />
-                    {errors.verifyPassword && (
+                    {errors.verifyPassword && (touchedFields.verifyPassword || isSubmitted) && (
                         <Text className={styles.errorText}>{errors.verifyPassword.message}</Text>
                     )}
                 </div>

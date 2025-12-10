@@ -622,31 +622,29 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                     )}
                 </div>
             ) : (
-                <div className={styles.kanbanBoardOuter}>
-                    <div className={styles.kanbanBoard}>
-                        {columns.map(column => (
-                            <KanbanColumn
-                                key={column.id}
-                                column={column}
-                                onAddTask={handleAddTask}
-                                onTaskClick={handleTaskClick}
-                                onDeleteColumn={handleDeleteCategory}
-                                onUpdateColumn={handleUpdateCategory}
-                            />
-                        ))}
-                        <div className={styles.kanbanAddColumn}>
-                            {isAddingColumn ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                                    <Input placeholder="Column name" value={newCategoryName} onChange={(e: ChangeEvent<HTMLInputElement>) => setNewCategoryName(e.target.value)} />
-                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                        <Button appearance="primary" onClick={handleAddCategory} disabled={!newCategoryName.trim()}>Save</Button>
-                                        <Button appearance="subtle" onClick={() => { setIsAddingColumn(false); setNewCategoryName(''); }}>Cancel</Button>
-                                    </div>
+                <div className={styles.kanbanBoard}>
+                    {columns.map(column => (
+                        <KanbanColumn
+                            key={column.id}
+                            column={column}
+                            onAddTask={handleAddTask}
+                            onTaskClick={handleTaskClick}
+                            onDeleteColumn={handleDeleteCategory}
+                            onUpdateColumn={handleUpdateCategory}
+                        />
+                    ))}
+                    <div className={styles.kanbanAddColumn}>
+                        {isAddingColumn ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                                <Input placeholder="Column name" value={newCategoryName} onChange={(e: ChangeEvent<HTMLInputElement>) => setNewCategoryName(e.target.value)} />
+                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                    <Button appearance="primary" onClick={handleAddCategory} disabled={!newCategoryName.trim()}>Save</Button>
+                                    <Button appearance="subtle" onClick={() => { setIsAddingColumn(false); setNewCategoryName(''); }}>Cancel</Button>
                                 </div>
-                            ) : (
-                                <Button appearance="subtle" onClick={() => setIsAddingColumn(true)}>+ Add column</Button>
-                            )}
-                        </div>
+                            </div>
+                        ) : (
+                            <Button appearance="subtle" onClick={() => setIsAddingColumn(true)}>+ Add column</Button>
+                        )}
                     </div>
                 </div>
             )}

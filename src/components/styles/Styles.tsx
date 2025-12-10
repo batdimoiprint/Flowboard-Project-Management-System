@@ -213,34 +213,21 @@ export const mainLayoutStyles = makeStyles({
 	///////////////////////////
 	// Kanban Board Styles
 	///////////////////////////
-	kanbanPageContainer: {
-		height: '100%',
-		maxHeight: '100vh',
-		display: 'flex',
-		flexDirection: 'column',
-		overflow: 'hidden',
-	},
-	kanbanBoardOuter: {
-		display: 'flex',
-		flexDirection: 'column',
-		flex: 1,
-		overflow: 'hidden',
-		minHeight: '400px',
-		height: '100%',
-		maxHeight: '100%',
-	},
+
 	kanbanBoard: {
 		boxSizing: 'border-box',
 		display: 'flex',
 		flexDirection: 'row',
 		alignItems: 'stretch',
-		gap: tokens.spacingHorizontalL,
+		gap: tokens.spacingHorizontalM,
 		flex: 1,
+		minHeight: 0,
 		width: '100%',
 		height: '100%',
 		overflowX: 'auto',
 		overflowY: 'hidden',
 		paddingBottom: tokens.spacingVerticalL,
+		flexWrap: 'nowrap',
 	},
 	kanbanColumn: {
 		boxSizing: 'border-box',
