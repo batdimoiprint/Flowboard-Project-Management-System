@@ -27,7 +27,7 @@ export default function TeamSection() {
     ];
 
     // Infinite scroll animation keyframes
-    const bannerStyle = {
+    const bannerStyle: React.CSSProperties = {
         display: 'flex',
         overflow: 'hidden',
         width: '100%',
@@ -36,7 +36,7 @@ export default function TeamSection() {
         background: 'transparent',
         padding: "10px"
     };
-    const scrollStyle = {
+    const scrollStyle: React.CSSProperties = {
         display: 'flex',
         animation: 'scrollBanner 30s linear infinite',
     };
