@@ -4,6 +4,7 @@ export interface CreateSubTaskData {
     title: string;
     description?: string;
     priority?: string;
+    status?: string;
     mainTaskId?: string;
     projectId: string;
     category?: string;
@@ -18,6 +19,7 @@ export interface UpdateSubTaskData {
     title?: string;
     description?: string;
     priority?: string;
+    status?: string;
     mainTaskId?: string;
     projectId?: string;
     category?: string;
@@ -33,6 +35,7 @@ export interface SubTaskResponse {
     title: string;
     description?: string;
     priority?: string;
+    status?: string;
     mainTaskId?: string;
     projectId: string;
     category?: string;
@@ -125,8 +128,11 @@ export const subTasksApi = {
         if (updates.title !== undefined) payload.title = updates.title;
         if (updates.description !== undefined) payload.description = updates.description;
         if (updates.priority !== undefined && updates.priority !== '') payload.priority = updates.priority;
+        if (updates.status !== undefined && updates.status !== '') payload.status = updates.status;
         if (updates.categoryId !== undefined && updates.categoryId !== '') payload.categoryId = updates.categoryId;
         if (updates.assignedTo !== undefined) payload.assignedTo = updates.assignedTo;
+        if (updates.startDate !== undefined) payload.startDate = updates.startDate;
+        if (updates.endDate !== undefined) payload.endDate = updates.endDate;
 
         const response = await axiosInstance.patch<{ message: string }>(`/api/subtasks/${subTaskId}`, payload);
         return response.data;
@@ -151,6 +157,15 @@ export const subTasksApi = {
             content: string;
             createdAt: string;
         }>(`/api/subtasks/${subTaskId}/comments`, payload);
+        return response.data;
+    },
+
+    /**
+     * Update category of a subtask
+     * Backend path: PATCH /api/subtasks/{id}/category
+     */
+    updateCategory: async (subTaskId: string, categoryData: { categoryId?: string; category?: string }): Promise<{ message: string }> => {
+        const response = await axiosInstance.patch<{ message: string }>(`/api/subtasks/${subTaskId}/category`, categoryData);
         return response.data;
     },
 

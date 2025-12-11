@@ -1,22 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { Card, Button, Input, Label, Text, Avatar, tokens, Dropdown, Option, Spinner } from '@fluentui/react-components';
+import { Card, Button, Input, Label, Text, Avatar, tokens } from '@fluentui/react-components';
 import { DatePicker } from '@fluentui/react-datepicker-compat';
 import { Camera24Regular, Delete24Regular } from '@fluentui/react-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { useUser } from '../../hooks/useUser';
 import { usersApi } from '../../components/apis/users';
 import type { UserUpdateRequest } from '../../components/apis/users';
+import type { AddressData } from '../../components/apis/philippineAddress';
 import { mainLayoutStyles } from '../../components/styles/Styles';
 import { mergeClasses } from '@fluentui/react-components';
 import imageCompression from 'browser-image-compression';
-import {
-  philippineAddressApi,
-  type Region,
-  type Province,
-  type CityMunicipality,
-  type Barangay,
-  type AddressData,
-} from '../../components/apis/philippineAddress';
 
 type ProfileFormInputs = {
   userName: string;
@@ -33,16 +26,24 @@ type ProfileFormInputs = {
   confirmPassword: string;
   // Primary Address fields
   region: string;
+  regionCode: string;
   province: string;
+  provinceCode: string;
   cityMunicipality: string;
+  cityMunicipalityCode: string;
   barangay: string;
+  barangayCode: string;
   streetAddress: string;
   zipCode: string;
   // Secondary Address fields
   secondaryRegion: string;
+  secondaryRegionCode: string;
   secondaryProvince: string;
+  secondaryProvinceCode: string;
   secondaryCityMunicipality: string;
+  secondaryCityMunicipalityCode: string;
   secondaryBarangay: string;
+  secondaryBarangayCode: string;
   secondaryStreetAddress: string;
   secondaryZipCode: string;
 };
@@ -55,30 +56,6 @@ export default function MyProfile() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Primary Address state
-  const [regions, setRegions] = useState<Region[]>([]);
-  const [provinces, setProvinces] = useState<Province[]>([]);
-  const [citiesMunicipalities, setCitiesMunicipalities] = useState<CityMunicipality[]>([]);
-  const [barangays, setBarangays] = useState<Barangay[]>([]);
-  const [addressLoading, setAddressLoading] = useState({
-    regions: false,
-    provinces: false,
-    cities: false,
-    barangays: false
-  });
-  const [isNCR, setIsNCR] = useState(false);
-
-  // Secondary Address state
-  const [secondaryProvinces, setSecondaryProvinces] = useState<Province[]>([]);
-  const [secondaryCitiesMunicipalities, setSecondaryCitiesMunicipalities] = useState<CityMunicipality[]>([]);
-  const [secondaryBarangays, setSecondaryBarangays] = useState<Barangay[]>([]);
-  const [secondaryAddressLoading, setSecondaryAddressLoading] = useState({
-    provinces: false,
-    cities: false,
-    barangays: false
-  });
-  const [isSecondaryNCR, setIsSecondaryNCR] = useState(false);
 
   const { control, handleSubmit, reset, formState: { errors }, watch, setError, clearErrors, setValue } = useForm<ProfileFormInputs>({
     defaultValues: {
@@ -95,15 +72,23 @@ export default function MyProfile() {
       newPassword: '',
       confirmPassword: '',
       region: userCtx?.user?.address?.region || '',
+      regionCode: userCtx?.user?.address?.regionCode || '',
       province: userCtx?.user?.address?.province || '',
+      provinceCode: userCtx?.user?.address?.provinceCode || '',
       cityMunicipality: userCtx?.user?.address?.cityMunicipality || '',
+      cityMunicipalityCode: userCtx?.user?.address?.cityMunicipalityCode || '',
       barangay: userCtx?.user?.address?.barangay || '',
+      barangayCode: userCtx?.user?.address?.barangayCode || '',
       streetAddress: userCtx?.user?.address?.streetAddress || '',
       zipCode: userCtx?.user?.address?.zipCode || '',
       secondaryRegion: userCtx?.user?.secondaryAddress?.region || '',
+      secondaryRegionCode: userCtx?.user?.secondaryAddress?.regionCode || '',
       secondaryProvince: userCtx?.user?.secondaryAddress?.province || '',
+      secondaryProvinceCode: userCtx?.user?.secondaryAddress?.provinceCode || '',
       secondaryCityMunicipality: userCtx?.user?.secondaryAddress?.cityMunicipality || '',
+      secondaryCityMunicipalityCode: userCtx?.user?.secondaryAddress?.cityMunicipalityCode || '',
       secondaryBarangay: userCtx?.user?.secondaryAddress?.barangay || '',
+      secondaryBarangayCode: userCtx?.user?.secondaryAddress?.barangayCode || '',
       secondaryStreetAddress: userCtx?.user?.secondaryAddress?.streetAddress || '',
       secondaryZipCode: userCtx?.user?.secondaryAddress?.zipCode || '',
     },
@@ -114,210 +99,21 @@ export default function MyProfile() {
   const newPasswordValue = watch('newPassword');
   const confirmPasswordValue = watch('confirmPassword');
 
-  // Watch primary address fields for cascading dropdowns
-  const selectedRegion = watch('region');
-  const selectedProvince = watch('province');
-  const selectedCity = watch('cityMunicipality');
-
-  // Watch secondary address fields for cascading dropdowns
-  const selectedSecondaryRegion = watch('secondaryRegion');
-  const selectedSecondaryProvince = watch('secondaryProvince');
-  const selectedSecondaryCity = watch('secondaryCityMunicipality');
-
-  // Load regions on mount
+  // Validation for password fields
   useEffect(() => {
-    const loadRegions = async () => {
-      setAddressLoading(prev => ({ ...prev, regions: true }));
-      try {
-        const data = await philippineAddressApi.getRegions();
-        setRegions(data.sort((a, b) => a.name.localeCompare(b.name)));
-      } catch (error) {
-        console.error('Failed to load regions:', error);
-      } finally {
-        setAddressLoading(prev => ({ ...prev, regions: false }));
+    const needsValidation = !!currentPasswordValue || !!newPasswordValue || !!confirmPasswordValue;
+    if (needsValidation) {
+      if (!currentPasswordValue) {
+        setError('currentPassword', { type: 'manual', message: 'Current password required' });
       }
-    };
-    loadRegions();
-  }, []);
-
-  // Load provinces when region changes (only if editing or loading initial data)
-  useEffect(() => {
-    if (!selectedRegion) {
-      setProvinces([]);
-      setCitiesMunicipalities([]);
-      setBarangays([]);
-      return;
+      if (newPasswordValue && newPasswordValue.length < 8) {
+        setError('newPassword', { type: 'manual', message: 'Password must be at least 8 characters' });
+      }
+      if (newPasswordValue && confirmPasswordValue && newPasswordValue !== confirmPasswordValue) {
+        setError('confirmPassword', { type: 'manual', message: 'Passwords do not match' });
+      }
     }
-
-    const regionData = regions.find(r => r.name === selectedRegion);
-    if (!regionData) return;
-
-    const loadProvinces = async () => {
-      setAddressLoading(prev => ({ ...prev, provinces: true }));
-
-      try {
-        const ncrCheck = philippineAddressApi.isNCR(regionData.code);
-        setIsNCR(ncrCheck);
-
-        if (ncrCheck) {
-          const cities = await philippineAddressApi.getCitiesMunicipalitiesByRegion(regionData.code);
-          setCitiesMunicipalities(cities.sort((a, b) => a.name.localeCompare(b.name)));
-          setProvinces([]);
-        } else {
-          const data = await philippineAddressApi.getProvincesByRegion(regionData.code);
-          setProvinces(data.sort((a, b) => a.name.localeCompare(b.name)));
-        }
-      } catch (error) {
-        console.error('Failed to load provinces:', error);
-      } finally {
-        setAddressLoading(prev => ({ ...prev, provinces: false }));
-      }
-    };
-    loadProvinces();
-  }, [selectedRegion, regions]);
-
-  // Load cities/municipalities when province changes
-  useEffect(() => {
-    if (!selectedProvince || isNCR) {
-      if (!isNCR) {
-        setCitiesMunicipalities([]);
-        setBarangays([]);
-      }
-      return;
-    }
-
-    const provinceData = provinces.find(p => p.name === selectedProvince);
-    if (!provinceData) return;
-
-    const loadCities = async () => {
-      setAddressLoading(prev => ({ ...prev, cities: true }));
-
-      try {
-        const data = await philippineAddressApi.getCitiesMunicipalitiesByProvince(provinceData.code);
-        setCitiesMunicipalities(data.sort((a, b) => a.name.localeCompare(b.name)));
-      } catch (error) {
-        console.error('Failed to load cities/municipalities:', error);
-      } finally {
-        setAddressLoading(prev => ({ ...prev, cities: false }));
-      }
-    };
-    loadCities();
-  }, [selectedProvince, provinces, isNCR]);
-
-  // Load barangays when city/municipality changes
-  useEffect(() => {
-    if (!selectedCity) {
-      setBarangays([]);
-      return;
-    }
-
-    const cityData = citiesMunicipalities.find(c => c.name === selectedCity);
-    if (!cityData) return;
-
-    const loadBarangays = async () => {
-      setAddressLoading(prev => ({ ...prev, barangays: true }));
-
-      try {
-        const data = await philippineAddressApi.getBarangaysByCityMunicipality(cityData.code);
-        setBarangays(data.sort((a, b) => a.name.localeCompare(b.name)));
-      } catch (error) {
-        console.error('Failed to load barangays:', error);
-      } finally {
-        setAddressLoading(prev => ({ ...prev, barangays: false }));
-      }
-    };
-    loadBarangays();
-  }, [selectedCity, citiesMunicipalities]);
-
-  // Secondary Address Effects
-  // Load secondary provinces when secondary region changes
-  useEffect(() => {
-    if (!selectedSecondaryRegion) {
-      setSecondaryProvinces([]);
-      setSecondaryCitiesMunicipalities([]);
-      setSecondaryBarangays([]);
-      return;
-    }
-
-    const regionData = regions.find(r => r.name === selectedSecondaryRegion);
-    if (!regionData) return;
-
-    const loadSecondaryProvinces = async () => {
-      setSecondaryAddressLoading(prev => ({ ...prev, provinces: true }));
-
-      try {
-        const ncrCheck = philippineAddressApi.isNCR(regionData.code);
-        setIsSecondaryNCR(ncrCheck);
-
-        if (ncrCheck) {
-          const cities = await philippineAddressApi.getCitiesMunicipalitiesByRegion(regionData.code);
-          setSecondaryCitiesMunicipalities(cities.sort((a, b) => a.name.localeCompare(b.name)));
-          setSecondaryProvinces([]);
-        } else {
-          const data = await philippineAddressApi.getProvincesByRegion(regionData.code);
-          setSecondaryProvinces(data.sort((a, b) => a.name.localeCompare(b.name)));
-        }
-      } catch (error) {
-        console.error('Failed to load secondary provinces:', error);
-      } finally {
-        setSecondaryAddressLoading(prev => ({ ...prev, provinces: false }));
-      }
-    };
-    loadSecondaryProvinces();
-  }, [selectedSecondaryRegion, regions]);
-
-  // Load secondary cities/municipalities when secondary province changes
-  useEffect(() => {
-    if (!selectedSecondaryProvince || isSecondaryNCR) {
-      if (!isSecondaryNCR) {
-        setSecondaryCitiesMunicipalities([]);
-        setSecondaryBarangays([]);
-      }
-      return;
-    }
-
-    const provinceData = secondaryProvinces.find(p => p.name === selectedSecondaryProvince);
-    if (!provinceData) return;
-
-    const loadSecondaryCities = async () => {
-      setSecondaryAddressLoading(prev => ({ ...prev, cities: true }));
-
-      try {
-        const data = await philippineAddressApi.getCitiesMunicipalitiesByProvince(provinceData.code);
-        setSecondaryCitiesMunicipalities(data.sort((a, b) => a.name.localeCompare(b.name)));
-      } catch (error) {
-        console.error('Failed to load secondary cities/municipalities:', error);
-      } finally {
-        setSecondaryAddressLoading(prev => ({ ...prev, cities: false }));
-      }
-    };
-    loadSecondaryCities();
-  }, [selectedSecondaryProvince, secondaryProvinces, isSecondaryNCR]);
-
-  // Load secondary barangays when secondary city/municipality changes
-  useEffect(() => {
-    if (!selectedSecondaryCity) {
-      setSecondaryBarangays([]);
-      return;
-    }
-
-    const cityData = secondaryCitiesMunicipalities.find(c => c.name === selectedSecondaryCity);
-    if (!cityData) return;
-
-    const loadSecondaryBarangays = async () => {
-      setSecondaryAddressLoading(prev => ({ ...prev, barangays: true }));
-
-      try {
-        const data = await philippineAddressApi.getBarangaysByCityMunicipality(cityData.code);
-        setSecondaryBarangays(data.sort((a, b) => a.name.localeCompare(b.name)));
-      } catch (error) {
-        console.error('Failed to load secondary barangays:', error);
-      } finally {
-        setSecondaryAddressLoading(prev => ({ ...prev, barangays: false }));
-      }
-    };
-    loadSecondaryBarangays();
-  }, [selectedSecondaryCity, secondaryCitiesMunicipalities]);
+  }, [currentPasswordValue, newPasswordValue, confirmPasswordValue, setError]);
 
   // Update form when user data loads
   useEffect(() => {
@@ -336,15 +132,23 @@ export default function MyProfile() {
         newPassword: '',
         confirmPassword: '',
         region: userCtx.user.address?.region || '',
+        regionCode: userCtx.user.address?.regionCode || '',
         province: userCtx.user.address?.province || '',
+        provinceCode: userCtx.user.address?.provinceCode || '',
         cityMunicipality: userCtx.user.address?.cityMunicipality || '',
+        cityMunicipalityCode: userCtx.user.address?.cityMunicipalityCode || '',
         barangay: userCtx.user.address?.barangay || '',
+        barangayCode: userCtx.user.address?.barangayCode || '',
         streetAddress: userCtx.user.address?.streetAddress || '',
         zipCode: userCtx.user.address?.zipCode || '',
         secondaryRegion: userCtx.user.secondaryAddress?.region || '',
+        secondaryRegionCode: userCtx.user.secondaryAddress?.regionCode || '',
         secondaryProvince: userCtx.user.secondaryAddress?.province || '',
+        secondaryProvinceCode: userCtx.user.secondaryAddress?.provinceCode || '',
         secondaryCityMunicipality: userCtx.user.secondaryAddress?.cityMunicipality || '',
+        secondaryCityMunicipalityCode: userCtx.user.secondaryAddress?.cityMunicipalityCode || '',
         secondaryBarangay: userCtx.user.secondaryAddress?.barangay || '',
+        secondaryBarangayCode: userCtx.user.secondaryAddress?.barangayCode || '',
         secondaryStreetAddress: userCtx.user.secondaryAddress?.streetAddress || '',
         secondaryZipCode: userCtx.user.secondaryAddress?.zipCode || '',
       });
@@ -427,8 +231,11 @@ export default function MyProfile() {
 
       const {
         currentPassword, newPassword, confirmPassword,
-        region, province, cityMunicipality, barangay, streetAddress, zipCode,
-        secondaryRegion, secondaryProvince, secondaryCityMunicipality, secondaryBarangay, secondaryStreetAddress, secondaryZipCode,
+        region, regionCode, province, provinceCode, cityMunicipality, cityMunicipalityCode,
+        barangay, barangayCode, streetAddress, zipCode,
+        secondaryRegion, secondaryRegionCode, secondaryProvince, secondaryProvinceCode,
+        secondaryCityMunicipality, secondaryCityMunicipalityCode, secondaryBarangay,
+        secondaryBarangayCode, secondaryStreetAddress, secondaryZipCode,
         ...profileFields
       } = data;
       const payload: UserUpdateRequest = {};
@@ -498,33 +305,33 @@ export default function MyProfile() {
       });
 
       // Handle address fields
-      const hasAddressData = region || province || cityMunicipality || barangay || streetAddress || zipCode;
+      const hasAddressData = region || regionCode || province || provinceCode || cityMunicipality ||
+        cityMunicipalityCode || barangay || barangayCode || streetAddress || zipCode;
       if (hasAddressData) {
-        const regionData = regions.find(r => r.name === region);
-        const provinceData = provinces.find(p => p.name === province);
-        const cityData = citiesMunicipalities.find(c => c.name === cityMunicipality);
-        const barangayData = barangays.find(b => b.name === barangay);
-
         const newAddress: AddressData = {
-          region: region,
-          regionCode: regionData?.code || '',
-          province: province,
-          provinceCode: provinceData?.code || '',
-          cityMunicipality: cityMunicipality,
-          cityMunicipalityCode: cityData?.code || '',
-          barangay: barangay,
-          barangayCode: barangayData?.code || '',
-          streetAddress: streetAddress,
-          zipCode: zipCode
+          region: region || '',
+          regionCode: regionCode || '',
+          province: province || '',
+          provinceCode: provinceCode || '',
+          cityMunicipality: cityMunicipality || '',
+          cityMunicipalityCode: cityMunicipalityCode || '',
+          barangay: barangay || '',
+          barangayCode: barangayCode || '',
+          streetAddress: streetAddress || '',
+          zipCode: zipCode || ''
         };
 
         // Check if address has changed
         const currentAddress = userCtx?.user?.address;
         const addressChanged =
           newAddress.region !== (currentAddress?.region || '') ||
+          newAddress.regionCode !== (currentAddress?.regionCode || '') ||
           newAddress.province !== (currentAddress?.province || '') ||
+          newAddress.provinceCode !== (currentAddress?.provinceCode || '') ||
           newAddress.cityMunicipality !== (currentAddress?.cityMunicipality || '') ||
+          newAddress.cityMunicipalityCode !== (currentAddress?.cityMunicipalityCode || '') ||
           newAddress.barangay !== (currentAddress?.barangay || '') ||
+          newAddress.barangayCode !== (currentAddress?.barangayCode || '') ||
           newAddress.streetAddress !== (currentAddress?.streetAddress || '') ||
           newAddress.zipCode !== (currentAddress?.zipCode || '');
 
@@ -534,22 +341,20 @@ export default function MyProfile() {
       }
 
       // Handle secondary address fields (optional)
-      const hasSecondaryAddressData = secondaryRegion || secondaryProvince || secondaryCityMunicipality || secondaryBarangay || secondaryStreetAddress || secondaryZipCode;
+      const hasSecondaryAddressData = secondaryRegion || secondaryRegionCode || secondaryProvince ||
+        secondaryProvinceCode || secondaryCityMunicipality ||
+        secondaryCityMunicipalityCode || secondaryBarangay ||
+        secondaryBarangayCode || secondaryStreetAddress || secondaryZipCode;
       if (hasSecondaryAddressData) {
-        const regionData = regions.find(r => r.name === secondaryRegion);
-        const provinceData = secondaryProvinces.find(p => p.name === secondaryProvince);
-        const cityData = secondaryCitiesMunicipalities.find(c => c.name === secondaryCityMunicipality);
-        const barangayData = secondaryBarangays.find(b => b.name === secondaryBarangay);
-
         const newSecondaryAddress: AddressData = {
           region: secondaryRegion || '',
-          regionCode: regionData?.code || '',
+          regionCode: secondaryRegionCode || '',
           province: secondaryProvince || '',
-          provinceCode: provinceData?.code || '',
+          provinceCode: secondaryProvinceCode || '',
           cityMunicipality: secondaryCityMunicipality || '',
-          cityMunicipalityCode: cityData?.code || '',
+          cityMunicipalityCode: secondaryCityMunicipalityCode || '',
           barangay: secondaryBarangay || '',
-          barangayCode: barangayData?.code || '',
+          barangayCode: secondaryBarangayCode || '',
           streetAddress: secondaryStreetAddress || '',
           zipCode: secondaryZipCode || ''
         };
@@ -558,9 +363,13 @@ export default function MyProfile() {
         const currentSecondaryAddress = userCtx?.user?.secondaryAddress;
         const secondaryAddressChanged =
           newSecondaryAddress.region !== (currentSecondaryAddress?.region || '') ||
+          newSecondaryAddress.regionCode !== (currentSecondaryAddress?.regionCode || '') ||
           newSecondaryAddress.province !== (currentSecondaryAddress?.province || '') ||
+          newSecondaryAddress.provinceCode !== (currentSecondaryAddress?.provinceCode || '') ||
           newSecondaryAddress.cityMunicipality !== (currentSecondaryAddress?.cityMunicipality || '') ||
+          newSecondaryAddress.cityMunicipalityCode !== (currentSecondaryAddress?.cityMunicipalityCode || '') ||
           newSecondaryAddress.barangay !== (currentSecondaryAddress?.barangay || '') ||
+          newSecondaryAddress.barangayCode !== (currentSecondaryAddress?.barangayCode || '') ||
           newSecondaryAddress.streetAddress !== (currentSecondaryAddress?.streetAddress || '') ||
           newSecondaryAddress.zipCode !== (currentSecondaryAddress?.zipCode || '');
 
@@ -630,15 +439,23 @@ export default function MyProfile() {
         newPassword: '',
         confirmPassword: '',
         region: updatedUser.address?.region || '',
+        regionCode: updatedUser.address?.regionCode || '',
         province: updatedUser.address?.province || '',
+        provinceCode: updatedUser.address?.provinceCode || '',
         cityMunicipality: updatedUser.address?.cityMunicipality || '',
+        cityMunicipalityCode: updatedUser.address?.cityMunicipalityCode || '',
         barangay: updatedUser.address?.barangay || '',
+        barangayCode: updatedUser.address?.barangayCode || '',
         streetAddress: updatedUser.address?.streetAddress || '',
         zipCode: updatedUser.address?.zipCode || '',
         secondaryRegion: updatedUser.secondaryAddress?.region || '',
+        secondaryRegionCode: updatedUser.secondaryAddress?.regionCode || '',
         secondaryProvince: updatedUser.secondaryAddress?.province || '',
+        secondaryProvinceCode: updatedUser.secondaryAddress?.provinceCode || '',
         secondaryCityMunicipality: updatedUser.secondaryAddress?.cityMunicipality || '',
+        secondaryCityMunicipalityCode: updatedUser.secondaryAddress?.cityMunicipalityCode || '',
         secondaryBarangay: updatedUser.secondaryAddress?.barangay || '',
+        secondaryBarangayCode: updatedUser.secondaryAddress?.barangayCode || '',
         secondaryStreetAddress: updatedUser.secondaryAddress?.streetAddress || '',
         secondaryZipCode: updatedUser.secondaryAddress?.zipCode || '',
       });
@@ -654,7 +471,7 @@ export default function MyProfile() {
   const username = userCtx?.user?.userName || 'User';
 
   return (
-    <Card className={mergeClasses(s.flexColFill, s.layoutPadding, s.gap, s.componentBorder)}>
+    <Card className={mergeClasses(s.flexColFill, s.layoutPadding, s.gap, s.componentBorder)} style={{ overflow: 'auto' }}>
       {/* Title Row */}
 
       <h1 className={mergeClasses(s.brand)}>My Profile</h1>
@@ -743,113 +560,41 @@ export default function MyProfile() {
       {/* Profile Form */}
       <form onSubmit={handleSubmit(onSubmit)} className={mergeClasses(s.formSection)}>
         {/* Personal Information */}
+        <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalM }}>Personal Information</Text>
         <div className={mergeClasses(s.formRow)}>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="firstName">First Name</Label>
             <Controller
               control={control}
               name="firstName"
-              rules={{
-                required: 'First name is required',
-                minLength: { value: 2, message: 'First name must be at least 2 characters' },
-                maxLength: { value: 50, message: 'First name must not exceed 50 characters' },
-                pattern: {
-                  value: /^[a-zA-Z\s'-]+$/,
-                  message: 'First name can only contain letters, spaces, hyphens, and apostrophes'
-                }
-              }}
+              rules={{ required: 'First name is required' }}
               render={({ field }) => (
-                <Input id="firstName" type="text" disabled={!isEditing} {...field} />
+                <Input id="firstName" type="text" disabled={!isEditing} size="small" {...field} />
               )}
             />
-            {errors.firstName && (
-              <Text className={mergeClasses(s.errorText)}>{errors.firstName.message}</Text>
-            )}
+            {errors.firstName && <Text className={mergeClasses(s.errorText)}>{errors.firstName.message}</Text>}
           </div>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="middleName">Middle Name</Label>
             <Controller
               control={control}
               name="middleName"
-              rules={{
-                minLength: { value: 1, message: 'Middle name must be at least 1 character' },
-                maxLength: { value: 50, message: 'Middle name must not exceed 50 characters' },
-                pattern: {
-                  value: /^[a-zA-Z\s'-]+$/,
-                  message: 'Middle name can only contain letters, spaces, hyphens, and apostrophes'
-                }
-              }}
               render={({ field }) => (
-                <Input id="middleName" type="text" disabled={!isEditing} {...field} />
+                <Input id="middleName" type="text" disabled={!isEditing} size="small" {...field} />
               )}
             />
-            {errors.middleName && (
-              <Text className={mergeClasses(s.errorText)}>{errors.middleName.message}</Text>
-            )}
           </div>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="lastName">Last Name</Label>
             <Controller
               control={control}
               name="lastName"
-              rules={{
-                required: 'Last name is required',
-                minLength: { value: 2, message: 'Last name must be at least 2 characters' },
-                maxLength: { value: 50, message: 'Last name must not exceed 50 characters' },
-                pattern: {
-                  value: /^[a-zA-Z\s'-]+$/,
-                  message: 'Last name can only contain letters, spaces, hyphens, and apostrophes'
-                }
-              }}
+              rules={{ required: 'Last name is required' }}
               render={({ field }) => (
-                <Input id="lastName" type="text" disabled={!isEditing} {...field} />
+                <Input id="lastName" type="text" disabled={!isEditing} size="small" {...field} />
               )}
             />
-            {errors.lastName && (
-              <Text className={mergeClasses(s.errorText)}>{errors.lastName.message}</Text>
-            )}
-          </div>
-        </div>
-
-        <div className={mergeClasses(s.formRow)}>
-          <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="contactNumber">Contact Number *</Label>
-            <Controller
-              control={control}
-              name="contactNumber"
-              rules={{
-                required: 'Contact number is required',
-                pattern: {
-                  value: /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/,
-                  message: 'Please enter a valid phone number'
-                }
-              }}
-              render={({ field }) => (
-                <Input id="contactNumber" type="tel" disabled={!isEditing} {...field} />
-              )}
-            />
-            {errors.contactNumber && (
-              <Text className={mergeClasses(s.errorText)}>{errors.contactNumber.message}</Text>
-            )}
-          </div>
-          <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="secondaryContactNumber">Secondary Contact Number (Optional)</Label>
-            <Controller
-              control={control}
-              name="secondaryContactNumber"
-              rules={{
-                pattern: {
-                  value: /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/,
-                  message: 'Please enter a valid phone number'
-                }
-              }}
-              render={({ field }) => (
-                <Input id="secondaryContactNumber" type="tel" disabled={!isEditing} {...field} />
-              )}
-            />
-            {errors.secondaryContactNumber && (
-              <Text className={mergeClasses(s.errorText)}>{errors.secondaryContactNumber.message}</Text>
-            )}
+            {errors.lastName && <Text className={mergeClasses(s.errorText)}>{errors.lastName.message}</Text>}
           </div>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="birthDate">Birth Date</Label>
@@ -860,319 +605,136 @@ export default function MyProfile() {
               render={({ field }) => (
                 <DatePicker
                   id="birthDate"
-                  placeholder="Select your birth date"
+                  placeholder="mm/dd/yyyy"
                   value={field.value ? new Date(field.value) : null}
-                  onSelectDate={(date) => {
-                    field.onChange(date ? date.toISOString().split('T')[0] : '');
-                  }}
+                  onSelectDate={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
                   disabled={!isEditing}
                   maxDate={new Date()}
+                  size="small"
                   style={{ width: '100%' }}
                 />
               )}
             />
-            {errors.birthDate && (
-              <Text className={mergeClasses(s.errorText)}>{errors.birthDate.message}</Text>
-            )}
+            {errors.birthDate && <Text className={mergeClasses(s.errorText)}>{errors.birthDate.message}</Text>}
           </div>
         </div>
 
-        {/* Account Information */}
         <div className={mergeClasses(s.formRow)}>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="userName">Username</Label>
             <Controller
               control={control}
               name="userName"
-              rules={{
-                required: 'Username is required',
-                minLength: { value: 3, message: 'Username must be at least 3 characters' },
-                maxLength: { value: 20, message: 'Username must not exceed 20 characters' },
-                pattern: {
-                  value: /^[a-zA-Z0-9_]+$/,
-                  message: 'Username can only contain letters, numbers, and underscores'
-                }
-              }}
+              rules={{ required: 'Username is required' }}
               render={({ field }) => (
-                <Input id="userName" type="text" disabled={!isEditing} {...field} />
+                <Input id="userName" type="text" disabled={!isEditing} size="small" {...field} />
               )}
             />
-            {errors.userName && (
-              <Text className={mergeClasses(s.errorText)}>{errors.userName.message}</Text>
-            )}
+            {errors.userName && <Text className={mergeClasses(s.errorText)}>{errors.userName.message}</Text>}
           </div>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="email">Email</Label>
             <Controller
               control={control}
               name="email"
-              rules={{
-                required: 'Email is required',
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Invalid email address'
-                }
-              }}
+              rules={{ required: 'Email is required' }}
               render={({ field }) => (
-                <Input id="email" type="email" disabled={!isEditing} {...field} />
+                <Input id="email" type="email" disabled={!isEditing} size="small" {...field} />
               )}
             />
-            {errors.email && (
-              <Text className={mergeClasses(s.errorText)}>{errors.email.message}</Text>
-            )}
+            {errors.email && <Text className={mergeClasses(s.errorText)}>{errors.email.message}</Text>}
+          </div>
+          <div className={mergeClasses(s.formField)}>
+            <Label htmlFor="contactNumber">Contact Number</Label>
+            <Controller
+              control={control}
+              name="contactNumber"
+              rules={{ required: 'Contact number is required' }}
+              render={({ field }) => (
+                <Input id="contactNumber" type="tel" disabled={!isEditing} size="small" {...field} />
+              )}
+            />
+            {errors.contactNumber && <Text className={mergeClasses(s.errorText)}>{errors.contactNumber.message}</Text>}
+          </div>
+          <div className={mergeClasses(s.formField)}>
+            <Label htmlFor="secondaryContactNumber">Secondary Contact</Label>
+            <Controller
+              control={control}
+              name="secondaryContactNumber"
+              render={({ field }) => (
+                <Input id="secondaryContactNumber" type="tel" disabled={!isEditing} size="small" {...field} />
+              )}
+            />
           </div>
         </div>
 
         {/* Password Update */}
+        <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalL }}>Change Password</Text>
         <div className={mergeClasses(s.formRow)}>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="currentPassword">Current Password</Label>
             <Controller
               control={control}
               name="currentPassword"
-              rules={{
-                validate: (value) => {
-                  const needsValidation = !!newPasswordValue || !!confirmPasswordValue;
-                  if (needsValidation && !value) {
-                    return 'Current password is required to change your password';
-                  }
-                  return true;
-                }
-              }}
               render={({ field }) => (
-                <Input id="currentPassword" type="password" disabled={!isEditing} {...field} />
+                <Input id="currentPassword" type="password" disabled={!isEditing} size="small" {...field} />
               )}
             />
-            {errors.currentPassword && (
-              <Text className={mergeClasses(s.errorText)}>{errors.currentPassword.message}</Text>
-            )}
+            {errors.currentPassword && <Text className={mergeClasses(s.errorText)}>{errors.currentPassword.message}</Text>}
           </div>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="newPassword">New Password</Label>
             <Controller
               control={control}
               name="newPassword"
-              rules={{
-                validate: (value) => {
-                  const needsValidation = !!currentPasswordValue || !!confirmPasswordValue;
-                  if (needsValidation && !value) {
-                    return 'New password is required';
-                  }
-                  if (value && value.length < 8) {
-                    return 'Password must be at least 8 characters';
-                  }
-                  return true;
-                }
-              }}
               render={({ field }) => (
-                <Input id="newPassword" type="password" disabled={!isEditing} {...field} />
+                <Input id="newPassword" type="password" disabled={!isEditing} size="small" {...field} />
               )}
             />
-            {errors.newPassword && (
-              <Text className={mergeClasses(s.errorText)}>{errors.newPassword.message}</Text>
-            )}
+            {errors.newPassword && <Text className={mergeClasses(s.errorText)}>{errors.newPassword.message}</Text>}
           </div>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="confirmPassword">Confirm Password</Label>
             <Controller
               control={control}
               name="confirmPassword"
-              rules={{
-                validate: (value) => {
-                  const needsValidation = !!currentPasswordValue || !!newPasswordValue;
-                  if (needsValidation && !value) {
-                    return 'Please confirm your new password';
-                  }
-                  if (value && value !== newPasswordValue) {
-                    return 'Passwords do not match';
-                  }
-                  return true;
-                }
-              }}
               render={({ field }) => (
-                <Input id="confirmPassword" type="password" disabled={!isEditing} {...field} />
+                <Input id="confirmPassword" type="password" disabled={!isEditing} size="small" {...field} />
               )}
             />
-            {errors.confirmPassword && (
-              <Text className={mergeClasses(s.errorText)}>{errors.confirmPassword.message}</Text>
-            )}
+            {errors.confirmPassword && <Text className={mergeClasses(s.errorText)}>{errors.confirmPassword.message}</Text>}
           </div>
         </div>
 
         {/* Address Information */}
-        <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalL }}>Address Information</Text>
+        <Text weight="semibold" style={{ marginTop: tokens.spacingVerticalL }}>Primary Address</Text>
         <div className={mergeClasses(s.formRow)}>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="region">Region</Label>
-            <Controller
-              control={control}
-              name="region"
-              render={({ field }) => (
-                <Dropdown
-                  id="region"
-                  placeholder={addressLoading.regions ? "Loading regions..." : "Select Region"}
-                  disabled={!isEditing || addressLoading.regions}
-                  selectedOptions={field.value ? [field.value] : []}
-                  onOptionSelect={(_, data) => {
-                    field.onChange(data.optionValue || '');
-                    // Clear dependent fields when region changes
-                    setValue('province', '');
-                    setValue('cityMunicipality', '');
-                    setValue('barangay', '');
-                  }}
-                >
-                  {regions.map((region) => (
-                    <Option key={region.code} value={region.name}>
-                      {region.name}
-                    </Option>
-                  ))}
-                </Dropdown>
-              )}
-            />
-            {addressLoading.regions && <Spinner size="tiny" />}
+            <Controller control={control} name="region" render={({ field }) => (
+              <Input id="region" type="text" disabled={!isEditing} size="small" {...field} />
+            )} />
           </div>
-          {!isNCR && (
-            <div className={mergeClasses(s.formField)}>
-              <Label htmlFor="province">Province</Label>
-              <Controller
-                control={control}
-                name="province"
-                render={({ field }) => (
-                  <Dropdown
-                    id="province"
-                    placeholder={
-                      !selectedRegion
-                        ? "Select region first"
-                        : addressLoading.provinces
-                          ? "Loading provinces..."
-                          : "Select Province"
-                    }
-                    disabled={!isEditing || !selectedRegion || addressLoading.provinces}
-                    selectedOptions={field.value ? [field.value] : []}
-                    onOptionSelect={(_, data) => {
-                      field.onChange(data.optionValue || '');
-                      // Clear dependent fields when province changes
-                      setValue('cityMunicipality', '');
-                      setValue('barangay', '');
-                    }}
-                  >
-                    {provinces.map((province) => (
-                      <Option key={province.code} value={province.name}>
-                        {province.name}
-                      </Option>
-                    ))}
-                  </Dropdown>
-                )}
-              />
-              {addressLoading.provinces && <Spinner size="tiny" />}
-            </div>
-          )}
-        </div>
-
-        <div className={mergeClasses(s.formRow)}>
           <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="cityMunicipality">City / Municipality</Label>
-            <Controller
-              control={control}
-              name="cityMunicipality"
-              render={({ field }) => (
-                <Dropdown
-                  id="cityMunicipality"
-                  placeholder={
-                    isNCR
-                      ? (!selectedRegion ? "Select region first" : addressLoading.cities ? "Loading..." : "Select City")
-                      : (!selectedProvince ? "Select province first" : addressLoading.cities ? "Loading..." : "Select City/Municipality")
-                  }
-                  disabled={!isEditing || (isNCR ? !selectedRegion : !selectedProvince) || addressLoading.cities}
-                  selectedOptions={field.value ? [field.value] : []}
-                  onOptionSelect={(_, data) => {
-                    field.onChange(data.optionValue || '');
-                    // Clear dependent field when city changes
-                    setValue('barangay', '');
-                  }}
-                >
-                  {citiesMunicipalities.map((city) => (
-                    <Option key={city.code} value={city.name}>
-                      {city.name}
-                    </Option>
-                  ))}
-                </Dropdown>
-              )}
-            />
-            {addressLoading.cities && <Spinner size="tiny" />}
+            <Label htmlFor="cityMunicipality">City/Municipality</Label>
+            <Controller control={control} name="cityMunicipality" render={({ field }) => (
+              <Input id="cityMunicipality" type="text" disabled={!isEditing} size="small" {...field} />
+            )} />
           </div>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="barangay">Barangay</Label>
-            <Controller
-              control={control}
-              name="barangay"
-              render={({ field }) => (
-                <Dropdown
-                  id="barangay"
-                  placeholder={
-                    !selectedCity
-                      ? "Select city first"
-                      : addressLoading.barangays
-                        ? "Loading barangays..."
-                        : "Select Barangay"
-                  }
-                  disabled={!isEditing || !selectedCity || addressLoading.barangays}
-                  selectedOptions={field.value ? [field.value] : []}
-                  onOptionSelect={(_, data) => field.onChange(data.optionValue || '')}
-                >
-                  {barangays.map((barangay) => (
-                    <Option key={barangay.code} value={barangay.name}>
-                      {barangay.name}
-                    </Option>
-                  ))}
-                </Dropdown>
-              )}
-            />
-            {addressLoading.barangays && <Spinner size="tiny" />}
+            <Controller control={control} name="barangay" render={({ field }) => (
+              <Input id="barangay" type="text" disabled={!isEditing} size="small" {...field} />
+            )} />
           </div>
         </div>
 
         <div className={mergeClasses(s.formRow)}>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="streetAddress">Street Address</Label>
-            <Controller
-              control={control}
-              name="streetAddress"
-              render={({ field }) => (
-                <Input
-                  id="streetAddress"
-                  type="text"
-                  placeholder="123 Main Street"
-                  disabled={!isEditing}
-                  {...field}
-                />
-              )}
-            />
-          </div>
-          <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="zipCode">Zip Code</Label>
-            <Controller
-              control={control}
-              name="zipCode"
-              rules={{
-                pattern: {
-                  value: /^[0-9]{4}$/,
-                  message: 'Zip code must be 4 digits'
-                }
-              }}
-              render={({ field }) => (
-                <Input
-                  id="zipCode"
-                  type="text"
-                  placeholder="1234"
-                  disabled={!isEditing}
-                  {...field}
-                />
-              )}
-            />
-            {errors.zipCode && (
-              <Text className={mergeClasses(s.errorText)}>{errors.zipCode.message}</Text>
-            )}
+            <Controller control={control} name="streetAddress" render={({ field }) => (
+              <Input id="streetAddress" type="text" disabled={!isEditing} size="small" {...field} />
+            )} />
           </div>
         </div>
 
@@ -1181,175 +743,30 @@ export default function MyProfile() {
         <div className={mergeClasses(s.formRow)}>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="secondaryRegion">Region</Label>
-            <Controller
-              control={control}
-              name="secondaryRegion"
-              render={({ field }) => (
-                <Dropdown
-                  id="secondaryRegion"
-                  placeholder={addressLoading.regions ? "Loading regions..." : "Select Region"}
-                  disabled={!isEditing || addressLoading.regions}
-                  selectedOptions={field.value ? [field.value] : []}
-                  onOptionSelect={(_, data) => {
-                    field.onChange(data.optionValue || '');
-                    // Clear dependent fields when region changes
-                    setValue('secondaryProvince', '');
-                    setValue('secondaryCityMunicipality', '');
-                    setValue('secondaryBarangay', '');
-                  }}
-                >
-                  {regions.map((region) => (
-                    <Option key={region.code} value={region.name}>
-                      {region.name}
-                    </Option>
-                  ))}
-                </Dropdown>
-              )}
-            />
-            {addressLoading.regions && <Spinner size="tiny" />}
+            <Controller control={control} name="secondaryRegion" render={({ field }) => (
+              <Input id="secondaryRegion" type="text" disabled={!isEditing} size="small" {...field} />
+            )} />
           </div>
-          {!isSecondaryNCR && (
-            <div className={mergeClasses(s.formField)}>
-              <Label htmlFor="secondaryProvince">Province</Label>
-              <Controller
-                control={control}
-                name="secondaryProvince"
-                render={({ field }) => (
-                  <Dropdown
-                    id="secondaryProvince"
-                    placeholder={
-                      !selectedSecondaryRegion
-                        ? "Select region first"
-                        : secondaryAddressLoading.provinces
-                          ? "Loading provinces..."
-                          : "Select Province"
-                    }
-                    disabled={!isEditing || !selectedSecondaryRegion || secondaryAddressLoading.provinces}
-                    selectedOptions={field.value ? [field.value] : []}
-                    onOptionSelect={(_, data) => {
-                      field.onChange(data.optionValue || '');
-                      // Clear dependent fields when province changes
-                      setValue('secondaryCityMunicipality', '');
-                      setValue('secondaryBarangay', '');
-                    }}
-                  >
-                    {secondaryProvinces.map((province) => (
-                      <Option key={province.code} value={province.name}>
-                        {province.name}
-                      </Option>
-                    ))}
-                  </Dropdown>
-                )}
-              />
-              {secondaryAddressLoading.provinces && <Spinner size="tiny" />}
-            </div>
-          )}
-        </div>
-
-        <div className={mergeClasses(s.formRow)}>
           <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="secondaryCityMunicipality">City / Municipality</Label>
-            <Controller
-              control={control}
-              name="secondaryCityMunicipality"
-              render={({ field }) => (
-                <Dropdown
-                  id="secondaryCityMunicipality"
-                  placeholder={
-                    isSecondaryNCR
-                      ? (!selectedSecondaryRegion ? "Select region first" : secondaryAddressLoading.cities ? "Loading..." : "Select City")
-                      : (!selectedSecondaryProvince ? "Select province first" : secondaryAddressLoading.cities ? "Loading..." : "Select City/Municipality")
-                  }
-                  disabled={!isEditing || (isSecondaryNCR ? !selectedSecondaryRegion : !selectedSecondaryProvince) || secondaryAddressLoading.cities}
-                  selectedOptions={field.value ? [field.value] : []}
-                  onOptionSelect={(_, data) => {
-                    field.onChange(data.optionValue || '');
-                    // Clear dependent field when city changes
-                    setValue('secondaryBarangay', '');
-                  }}
-                >
-                  {secondaryCitiesMunicipalities.map((city) => (
-                    <Option key={city.code} value={city.name}>
-                      {city.name}
-                    </Option>
-                  ))}
-                </Dropdown>
-              )}
-            />
-            {secondaryAddressLoading.cities && <Spinner size="tiny" />}
+            <Label htmlFor="secondaryCityMunicipality">City/Municipality</Label>
+            <Controller control={control} name="secondaryCityMunicipality" render={({ field }) => (
+              <Input id="secondaryCityMunicipality" type="text" disabled={!isEditing} size="small" {...field} />
+            )} />
           </div>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="secondaryBarangay">Barangay</Label>
-            <Controller
-              control={control}
-              name="secondaryBarangay"
-              render={({ field }) => (
-                <Dropdown
-                  id="secondaryBarangay"
-                  placeholder={
-                    !selectedSecondaryCity
-                      ? "Select city first"
-                      : secondaryAddressLoading.barangays
-                        ? "Loading barangays..."
-                        : "Select Barangay"
-                  }
-                  disabled={!isEditing || !selectedSecondaryCity || secondaryAddressLoading.barangays}
-                  selectedOptions={field.value ? [field.value] : []}
-                  onOptionSelect={(_, data) => field.onChange(data.optionValue || '')}
-                >
-                  {secondaryBarangays.map((barangay) => (
-                    <Option key={barangay.code} value={barangay.name}>
-                      {barangay.name}
-                    </Option>
-                  ))}
-                </Dropdown>
-              )}
-            />
-            {secondaryAddressLoading.barangays && <Spinner size="tiny" />}
+            <Controller control={control} name="secondaryBarangay" render={({ field }) => (
+              <Input id="secondaryBarangay" type="text" disabled={!isEditing} size="small" {...field} />
+            )} />
           </div>
         </div>
 
         <div className={mergeClasses(s.formRow)}>
           <div className={mergeClasses(s.formField)}>
             <Label htmlFor="secondaryStreetAddress">Street Address</Label>
-            <Controller
-              control={control}
-              name="secondaryStreetAddress"
-              render={({ field }) => (
-                <Input
-                  id="secondaryStreetAddress"
-                  type="text"
-                  placeholder="123 Main Street"
-                  disabled={!isEditing}
-                  {...field}
-                />
-              )}
-            />
-          </div>
-          <div className={mergeClasses(s.formField)}>
-            <Label htmlFor="secondaryZipCode">Zip Code</Label>
-            <Controller
-              control={control}
-              name="secondaryZipCode"
-              rules={{
-                pattern: {
-                  value: /^[0-9]{4}$/,
-                  message: 'Zip code must be 4 digits'
-                }
-              }}
-              render={({ field }) => (
-                <Input
-                  id="secondaryZipCode"
-                  type="text"
-                  placeholder="1234"
-                  disabled={!isEditing}
-                  {...field}
-                />
-              )}
-            />
-            {errors.secondaryZipCode && (
-              <Text className={mergeClasses(s.errorText)}>{errors.secondaryZipCode.message}</Text>
-            )}
+            <Controller control={control} name="secondaryStreetAddress" render={({ field }) => (
+              <Input id="secondaryStreetAddress" type="text" disabled={!isEditing} size="small" {...field} />
+            )} />
           </div>
         </div>
       </form>

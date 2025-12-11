@@ -1,6 +1,8 @@
 export interface UpdateMainTaskData {
     title: string;
     description?: string;
+    startDate?: string | null;
+    endDate?: string | null;
 }
 import axiosInstance from './axiosInstance';
 import type { SubTaskResponse } from './subtasks';
@@ -9,6 +11,8 @@ export interface CreateMainTaskData {
     title: string;
     description?: string;
     projectId?: string;
+    startDate?: string | null;
+    endDate?: string | null;
 }
 
 export interface MainTaskResponse {
@@ -18,6 +22,8 @@ export interface MainTaskResponse {
     projectId?: string;
     createdAt?: string;
     subTaskIds?: string[];
+    startDate?: string | null;
+    endDate?: string | null;
 }
 
 export const mainTasksApi = {

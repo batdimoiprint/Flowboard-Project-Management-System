@@ -17,14 +17,14 @@ export default function TeamSection() {
     { name: "Wiljhon Suico", role: "Database Designer", image: "/images/suico1.jpg" },
 ];
 
-    // Animation delay classes for 3x3 grid
+    // Animation delay classes
     const delayClasses = [
         styles.delay100,
         styles.delay200,
         styles.delay300,
-        styles.delay100,
-        styles.delay200,
-        styles.delay300,
+        styles.delay400,
+        styles.delay500,
+        styles.delay600,
         styles.delay100,
         styles.delay200,
         styles.delay300,
@@ -40,7 +40,7 @@ export default function TeamSection() {
                 </div>
             </div>
 
-            {/* Team cards grid */}
+            {/* Transparent container for team cards */}
             <div className={styles.teamCardsContainer}>
                 <div className={styles.teamGrid}>
                     {teamMembers.map((member, index) => (

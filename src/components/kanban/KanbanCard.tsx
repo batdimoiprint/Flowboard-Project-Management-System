@@ -1,9 +1,8 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Avatar, Badge, Card, Text } from '@fluentui/react-components';
+import { Badge, Card, Text, tokens } from '@fluentui/react-components';
+import { Calendar16Regular } from '@fluentui/react-icons';
 import { mainLayoutStyles } from '../styles/Styles';
-import { useState, useEffect } from 'react';
-import { usersApi, type User } from '../apis/users';
 
 export interface Task {
     id: string;
@@ -25,7 +24,6 @@ interface KanbanCardProps {
 
 export default function KanbanCard({ task, onClick }: KanbanCardProps) {
     const styles = mainLayoutStyles();
-    const [assigneeUser, setAssigneeUser] = useState<User | null>(null);
 
     const {
         attributes,
@@ -42,28 +40,61 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
         opacity: isDragging ? 0.5 : 1,
     };
 
-    // Fetch assignee user data when task.assignee changes
-    useEffect(() => {
-        if (!task.assignee) {
-            setAssigneeUser(null);
-            return;
-        }
+    const priorityStyles: Record<string, { bg: string; color: string; border: string }> = {
+        Important: {
+            bg: tokens.colorPaletteRedBackground3,
+            color: tokens.colorPaletteRedForeground2,
+            border: tokens.colorPaletteRedBorderActive,
+        },
+        Medium: {
+            bg: tokens.colorPaletteGoldBackground2,
+            color: tokens.colorPaletteGoldForeground2,
+            border: tokens.colorPaletteGoldBorderActive,
+        },
+        Low: {
+            bg: tokens.colorPaletteTealBackground2,
+            color: tokens.colorPaletteTealForeground2,
+            border: tokens.colorPaletteTealBorderActive,
+        },
+    };
 
-        usersApi.getUserById(task.assignee)
-            .then(user => setAssigneeUser(user))
-            .catch(err => {
-                console.error(`Failed to load user ${task.assignee}:`, err);
-                setAssigneeUser(null);
-            });
-    }, [task.assignee]);
+    const statusStyles: Record<string, { bg: string; color: string; border: string }> = {
+        'To Do': {
+            bg: tokens.colorPaletteSteelBackground2,
+            color: tokens.colorPaletteSteelForeground2,
+            border: tokens.colorPaletteSteelBorderActive,
+        },
+        'In Progress': {
+            bg: tokens.colorPaletteBlueBackground2,
+            color: tokens.colorPaletteBlueForeground2,
+            border: tokens.colorPaletteBlueBorderActive,
+        },
+        'Done': {
+            bg: tokens.colorPaletteGreenBackground2,
+            color: tokens.colorPaletteGreenForeground2,
+            border: tokens.colorPaletteGreenBorderActive,
+        },
+        'Blocked': {
+            bg: tokens.colorPaletteRedBackground3,
+            color: tokens.colorPaletteRedForeground2,
+            border: tokens.colorPaletteRedBorderActive,
+        },
+    };
 
-    const getPriorityColor = (priority?: string) => {
-        switch (priority) {
-            case 'High': return 'danger';
-            case 'Medium': return 'warning';
-            case 'Low': return 'success';
-            default: return 'informative';
-        }
+    const getPriorityStyle = (priority?: string) => {
+        return priority && priorityStyles[priority] ? priorityStyles[priority] : {
+            bg: tokens.colorNeutralBackground3,
+            color: tokens.colorNeutralForeground2,
+            border: tokens.colorNeutralStroke1,
+        };
+    };
+
+    const getStatusStyle = (status?: string) => {
+        return status && statusStyles[status] ? statusStyles[status] : {
+            bg: tokens.colorNeutralBackground3,
+            color: tokens.colorNeutralForeground2,
+            border: tokens.colorNeutralStroke1,
+        };
     };
 
     return (
@@ -84,28 +115,37 @@ export default function KanbanCard({ task, onClick }: KanbanCardProps) {
             )}
 
             <div className={styles.kanbanTaskMetaRow}>
+                {task.status && (
+                    <Badge
+                        appearance="filled"
+                        style={{
+                            backgroundColor: getStatusStyle(task.status).bg,
+                            color: getStatusStyle(task.status).color,
+                            borderColor: getStatusStyle(task.status).border,
+                        }}
+                    >
+                        {task.status}
+                    </Badge>
+                )}
                 {task.priority && (
-                    <Badge appearance="filled" color={getPriorityColor(task.priority)}>
+                    <Badge
+                        appearance="filled"
+                        style={{
+                            backgroundColor: getPriorityStyle(task.priority).bg,
+                            color: getPriorityStyle(task.priority).color,
+                            borderColor: getPriorityStyle(task.priority).border,
+                        }}
+                    >
                         {task.priority}
                     </Badge>
                 )}
                 {task.dueDate && (
-                    <Text size={200} className={styles.kanbanSmallBadge}>
-                        {new Date(task.dueDate).toLocaleDateString()}
-                    </Text>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground2 }}>
+                        <Calendar16Regular style={{ fontSize: '14px' }} />
+                        <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                    </div>
                 )}
             </div>
-
-            {task.assignee && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px' }}>
-                    <Avatar
-                        name={assigneeUser ? `${assigneeUser.firstName} ${assigneeUser.lastName}` : 'User'}
-                        size={24}
-                        color="colorful"
-                        image={assigneeUser?.userIMG ? { src: assigneeUser.userIMG } : undefined}
-                    />
-                </div>
-            )}
         </Card>
     );
 }

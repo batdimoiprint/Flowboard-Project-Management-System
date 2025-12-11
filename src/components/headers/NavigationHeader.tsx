@@ -1,8 +1,10 @@
 import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Button, Card, mergeClasses, Tooltip } from "@fluentui/react-components";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Folder20Regular, Board20Regular, TaskListSquareLtr20Regular, Settings20Regular, ChartMultiple20Regular } from '@fluentui/react-icons';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { mainLayoutStyles } from "../styles/Styles";
+import { projectsApi } from "../apis/projects";
+import { useUser } from "../../hooks/useUser";
 
 function titleCase(segment: string) {
     // make a friendly label from a path segment
@@ -17,14 +19,13 @@ function titleCase(segment: string) {
 export default function NavigationHeader() {
     const location = useLocation();
     const navigate = useNavigate();
-    const s = mainLayoutStyles()
+    const s = mainLayoutStyles();
+    const { user } = useUser();
+    const [userProjectRole, setUserProjectRole] = useState<string | null>(null);
 
     // Build path segments, remove empty and leading 'home'
     const rawSegments = location.pathname.split('/').filter(Boolean);
     const segments = rawSegments[0] === 'home' ? rawSegments.slice(1) : rawSegments;
-
-    // Do not render breadcrumb for base/home with no meaningful segments
-    if (!segments || segments.length === 0) return null;
 
     // Build cumulative paths (we want clicks to navigate to the correct /home/... route)
     const crumbs = segments.map((seg, i) => {
@@ -37,6 +38,39 @@ export default function NavigationHeader() {
     // Check if we're in a project context to show Kanban, Tasks, and Settings buttons
     const isInProject = segments.length >= 2 && segments[0] === 'project';
     const projectName = isInProject ? segments[1] : null;
+
+    // Fetch user's role in the current project
+    useEffect(() => {
+        const fetchProjectRole = async () => {
+            if (!isInProject || !projectName || !user?.id) {
+                setUserProjectRole(null);
+                return;
+            }
+            try {
+                // Decode project name from URL and find matching project
+                const decodedName = decodeURIComponent(projectName).replace(/-/g, ' ');
+                const projects = await projectsApi.getProjectsAsMember();
+                const project = projects.find(p => p.projectName.toLowerCase() === decodedName.toLowerCase());
+
+                if (!project) {
+                    console.warn('NavigationHeader - Project not found:', decodedName);
+                    setUserProjectRole(null);
+                    return;
+                }
+
+                const role = project.permissions?.[user.id] || 'Member';
+                console.log('NavigationHeader - Project:', project.projectName, 'User ID:', user.id, 'Role:', role, 'Permissions:', project.permissions);
+                setUserProjectRole(role);
+            } catch (err) {
+                console.error('Failed to fetch project role:', err);
+                setUserProjectRole(null);
+            }
+        };
+        fetchProjectRole();
+    }, [isInProject, projectName, user?.id]);
+
+    // Do not render breadcrumb for base/home with no meaningful segments
+    if (!segments || segments.length === 0) return null;
 
     // Construct navigation paths
     const kanbanPath = projectName ? `/home/project/${projectName}/kanban` : null;
@@ -70,52 +104,70 @@ export default function NavigationHeader() {
                 ))}
             </Breadcrumb>
 
-            {/* Show Kanban, Tasks, Settings, and Analytics buttons when in a project context */}
+            {/* Show buttons when in a project context - role-based visibility */}
             {isInProject && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
-                    {kanbanPath && (
-                        <Tooltip content="Kanban Board" relationship="label">
-                            <Button
-                                appearance={isKanbanPage ? 'primary' : 'subtle'}
-                                icon={<Board20Regular />}
-                                onClick={() => navigate(kanbanPath)}
-                            >
-                                Kanban
-                            </Button>
-                        </Tooltip>
-                    )}
-                    {tasksPath && (
-                        <Tooltip content="Task List" relationship="label">
-                            <Button
-                                appearance={isTasksPage ? 'primary' : 'subtle'}
-                                icon={<TaskListSquareLtr20Regular />}
-                                onClick={() => navigate(tasksPath)}
-                            >
-                                Tasks
-                            </Button>
-                        </Tooltip>
-                    )}
-                    {analyticsPath && (
-                        <Tooltip content="Analytics Dashboard" relationship="label">
-                            <Button
-                                appearance={isAnalyticsPageProject ? 'primary' : 'subtle'}
-                                icon={<ChartMultiple20Regular />}
-                                onClick={() => navigate(analyticsPath)}
-                            >
-                                Analytics
-                            </Button>
-                        </Tooltip>
-                    )}
-                    {settingsPath && (
-                        <Tooltip content="Project Settings" relationship="label">
-                            <Button
-                                appearance={isSettingsPage ? 'primary' : 'subtle'}
-                                icon={<Settings20Regular />}
-                                onClick={() => navigate(settingsPath)}
-                            >
-                                Settings
-                            </Button>
-                        </Tooltip>
+                    {/* Clients see only Analytics */}
+                    {userProjectRole === 'Client' ? (
+                        analyticsPath && (
+                            <Tooltip content="Analytics Dashboard" relationship="label">
+                                <Button
+                                    appearance={isAnalyticsPageProject ? 'primary' : 'subtle'}
+                                    icon={<ChartMultiple20Regular />}
+                                    onClick={() => navigate(analyticsPath)}
+                                >
+                                    Analytics
+                                </Button>
+                            </Tooltip>
+                        )
+                    ) : (
+                        <>
+                            {/* Non-client users see Kanban, Tasks, Analytics, and Settings */}
+                            {kanbanPath && (
+                                <Tooltip content="Kanban Board" relationship="label">
+                                    <Button
+                                        appearance={isKanbanPage ? 'primary' : 'subtle'}
+                                        icon={<Board20Regular />}
+                                        onClick={() => navigate(kanbanPath)}
+                                    >
+                                        Kanban
+                                    </Button>
+                                </Tooltip>
+                            )}
+                            {tasksPath && (
+                                <Tooltip content="Task List" relationship="label">
+                                    <Button
+                                        appearance={isTasksPage ? 'primary' : 'subtle'}
+                                        icon={<TaskListSquareLtr20Regular />}
+                                        onClick={() => navigate(tasksPath)}
+                                    >
+                                        Tasks
+                                    </Button>
+                                </Tooltip>
+                            )}
+                            {analyticsPath && (
+                                <Tooltip content="Analytics Dashboard" relationship="label">
+                                    <Button
+                                        appearance={isAnalyticsPageProject ? 'primary' : 'subtle'}
+                                        icon={<ChartMultiple20Regular />}
+                                        onClick={() => navigate(analyticsPath)}
+                                    >
+                                        Analytics
+                                    </Button>
+                                </Tooltip>
+                            )}
+                            {settingsPath && (
+                                <Tooltip content="Project Settings" relationship="label">
+                                    <Button
+                                        appearance={isSettingsPage ? 'primary' : 'subtle'}
+                                        icon={<Settings20Regular />}
+                                        onClick={() => navigate(settingsPath)}
+                                    >
+                                        Settings
+                                    </Button>
+                                </Tooltip>
+                            )}
+                        </>
                     )}
                 </div>
             )}

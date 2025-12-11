@@ -1,18 +1,48 @@
-import { mergeClasses, NavCategory, NavCategoryItem, NavSectionHeader, NavSubItem, NavSubItemGroup, Text, tokens, Button } from "@fluentui/react-components";
+import { mergeClasses, NavItem, NavSectionHeader, Text, tokens, Button, makeStyles } from "@fluentui/react-components";
 import { Folder20Regular, AddCircle24Regular } from "@fluentui/react-icons";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router';
 import { useUser } from "../../hooks/useUser";
 import { projectsApi, type Project } from "../apis/projects";
-import { mainLayoutStyles } from '../styles/Styles';
 
 interface ProjectListProps {
-    openCategories: string[];
-    onNavigateToProjects: () => void;
     refreshSignal?: number;
 }
 
-const RECENT_LIMIT = 4;
+const useProjectListStyles = makeStyles({
+    projectListContainer: {
+        maxHeight: "300px",
+        overflowY: "auto",
+        overflowX: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        gap: tokens.spacingVerticalXS,
+    },
+    sectionHeader: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    navItem: {
+        paddingInline: tokens.spacingHorizontalS,
+        paddingBlock: tokens.spacingVerticalS,
+        display: 'flex',
+        alignItems: 'center',
+        gap: tokens.spacingHorizontalS,
+    },
+    navItemLabel: {
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        display: 'block',
+        maxWidth: '100%'
+    },
+    selectedItem: {
+        backgroundColor: tokens.colorNeutralBackground3,
+        borderRadius: tokens.borderRadiusMedium,
+    },
+});
 
 const buildSlug = (name: string) =>
     encodeURIComponent(
@@ -23,13 +53,14 @@ const buildSlug = (name: string) =>
             .replace(/\s+/g, "-")
     );
 
-export default function ProjectList({ openCategories, onNavigateToProjects, refreshSignal }: ProjectListProps) {
+export default function ProjectList({ refreshSignal }: ProjectListProps) {
     const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const { user: currentUser } = useUser();
-    const s = mainLayoutStyles();
+    const styles = useProjectListStyles();
+    const [selectedValue, setSelectedValue] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         let active = true;
@@ -83,78 +114,73 @@ export default function ProjectList({ openCategories, onNavigateToProjects, refr
         };
     }, [currentUser?.id, refreshSignal]);
 
-    const recentProjects = useMemo(() => {
-        return [...projects]
-            .sort((a, b) => {
-                const aDate = new Date(a.createdAt ?? 0).getTime();
-                const bDate = new Date(b.createdAt ?? 0).getTime();
-                return bDate - aDate;
-            })
-            .slice(0, RECENT_LIMIT);
-    }, [projects]);
-
-    const handleProjectClick = (projectName: string) => {
-        const slug = buildSlug(projectName);
-        navigate(`/home/project/${slug}/kanban`);
+    const handleProjectClick = (project: Project) => {
+        const slug = buildSlug(project.projectName);
+        // Check if user is a client in this project
+        const userRole = project.permissions?.[currentUser?.id || ''];
+        const isClient = userRole === 'Client';
+        // Redirect clients to analytics, others to kanban
+        const targetPath = isClient ? 'analytics' : 'kanban';
+        navigate(`/home/project/${slug}/${targetPath}`);
     };
 
     return (
         <>
+            <NavSectionHeader>
+                <div className={styles.sectionHeader}>
+                    <span>Projects</span>
+                    <Button
+                        aria-label="Create project"
+                        appearance="subtle"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/home/create');
+                        }}
+                    >
+                        <AddCircle24Regular />
+                    </Button>
+                </div>
+            </NavSectionHeader>
 
-            <NavCategory value="projects">
+            <NavItem
+                icon={<Folder20Regular />}
+                value="all-projects"
+                className={mergeClasses(styles.navItem, selectedValue === 'all-projects' && styles.selectedItem)}
+                onClick={() => { setSelectedValue('all-projects'); navigate('/home/project'); }}
+            >
+                <span className={styles.navItemLabel}>All Projects</span>
+            </NavItem>
 
-                <NavSectionHeader>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                        <span>Projects</span>
-                        <Button aria-label="Create project" appearance="subtle" onClick={(e) => { e.stopPropagation(); navigate('/home/create'); }}>
-                            <AddCircle24Regular />
-                        </Button>
-                    </div>
-                </NavSectionHeader>
-                <NavCategoryItem
-                    value="projects"
-                    icon={<Folder20Regular />}
-                    aria-expanded={openCategories.includes('projects')}
-                    className={mergeClasses(s.navMainItem)}
-                    onClick={onNavigateToProjects}
-                >
-                    Projects List
-                </NavCategoryItem>
+            <div className={styles.projectListContainer}>
+                {loading && (
+                    <Text size={200} style={{ paddingInline: tokens.spacingHorizontalM }}>
+                        Loading projects...
+                    </Text>
+                )}
 
-                {/* Render subitems group always (status messages will appear as subitems) */}
-                <NavSubItemGroup>
-                    {loading && (
-                        <Text size={200} style={{ paddingInline: tokens.spacingHorizontalS }}>
-                            Loading projects...
-                        </Text>
-                    )}
+                {!loading && error && (
+                    <Text size={200} style={{ paddingInline: tokens.spacingHorizontalM, color: tokens.colorPaletteRedForeground1 }}>
+                        {error}
+                    </Text>
+                )}
 
-                    {!loading && error && (
-                        <Text size={200} style={{ paddingInline: tokens.spacingHorizontalS, color: tokens.colorPaletteRedForeground1 }}>
-                            {error}
-                        </Text>
-                    )}
+                {!loading && !error && projects.length === 0 && (
+                    <Text size={200} style={{ paddingInline: tokens.spacingHorizontalM }}>
+                        No projects yet
+                    </Text>
+                )}
 
-                    {!loading && !error && recentProjects.length === 0 && (
-                        <Text size={200} style={{ paddingInline: tokens.spacingHorizontalS }}>
-                            No projects yet
-                        </Text>
-                    )}
-
-                    {recentProjects.map((project) => (
-                        <NavSubItem
-                            as="button"
-                            key={project.id}
-                            value={project.id}
-                            className={mergeClasses(s.navSubItem)}
-                            onClick={() => handleProjectClick(project.projectName)}
-                        >
-                            {project.projectName}
-                        </NavSubItem>
-                    ))}
-                </NavSubItemGroup>
-
-            </NavCategory>
+                {!loading && !error && projects.map((project) => (
+                    <NavItem
+                        key={project.id}
+                        value={project.id}
+                        className={mergeClasses(styles.navItem, selectedValue === project.id && styles.selectedItem)}
+                        onClick={() => { setSelectedValue(project.id); handleProjectClick(project); }}
+                    >
+                        <span className={styles.navItemLabel}>{project.projectName}</span>
+                    </NavItem>
+                ))}
+            </div>
         </>
     );
 }

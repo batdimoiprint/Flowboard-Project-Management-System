@@ -10,8 +10,10 @@ import {
     Tooltip,
     Text,
     Divider,
-    Card
+    Card,
+    // Label
 } from '@fluentui/react-components';
+import { DatePicker } from '@fluentui/react-datepicker-compat';
 import {
     Dismiss24Regular,
     Delete24Regular,
@@ -32,8 +34,11 @@ export interface EditMainTaskDialogProps {
     form: {
         title: string;
         description: string;
+        startDate?: string;
+        endDate?: string;
     };
     onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+    onDateChange?: (name: 'startDate' | 'endDate', value: string) => void;
     onDeleteClick?: () => void;
     currentUser?: User | null;
     createdByUser?: User | null;
@@ -51,6 +56,7 @@ export interface EditMainTaskDialogProps {
     categories?: Category[];
     isLoadingCategories?: boolean;
     onSubTaskCreated?: () => void;
+    onMainTaskUpdated?: () => void;
 }
 
 export default function EditMainTaskDialog({
@@ -58,6 +64,7 @@ export default function EditMainTaskDialog({
     onOpenChange,
     form,
     onInputChange,
+    onDateChange,
     onDeleteClick,
     isSubmitting = false,
     submitError,
@@ -73,7 +80,8 @@ export default function EditMainTaskDialog({
     projects = [],
     categories = [],
     isLoadingCategories = false,
-    onSubTaskCreated
+    onSubTaskCreated,
+    onMainTaskUpdated
 }: EditMainTaskDialogProps) {
     const [editingTitle, setEditingTitle] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -267,8 +275,11 @@ export default function EditMainTaskDialog({
             const updateData: UpdateMainTaskData = {
                 title: form.title,
                 description: form.description || '',
+                startDate: form.startDate || null,
+                endDate: form.endDate || null,
             };
             await mainTasksApi.updateMainTask(mainTaskId, updateData);
+            onMainTaskUpdated?.();
             // Optionally, show a success message or reload data
             onOpenChange(false);
         } catch (error) {
@@ -281,6 +292,7 @@ export default function EditMainTaskDialog({
     return (
         <Dialog open={open} onOpenChange={(_, data) => onOpenChange(data.open)}>
             <DialogSurface style={{ maxWidth: 900, width: '85vw' }}>
+                {/* <Label style={{ fontWeight: 'bold', fontSize: '24px' }}>Main Task</Label> */}
                 <form onSubmit={handleMainTaskSubmit} style={{ width: '100%' }}>
                     {/* Row 1: Delete button and Close icon button */}
                     <div style={{ display: 'flex', justifyContent: 'end', alignItems: 'center', height: 24, marginBottom: 8, gap: 8 }}>
@@ -371,6 +383,28 @@ export default function EditMainTaskDialog({
                                 <span style={{ fontSize: tokens.fontSizeBase200 }}>{formattedDate}</span>
                             </div>
                         )}
+                    </div>
+
+                    {/* Row 4: Start and End Dates */}
+                    <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+                        <Field label="Start Date" style={{ flex: '1 1 200px' }}>
+                            <DatePicker
+                                placeholder="mm/dd/yyyy"
+                                value={form.startDate ? new Date(form.startDate) : null}
+                                onSelectDate={(date) => onDateChange?.('startDate', date ? date.toISOString().split('T')[0] : '')}
+                                size="medium"
+                                style={{ width: '100%' }}
+                            />
+                        </Field>
+                        <Field label="End Date" style={{ flex: '1 1 200px' }}>
+                            <DatePicker
+                                placeholder="mm/dd/yyyy"
+                                value={form.endDate ? new Date(form.endDate) : null}
+                                onSelectDate={(date) => onDateChange?.('endDate', date ? date.toISOString().split('T')[0] : '')}
+                                size="medium"
+                                style={{ width: '100%' }}
+                            />
+                        </Field>
                     </div>
 
 
@@ -507,6 +541,7 @@ export default function EditMainTaskDialog({
                     categories={categories}
                     isLoadingCategories={isLoadingCategories}
                     hideProjectField={true}
+                    hideMainTaskField={true}
                     currentUser={currentUser}
                 />
 
@@ -521,11 +556,28 @@ export default function EditMainTaskDialog({
                             }
                         }}
                         form={editSubTaskForm}
-                        onInputChange={(e) => {
-                            const { name, value } = e.target;
-                            setEditSubTaskForm(prev => ({ ...prev, [name]: value }));
+                        onTitleChange={(title: string) => {
+                            setEditSubTaskForm(prev => ({ ...prev, title }));
                         }}
-                        onSubmit={async (e) => {
+                        onDescriptionChange={(description: string) => {
+                            setEditSubTaskForm(prev => ({ ...prev, description }));
+                        }}
+                        onPriorityChange={(priority: string) => {
+                            setEditSubTaskForm(prev => ({ ...prev, priority }));
+                        }}
+                        onStatusChange={(status: string) => {
+                            setEditSubTaskForm(prev => ({ ...prev, status }));
+                        }}
+                        onStartDateChange={(startDate: string) => {
+                            setEditSubTaskForm(prev => ({ ...prev, startDate }));
+                        }}
+                        onEndDateChange={(endDate: string) => {
+                            setEditSubTaskForm(prev => ({ ...prev, endDate }));
+                        }}
+                        onAssignedToChange={(assignedTo: string[]) => {
+                            setEditSubTaskForm(prev => ({ ...prev, assignedTo }));
+                        }}
+                        onSubmit={async (e: React.FormEvent) => {
                             e.preventDefault();
                             if (!selectedSubTask?.id) return;
 
