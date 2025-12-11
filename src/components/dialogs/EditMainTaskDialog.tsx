@@ -541,6 +541,7 @@ export default function EditMainTaskDialog({
                     categories={categories}
                     isLoadingCategories={isLoadingCategories}
                     hideProjectField={true}
+                    hideMainTaskField={true}
                     currentUser={currentUser}
                 />
 
@@ -555,11 +556,28 @@ export default function EditMainTaskDialog({
                             }
                         }}
                         form={editSubTaskForm}
-                        onInputChange={(e) => {
-                            const { name, value } = e.target;
-                            setEditSubTaskForm(prev => ({ ...prev, [name]: value }));
+                        onTitleChange={(title: string) => {
+                            setEditSubTaskForm(prev => ({ ...prev, title }));
                         }}
-                        onSubmit={async (e) => {
+                        onDescriptionChange={(description: string) => {
+                            setEditSubTaskForm(prev => ({ ...prev, description }));
+                        }}
+                        onPriorityChange={(priority: string) => {
+                            setEditSubTaskForm(prev => ({ ...prev, priority }));
+                        }}
+                        onStatusChange={(status: string) => {
+                            setEditSubTaskForm(prev => ({ ...prev, status }));
+                        }}
+                        onStartDateChange={(startDate: string) => {
+                            setEditSubTaskForm(prev => ({ ...prev, startDate }));
+                        }}
+                        onEndDateChange={(endDate: string) => {
+                            setEditSubTaskForm(prev => ({ ...prev, endDate }));
+                        }}
+                        onAssignedToChange={(assignedTo: string[]) => {
+                            setEditSubTaskForm(prev => ({ ...prev, assignedTo }));
+                        }}
+                        onSubmit={async (e: React.FormEvent) => {
                             e.preventDefault();
                             if (!selectedSubTask?.id) return;
 

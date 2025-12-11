@@ -58,13 +58,67 @@ export interface TaskDialogProps {
 }
 
 export default function TaskDialog(props: TaskDialogProps) {
+    // Convert onInputChange to individual handlers for EditTaskDialog
+    const createIndividualHandlers = (onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void) => ({
+        onTitleChange: (title: string) => {
+            const event = {
+                target: { name: 'title', value: title }
+            } as unknown as React.ChangeEvent<HTMLInputElement>;
+            onInputChange(event);
+        },
+        onDescriptionChange: (description: string) => {
+            const event = {
+                target: { name: 'description', value: description }
+            } as unknown as React.ChangeEvent<HTMLTextAreaElement>;
+            onInputChange(event);
+        },
+        onPriorityChange: (priority: string) => {
+            const event = {
+                target: { name: 'priority', value: priority }
+            } as unknown as React.ChangeEvent<HTMLSelectElement>;
+            onInputChange(event);
+        },
+        onStatusChange: (status: string) => {
+            const event = {
+                target: { name: 'status', value: status }
+            } as unknown as React.ChangeEvent<HTMLSelectElement>;
+            onInputChange(event);
+        },
+        onStartDateChange: (startDate: string) => {
+            const event = {
+                target: { name: 'startDate', value: startDate }
+            } as unknown as React.ChangeEvent<HTMLInputElement>;
+            onInputChange(event);
+        },
+        onEndDateChange: (endDate: string) => {
+            const event = {
+                target: { name: 'endDate', value: endDate }
+            } as unknown as React.ChangeEvent<HTMLInputElement>;
+            onInputChange(event);
+        },
+        onAssignedToChange: (assignedTo: string[]) => {
+            const event = {
+                target: { name: 'assignedTo', value: assignedTo.join(',') }
+            } as unknown as React.ChangeEvent<HTMLInputElement>;
+            onInputChange(event);
+        },
+    });
+
+    const handlers = createIndividualHandlers(props.onInputChange);
+
     if (props.dialogMode === 'edit') {
         return (
             <EditTaskDialog
                 open={props.open}
                 onOpenChange={props.onOpenChange}
                 form={props.form}
-                onInputChange={props.onInputChange}
+                onTitleChange={handlers.onTitleChange}
+                onDescriptionChange={handlers.onDescriptionChange}
+                onPriorityChange={handlers.onPriorityChange}
+                onStatusChange={handlers.onStatusChange}
+                onStartDateChange={handlers.onStartDateChange}
+                onEndDateChange={handlers.onEndDateChange}
+                onAssignedToChange={handlers.onAssignedToChange}
                 onSubmit={props.onSubmit}
                 assignableUsers={props.assignableUsers}
                 isLoadingAssignableUsers={props.isLoadingAssignableUsers}

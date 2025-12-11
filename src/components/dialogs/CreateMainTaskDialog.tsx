@@ -482,6 +482,7 @@ export default function CreateMainTaskDialog({
                         isLoadingCategories={isLoadingCategories}
                         categoriesError={null}
                         hideProjectField={true}
+                        hideMainTaskField={true}
                         currentUser={currentUser}
                         isSubmitting={isSubmittingSubTask}
                         submitError={subTaskSubmitError}

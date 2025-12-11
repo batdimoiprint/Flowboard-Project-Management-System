@@ -1,7 +1,8 @@
-import { Card, tokens, mergeClasses, DataGrid, DataGridHeader, DataGridRow, DataGridHeaderCell, DataGridBody, DataGridCell, createTableColumn, Button, Spinner, TabList, Tab, Avatar, Badge, makeStyles, Dropdown, Option } from '@fluentui/react-components';
+import { Card, tokens, mergeClasses, DataGrid, DataGridHeader, DataGridRow, DataGridHeaderCell, DataGridBody, DataGridCell, createTableColumn, Button, Spinner, TabList, Tab, Avatar, Badge, makeStyles, Dropdown, Option, Input } from '@fluentui/react-components';
+import { DatePicker } from '@fluentui/react-datepicker-compat';
 import type { TableColumnDefinition, SelectTabEvent, SelectTabData } from '@fluentui/react-components';
 import { useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { mainLayoutStyles } from '../../components/styles/Styles';
 import { useUser } from '../../hooks/useUser';
 import { usersApi } from '../../components/apis/users';
@@ -11,9 +12,10 @@ import { categoriesApi, type Category } from '../../components/apis/categories';
 import { mainTasksApi, type MainTaskResponse } from '../../components/apis/maintasks';
 import { subTasksApi, type SubTaskResponse } from '../../components/apis/subtasks';
 import CreateMainTaskDialog from '../../components/dialogs/CreateMainTaskDialog';
-import EditMainTaskDialog from '../../components/dialogs/EditMainTaskDialog';
+import CreateTaskDialog from '../../components/dialogs/CreateTaskDialog';
 import EditTaskDialog from '../../components/dialogs/EditTaskDialog';
 import { Add24Regular } from '@fluentui/react-icons';
+
 
 const useGridStyles = makeStyles({
     grid: {
@@ -61,6 +63,14 @@ const getPillColors = (value: string, map: Record<string, { bg: string; color: s
     return map[value] ?? fallback;
 };
 
+// Helper to convert Date to YYYY-MM-DD string using local timezone
+function formatDateToString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 export default function TaskListPage() {
     const { projectName } = useParams<{ projectName: string }>();
     const titleSlug = projectName ? decodeURIComponent(projectName) : '';
@@ -83,14 +93,14 @@ export default function TaskListPage() {
     const [loadingSubTasks, setLoadingSubTasks] = useState(false);
     const [subTasksWithUsers, setSubTasksWithUsers] = useState<(SubTaskResponse & { assignedToUsers?: User[] })[]>([]);
 
-    // SubTask filters (status, priority, category)
+    // SubTask filters (status, priority, category, mainTask)
     const [filterStatus, setFilterStatus] = useState<string[]>([]);
     const [filterPriority, setFilterPriority] = useState<string[]>([]);
     const [filterCategory, setFilterCategory] = useState<string[]>([]);
+    const [filterMainTaskId, setFilterMainTaskId] = useState<string | null>(null);
 
     // Dialog state
     const [createMainTaskOpen, setCreateMainTaskOpen] = useState(false);
-    const [editMainTaskOpen, setEditMainTaskOpen] = useState(false);
     const [selectedMainTask, setSelectedMainTask] = useState<MainTaskResponse | null>(null);
     const [mainTaskForm, setMainTaskForm] = useState({ title: '', description: '', startDate: '', endDate: '' });
     const [isSubmittingMainTask, setIsSubmittingMainTask] = useState(false);
@@ -98,7 +108,22 @@ export default function TaskListPage() {
     // SubTask dialog state
     const [editSubTaskOpen, setEditSubTaskOpen] = useState(false);
     const [selectedSubTask, setSelectedSubTask] = useState<SubTaskResponse | null>(null);
-    const [subTaskForm, setSubTaskForm] = useState({
+    type SubTaskFormType = {
+        title: string;
+        description: string;
+        priority: string;
+        status: string;
+        startDate: string;
+        endDate: string;
+        assignedTo: string[];
+        createdBy: string;
+        category: string;
+        categoryId: string;
+        projectId: string;
+        mainTaskId: string;
+    };
+
+    const [subTaskForm, setSubTaskForm] = useState<SubTaskFormType>({
         title: '',
         description: '',
         priority: 'Low',
@@ -109,13 +134,31 @@ export default function TaskListPage() {
         createdBy: '',
         category: '',
         categoryId: '',
-        projectId: ''
+        projectId: '',
+        mainTaskId: ''
     });
+    const [createSubTaskOpen, setCreateSubTaskOpen] = useState(false);
+    const [isSubmittingSubTask, setIsSubmittingSubTask] = useState(false);
+    const [subTaskSubmitError, setSubTaskSubmitError] = useState<string | null>(null);
 
     const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
     const [isLoadingAssignableUsers, setIsLoadingAssignableUsers] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+
+    // Debounce timeouts for title and description
+    const titleDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const descriptionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const mainTaskDescDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Inline edit state for main task description
+    const [isEditingMainTaskDesc, setIsEditingMainTaskDesc] = useState(false);
+    const mainTaskDescInputRef = useRef<HTMLInputElement | null>(null);
+
+    // Main task editing state
+    const [mainTaskDescValue, setMainTaskDescValue] = useState('');
+    const [mainTaskStartDate, setMainTaskStartDate] = useState<string | null>(null);
+    const [mainTaskEndDate, setMainTaskEndDate] = useState<string | null>(null);
 
     useEffect(() => {
         let active = true;
@@ -163,6 +206,25 @@ export default function TaskListPage() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [project, activeTab]);
+
+    // Update selectedMainTask when filterMainTaskId changes
+    useEffect(() => {
+        if (filterMainTaskId) {
+            const task = mainTasks.find(t => t.id === filterMainTaskId);
+            if (task) {
+                setSelectedMainTask(task);
+                setMainTaskDescValue(task.description || '');
+                // Convert dates to YYYY-MM-DD format for DatePicker
+                setMainTaskStartDate(task.startDate ? formatDateToString(new Date(task.startDate)) : null);
+                setMainTaskEndDate(task.endDate ? formatDateToString(new Date(task.endDate)) : null);
+            }
+        } else {
+            setSelectedMainTask(null);
+            setMainTaskDescValue('');
+            setMainTaskStartDate(null);
+            setMainTaskEndDate(null);
+        }
+    }, [filterMainTaskId, mainTasks]);
 
     const loadMainTasks = async () => {
         if (!project?.id) return;
@@ -240,13 +302,8 @@ export default function TaskListPage() {
 
     const handleMainTaskRowClick = (mainTask: MainTaskResponse) => {
         setSelectedMainTask(mainTask);
-        setMainTaskForm({
-            title: mainTask.title,
-            description: mainTask.description || '',
-            startDate: mainTask.startDate ? mainTask.startDate.split('T')[0] : '',
-            endDate: mainTask.endDate ? mainTask.endDate.split('T')[0] : ''
-        });
-        setEditMainTaskOpen(true);
+        setFilterMainTaskId(mainTask.id);
+        setActiveTab('subTasks');
     };
 
     const handleSubTaskRowClick = (subTask: SubTaskResponse) => {
@@ -256,13 +313,14 @@ export default function TaskListPage() {
             description: subTask.description || '',
             priority: subTask.priority || 'Low',
             status: subTask.status || 'To Do',
-            startDate: subTask.startDate ? new Date(subTask.startDate).toISOString().split('T')[0] : '',
-            endDate: subTask.endDate ? new Date(subTask.endDate).toISOString().split('T')[0] : '',
+            startDate: subTask.startDate ? formatDateToString(new Date(subTask.startDate)) : '',
+            endDate: subTask.endDate ? formatDateToString(new Date(subTask.endDate)) : '',
             assignedTo: subTask.assignedTo || [],
             createdBy: subTask.createdBy || '',
             category: subTask.category || '',
             categoryId: subTask.categoryId || '',
-            projectId: subTask.projectId
+            projectId: subTask.projectId,
+            mainTaskId: subTask.mainTaskId || ''
         });
         setEditSubTaskOpen(true);
     };
@@ -309,16 +367,6 @@ export default function TaskListPage() {
                     } as User));
                 } catch (projectErr) {
                     console.error('Failed to fetch project members:', projectErr);
-                }
-            }
-
-            // If we're in a project context, only use project members; do not fall back to all users
-            if (unique.length === 0 && !project?.id) {
-                try {
-                    const allUsers = await usersApi.getAllUsers();
-                    unique = allUsers;
-                } catch (usersErr) {
-                    console.error('Failed to fetch all users:', usersErr);
                 }
             }
 
@@ -393,6 +441,7 @@ export default function TaskListPage() {
         if (filterStatus.length > 0 && !filterStatus.includes(task.status ?? '')) return false;
         if (filterPriority.length > 0 && !filterPriority.includes(task.priority ?? '')) return false;
         if (filterCategory.length > 0 && !filterCategory.includes(task.category ?? '')) return false;
+        if (filterMainTaskId && task.mainTaskId !== filterMainTaskId) return false;
         return true;
     });
 
@@ -547,80 +596,305 @@ export default function TaskListPage() {
                     <div style={{ display: 'flex', justifyContent: 'center', padding: tokens.spacingVerticalXXL }}>
                         <Spinner label="Loading subtasks..." />
                     </div>
-                ) : subTasksWithUsers.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: tokens.spacingVerticalXXL, color: tokens.colorNeutralForeground3 }}>
-                        No subtasks in this project yet.
-                    </div>
                 ) : (
                     <>
-                        <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-                            <Dropdown
-                                multiselect
-                                placeholder="Status"
-                                selectedOptions={filterStatus}
-                                onOptionSelect={(_, data) => setFilterStatus(data.selectedOptions as string[])}
-                                style={{ minWidth: 120 }}
-                            >
-                                {statusOptions.map(status => (
-                                    <Option key={status} value={status}>{status}</Option>
-                                ))}
-                            </Dropdown>
-                            <Dropdown
-                                multiselect
-                                placeholder="Priority"
-                                selectedOptions={filterPriority}
-                                onOptionSelect={(_, data) => setFilterPriority(data.selectedOptions as string[])}
-                                style={{ minWidth: 120 }}
-                            >
-                                {priorityOptions.map(priority => (
-                                    <Option key={priority} value={priority}>{priority}</Option>
-                                ))}
-                            </Dropdown>
-                            <Dropdown
-                                multiselect
-                                placeholder="Category"
-                                selectedOptions={filterCategory}
-                                onOptionSelect={(_, data) => setFilterCategory(data.selectedOptions as string[])}
-                                style={{ minWidth: 120 }}
-                            >
-                                {categoryOptions.map(category => (
-                                    <Option key={category} value={category}>{category}</Option>
-                                ))}
-                            </Dropdown>
-                        </div>
-                        <div className={s.dataGridScrollable}>
-                            <DataGrid
-                                items={filteredSubTasks}
-                                columns={subTaskColumns}
-                                sortable
-                                size="small"
-                                className={gridStyles.grid}
-                            >
-                                <DataGridHeader>
-                                    <DataGridRow>
-                                        {({ renderHeaderCell }) => (
-                                            <DataGridHeaderCell className={gridStyles.headerCell}>{renderHeaderCell()}</DataGridHeaderCell>
+                        {/* Selected MainTask header-style (show regardless of subtasks) */}
+                        {filterMainTaskId && selectedMainTask && (
+                            <div className={mergeClasses(s.artifCard, s.wFull, s.flexColFit)} style={{ padding: tokens.spacingHorizontalM, marginBottom: tokens.spacingVerticalL }}>
+
+                                <div className={mergeClasses(s.spaceBetweenRow)} style={{ alignItems: 'center', gap: 12 }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 220 }}>
+
+                                        <h3 style={{ margin: 0 }}>{selectedMainTask.title}</h3>
+                                    </div>
+
+                                    <div style={{ flex: 1, minWidth: 160 }}>
+                                        {isEditingMainTaskDesc ? (
+                                            <Input
+                                                ref={(el) => { mainTaskDescInputRef.current = el as HTMLInputElement; if (el) el.focus(); }}
+                                                value={mainTaskDescValue}
+                                                onChange={(e) => {
+                                                    const newValue = e.target.value;
+                                                    setMainTaskDescValue(newValue);
+                                                    if (mainTaskDescDebounceRef.current) clearTimeout(mainTaskDescDebounceRef.current);
+                                                    mainTaskDescDebounceRef.current = setTimeout(async () => {
+                                                        if (!selectedMainTask?.id) return;
+                                                        try {
+                                                            await mainTasksApi.updateMainTask(selectedMainTask.id, {
+                                                                title: selectedMainTask.title,
+                                                                description: newValue,
+                                                                startDate: selectedMainTask.startDate || null,
+                                                                endDate: selectedMainTask.endDate || null,
+                                                            });
+                                                            loadMainTasks();
+                                                        } catch (err) {
+                                                            console.error('Failed to update main task description:', err);
+                                                        }
+                                                    }, 500);
+                                                }}
+                                                onBlur={async () => {
+                                                    setIsEditingMainTaskDesc(false);
+                                                    if (!selectedMainTask?.id) return;
+                                                    try {
+                                                        await mainTasksApi.updateMainTask(selectedMainTask.id, {
+                                                            title: selectedMainTask.title,
+                                                            description: mainTaskDescValue,
+                                                            startDate: selectedMainTask.startDate || null,
+                                                            endDate: selectedMainTask.endDate || null,
+                                                        });
+                                                        loadMainTasks();
+                                                    } catch (err) {
+                                                        console.error('Failed to save description on blur:', err);
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        (e.target as HTMLInputElement).blur();
+                                                    } else if (e.key === 'Escape') {
+                                                        setIsEditingMainTaskDesc(false);
+                                                        setMainTaskDescValue(selectedMainTask.description || '');
+                                                    }
+                                                }}
+                                                placeholder="Add description..."
+                                            />
+                                        ) : (
+                                            <div
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => setIsEditingMainTaskDesc(true)}
+                                                onKeyDown={(e) => { if (e.key === 'Enter') setIsEditingMainTaskDesc(true); }}
+                                                style={{ color: mainTaskDescValue ? tokens.colorNeutralForeground1 : tokens.colorNeutralForeground3, cursor: 'pointer' }}
+                                            >
+                                                {mainTaskDescValue || 'Add description...'}
+                                            </div>
                                         )}
-                                    </DataGridRow>
-                                </DataGridHeader>
-                                <DataGridBody<SubTaskResponse & { assignedToUsers?: User[] }>>
-                                    {({ item, rowId }) => (
-                                        <DataGridRow<SubTaskResponse & { assignedToUsers?: User[] }>
-                                            key={rowId}
-                                            onClick={() => handleSubTaskRowClick(item)}
-                                            style={{ cursor: 'pointer' }}
-                                        >
-                                            {({ renderCell }) => (
-                                                <DataGridCell className={gridStyles.cell}>{renderCell(item)}</DataGridCell>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <label style={{ color: tokens.colorNeutralForeground3, fontSize: '12px', marginBottom: '2px' }}>Start</label>
+                                            <DatePicker
+                                                value={mainTaskStartDate ? new Date(mainTaskStartDate) : null}
+                                                onSelectDate={(date: Date | null | undefined) => {
+                                                    const dateStr = date ? formatDateToString(date) : null;
+                                                    setMainTaskStartDate(dateStr);
+
+                                                    if (!selectedMainTask?.id) return;
+                                                    mainTasksApi.updateMainTask(selectedMainTask.id, {
+                                                        title: selectedMainTask.title,
+                                                        description: mainTaskDescValue,
+                                                        startDate: dateStr || null,
+                                                        endDate: mainTaskEndDate || null,
+                                                    }).then(() => loadMainTasks()).catch(err => console.error('Failed to update start date:', err));
+                                                }}
+                                                placeholder="Select date"
+                                            />
+                                        </div>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <label style={{ color: tokens.colorNeutralForeground3, fontSize: '12px', marginBottom: '2px' }}>End</label>
+                                            <DatePicker
+                                                value={mainTaskEndDate ? new Date(mainTaskEndDate) : null}
+                                                onSelectDate={(date: Date | null | undefined) => {
+                                                    const dateStr = date ? formatDateToString(date) : null;
+                                                    setMainTaskEndDate(dateStr);
+
+                                                    if (!selectedMainTask?.id) return;
+                                                    mainTasksApi.updateMainTask(selectedMainTask.id, {
+                                                        title: selectedMainTask.title,
+                                                        description: mainTaskDescValue,
+                                                        startDate: mainTaskStartDate || null,
+                                                        endDate: dateStr || null,
+                                                    }).then(() => loadMainTasks()).catch(err => console.error('Failed to update end date:', err));
+                                                }}
+                                                placeholder="Select date"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* description is now inline in header (editable on click) */}
+
+                            </div>
+                        )}
+
+                        {/* Filters and Add Button - one flex row */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 12, flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flex: 1 }}>
+                                <Dropdown
+                                    placeholder="Main Task"
+                                    selectedOptions={filterMainTaskId ? [filterMainTaskId] : []}
+                                    onOptionSelect={(_, data) => {
+                                        const selected = data.optionValue as string;
+                                        setFilterMainTaskId(selected || null);
+                                    }}
+                                    style={{ minWidth: 150 }}
+                                >
+                                    <Option value="">All Main Tasks</Option>
+                                    {mainTasks.map(task => (
+                                        <Option key={task.id} value={task.id}>{task.title}</Option>
+                                    ))}
+                                </Dropdown>
+                                <Dropdown
+                                    multiselect
+                                    placeholder="Status"
+                                    selectedOptions={filterStatus}
+                                    onOptionSelect={(_, data) => setFilterStatus(data.selectedOptions as string[])}
+                                    style={{ minWidth: 120 }}
+                                >
+                                    {statusOptions.map(status => (
+                                        <Option key={status} value={status}>{status}</Option>
+                                    ))}
+                                </Dropdown>
+                                <Dropdown
+                                    multiselect
+                                    placeholder="Priority"
+                                    selectedOptions={filterPriority}
+                                    onOptionSelect={(_, data) => setFilterPriority(data.selectedOptions as string[])}
+                                    style={{ minWidth: 120 }}
+                                >
+                                    {priorityOptions.map(priority => (
+                                        <Option key={priority} value={priority}>{priority}</Option>
+                                    ))}
+                                </Dropdown>
+                                <Dropdown
+                                    multiselect
+                                    placeholder="Category"
+                                    selectedOptions={filterCategory}
+                                    onOptionSelect={(_, data) => setFilterCategory(data.selectedOptions as string[])}
+                                    style={{ minWidth: 120 }}
+                                >
+                                    {categoryOptions.map(category => (
+                                        <Option key={category} value={category}>{category}</Option>
+                                    ))}
+                                </Dropdown>
+                            </div>
+                            <Button
+                                appearance="primary"
+                                icon={<Add24Regular />}
+                                onClick={() => {
+                                    const defaultMainTaskId = filterMainTaskId ?? (mainTasks && mainTasks.length > 0 ? mainTasks[0].id : '');
+                                    setSubTaskForm({
+                                        title: '',
+                                        description: '',
+                                        priority: 'Low',
+                                        status: 'To Do',
+                                        startDate: '',
+                                        endDate: '',
+                                        assignedTo: [],
+                                        createdBy: user?.id || '',
+                                        category: '',
+                                        projectId: project?.id || '',
+                                        categoryId: '',
+                                        mainTaskId: defaultMainTaskId
+                                    });
+                                    setCreateSubTaskOpen(true);
+                                }}
+                                disabled={mainTasks.length === 0}
+                            >
+                                Add SubTask
+                            </Button>
+                        </div>
+
+                        {/* No subtasks message or DataGrid */}
+                        {subTasksWithUsers.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: tokens.spacingVerticalXXL, color: tokens.colorNeutralForeground3 }}>
+                                <div style={{ marginBottom: tokens.spacingVerticalL }}>
+                                    No subtasks in this project yet.
+                                </div>
+                                {mainTasks.length === 0 && (
+                                    <div style={{ marginTop: tokens.spacingVerticalS, fontSize: tokens.fontSizeBase200, color: tokens.colorNeutralForeground3 }}>
+                                        Create a main task first
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className={s.dataGridScrollable}>
+                                <DataGrid
+                                    items={filteredSubTasks}
+                                    columns={subTaskColumns}
+                                    sortable
+                                    size="small"
+                                    className={gridStyles.grid}
+                                >
+                                    <DataGridHeader>
+                                        <DataGridRow>
+                                            {({ renderHeaderCell }) => (
+                                                <DataGridHeaderCell className={gridStyles.headerCell}>{renderHeaderCell()}</DataGridHeaderCell>
                                             )}
                                         </DataGridRow>
-                                    )}
-                                </DataGridBody>
-                            </DataGrid>
-                        </div>
+                                    </DataGridHeader>
+                                    <DataGridBody<SubTaskResponse & { assignedToUsers?: User[] }>>
+                                        {({ item, rowId }) => (
+                                            <DataGridRow<SubTaskResponse & { assignedToUsers?: User[] }>
+                                                key={rowId}
+                                                onClick={() => handleSubTaskRowClick(item)}
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                {({ renderCell }) => (
+                                                    <DataGridCell className={gridStyles.cell}>{renderCell(item)}</DataGridCell>
+                                                )}
+                                            </DataGridRow>
+                                        )}
+                                    </DataGridBody>
+                                </DataGrid>
+                            </div>
+                        )}
                     </>
                 )
             )}
+
+            {/* CreateTaskDialog for SubTasks - always render so it's available from empty state */}
+            <CreateTaskDialog
+                open={createSubTaskOpen}
+                onOpenChange={setCreateSubTaskOpen}
+                form={subTaskForm}
+                onInputChange={(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+                    const { name, value } = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+                    setSubTaskForm(prev => ({ ...prev, [name]: value }));
+                }}
+                onSubmit={async (e: React.FormEvent) => {
+                    e.preventDefault();
+                    if (!subTaskForm.mainTaskId || !subTaskForm.projectId) return;
+                    setIsSubmittingSubTask(true);
+                    setSubTaskSubmitError(null);
+                    try {
+                        await subTasksApi.createSubTask({
+                            title: subTaskForm.title,
+                            projectId: subTaskForm.projectId,
+                            mainTaskId: subTaskForm.mainTaskId,
+                            description: subTaskForm.description || undefined,
+                            priority: subTaskForm.priority || undefined,
+                            status: subTaskForm.status || undefined,
+                            createdBy: subTaskForm.createdBy || undefined,
+                            assignedTo: subTaskForm.assignedTo && subTaskForm.assignedTo.length > 0 ? subTaskForm.assignedTo : undefined,
+                            startDate: subTaskForm.startDate || undefined,
+                            endDate: subTaskForm.endDate || undefined,
+                            category: subTaskForm.category || undefined,
+                        });
+                        setCreateSubTaskOpen(false);
+                        loadSubTasks();
+                        loadMainTasks();
+                    } catch (err) {
+                        setSubTaskSubmitError((err as Error).message || 'Failed to create subtask');
+                    } finally {
+                        setIsSubmittingSubTask(false);
+                    }
+                }}
+                assignableUsers={assignableUsers}
+                isLoadingAssignableUsers={isLoadingAssignableUsers}
+                assignableUsersError={null}
+                projects={[project!]}
+                categories={categories}
+                isLoadingCategories={isLoadingCategories}
+                hideProjectField={true}
+                mainTasks={mainTasks}
+                isLoadingMainTasks={false}
+                hideMainTaskField={false}
+                currentUser={user}
+                isSubmitting={isSubmittingSubTask}
+                submitError={subTaskSubmitError}
+            />
 
             <CreateMainTaskDialog
                 open={createMainTaskOpen}
@@ -645,82 +919,103 @@ export default function TaskListPage() {
                 onSubTaskCreated={loadMainTasks}
             />
 
-            {selectedMainTask && (
-                <EditMainTaskDialog
-                    open={editMainTaskOpen}
-                    onOpenChange={setEditMainTaskOpen}
-                    form={mainTaskForm}
-                    onInputChange={(e) => {
-                        const { name, value } = e.target;
-                        setMainTaskForm(prev => ({ ...prev, [name]: value }));
-                    }}
-                    onDateChange={(name, value) => setMainTaskForm(prev => ({ ...prev, [name]: value }))}
-                    onDeleteClick={async () => {
-                        if (!confirm('Delete this main task and all its subtasks?')) return;
-                        try {
-                            await mainTasksApi.deleteMainTask(selectedMainTask.id);
-                            setEditMainTaskOpen(false);
-                            loadMainTasks();
-                        } catch (err) {
-                            console.error('Failed to delete main task:', err);
-                        }
-                    }}
-                    currentUser={user}
-                    mainTaskId={selectedMainTask.id}
-                    createdAt={selectedMainTask.createdAt}
-                    projectId={project.id}
-                    onSubTaskClick={(subTask) => {
-                        console.log('SubTask clicked:', subTask);
-                    }}
-                    assignableUsers={assignableUsers}
-                    isLoadingAssignableUsers={isLoadingAssignableUsers}
-                    assignableUsersError={null}
-                    projects={[project]}
-                    categories={categories}
-                    isLoadingCategories={isLoadingCategories}
-                    onSubTaskCreated={() => {
-                        loadMainTasks();
-                        if (activeTab === 'subTasks') loadSubTasks();
-                    }}
-                    onMainTaskUpdated={() => {
-                        loadMainTasks();
-                        if (activeTab === 'subTasks') loadSubTasks();
-                    }}
-                />
-            )}
 
             {selectedSubTask && (
                 <EditTaskDialog
                     open={editSubTaskOpen}
                     onOpenChange={setEditSubTaskOpen}
                     form={subTaskForm}
-                    onInputChange={(e) => {
-                        const { name, value } = e.target;
-                        setSubTaskForm(prev => ({ ...prev, [name]: value }));
+                    onTitleChange={(title: string) => {
+                        setSubTaskForm(prev => ({ ...prev, title }));
+
+                        // Clear previous timeout
+                        if (titleDebounceRef.current) {
+                            clearTimeout(titleDebounceRef.current);
+                        }
+
+                        // Set new timeout
+                        titleDebounceRef.current = setTimeout(async () => {
+                            if (!selectedSubTask?.id) return;
+                            try {
+                                await subTasksApi.patchSubTask(selectedSubTask.id, { title });
+                                loadSubTasks();
+                            } catch (err) {
+                                console.error('Failed to update title:', err);
+                            }
+                        }, 400);
+                    }}
+                    onDescriptionChange={(description: string) => {
+                        setSubTaskForm(prev => ({ ...prev, description }));
+
+                        // Clear previous timeout
+                        if (descriptionDebounceRef.current) {
+                            clearTimeout(descriptionDebounceRef.current);
+                        }
+
+                        // Set new timeout
+                        descriptionDebounceRef.current = setTimeout(async () => {
+                            if (!selectedSubTask?.id) return;
+                            try {
+                                await subTasksApi.patchSubTask(selectedSubTask.id, { description });
+                                loadSubTasks();
+                            } catch (err) {
+                                console.error('Failed to update description:', err);
+                            }
+                        }, 400);
+                    }}
+                    onPriorityChange={async (priority: string) => {
+                        setSubTaskForm(prev => ({ ...prev, priority }));
+                        if (!selectedSubTask?.id) return;
+                        try {
+                            await subTasksApi.patchSubTask(selectedSubTask.id, { priority });
+                            loadSubTasks();
+                        } catch (err) {
+                            console.error('Failed to update priority:', err);
+                        }
+                    }}
+                    onStatusChange={async (status: string) => {
+                        setSubTaskForm(prev => ({ ...prev, status }));
+                        if (!selectedSubTask?.id) return;
+                        try {
+                            await subTasksApi.patchSubTask(selectedSubTask.id, { status });
+                            loadSubTasks();
+                        } catch (err) {
+                            console.error('Failed to update status:', err);
+                        }
+                    }}
+                    onStartDateChange={async (startDate: string) => {
+                        setSubTaskForm(prev => ({ ...prev, startDate }));
+                        if (!selectedSubTask?.id) return;
+                        try {
+                            await subTasksApi.patchSubTask(selectedSubTask.id, { startDate });
+                            loadSubTasks();
+                        } catch (err) {
+                            console.error('Failed to update start date:', err);
+                        }
+                    }}
+                    onEndDateChange={async (endDate: string) => {
+                        setSubTaskForm(prev => ({ ...prev, endDate }));
+                        if (!selectedSubTask?.id) return;
+                        try {
+                            await subTasksApi.patchSubTask(selectedSubTask.id, { endDate });
+                            loadSubTasks();
+                        } catch (err) {
+                            console.error('Failed to update end date:', err);
+                        }
+                    }}
+                    onAssignedToChange={async (assignedTo: string[]) => {
+                        setSubTaskForm(prev => ({ ...prev, assignedTo }));
+                        if (!selectedSubTask?.id) return;
+                        try {
+                            await subTasksApi.patchSubTask(selectedSubTask.id, { assignedTo });
+                            loadSubTasks();
+                        } catch (err) {
+                            console.error('Failed to update assigned users:', err);
+                        }
                     }}
                     onSubmit={async (e) => {
                         e.preventDefault();
-                        if (!selectedSubTask?.id) return;
-                        try {
-                            await subTasksApi.updateSubTask(selectedSubTask.id, {
-                                title: subTaskForm.title,
-                                description: subTaskForm.description,
-                                priority: subTaskForm.priority,
-                                status: subTaskForm.status,
-                                projectId: subTaskForm.projectId,
-                                mainTaskId: selectedSubTask.mainTaskId,
-                                category: subTaskForm.category,
-                                categoryId: subTaskForm.categoryId,
-                                createdBy: subTaskForm.createdBy,
-                                assignedTo: subTaskForm.assignedTo,
-                                startDate: subTaskForm.startDate,
-                                endDate: subTaskForm.endDate,
-                            });
-                            setEditSubTaskOpen(false);
-                            loadSubTasks();
-                        } catch (err) {
-                            console.error('Failed to update subtask:', err);
-                        }
+                        setEditSubTaskOpen(false);
                     }}
                     onDeleteClick={async () => {
                         if (!selectedSubTask?.id) return;

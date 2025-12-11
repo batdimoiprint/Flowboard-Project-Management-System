@@ -27,11 +27,17 @@ export interface CreateTaskDialogProps {
         createdBy: string;
         category: string;
         projectId?: string | null;
+        mainTaskId?: string | null;
     };
     onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
     onSubmit: (e: React.FormEvent) => void;
     assignableUsers?: User[];
     projects?: Project[];
+    // Optional list of main tasks to attach the subtask to
+    mainTasks?: { id: string; title: string }[];
+    isLoadingMainTasks?: boolean;
+    mainTasksError?: string | null;
+    hideMainTaskField?: boolean;
     isLoadingProjects?: boolean;
     projectsError?: string | null;
     categories?: Category[];
@@ -63,6 +69,10 @@ export default function CreateTaskDialog({
     isLoadingCategories = false,
     categoriesError = null,
     hideProjectField = false,
+    mainTasks = [],
+    isLoadingMainTasks = false,
+    mainTasksError = null,
+    hideMainTaskField = false,
     currentUser = null
 }: CreateTaskDialogProps) {
     const [editingTitle, setEditingTitle] = useState(false);
@@ -94,6 +104,7 @@ export default function CreateTaskDialog({
 
         onInputChange(syntheticEvent);
     }
+
 
     function handleTitleBlur() {
         setEditingTitle(false);
@@ -291,6 +302,24 @@ export default function CreateTaskDialog({
                                 {projectsError && (
                                     <span style={{ color: tokens.colorPaletteRedForeground3, fontSize: tokens.fontSizeBase100 }}>
                                         {projectsError}
+                                    </span>
+                                )}
+                            </Field>
+                        )}
+                        {!hideMainTaskField && (
+                            <Field label="Main Task" style={{ flex: 1 }}>
+                                <Select name="mainTaskId" value={form.mainTaskId || ''} onChange={onInputChange} disabled={isLoadingMainTasks || !(mainTasks && mainTasks.length > 0)}>
+                                    <option value="">{isLoadingMainTasks ? 'Loading main tasks…' : 'Select main task'}</option>
+                                    {!isLoadingMainTasks && (!mainTasks || mainTasks.length === 0) && (
+                                        <option value="" disabled>No main tasks available</option>
+                                    )}
+                                    {!isLoadingMainTasks && mainTasks && mainTasks.map(mt => (
+                                        <option key={mt.id} value={mt.id}>{mt.title}</option>
+                                    ))}
+                                </Select>
+                                {mainTasksError && (
+                                    <span style={{ color: tokens.colorPaletteRedForeground3, fontSize: tokens.fontSizeBase100 }}>
+                                        {mainTasksError}
                                     </span>
                                 )}
                             </Field>

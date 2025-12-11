@@ -284,10 +284,10 @@ export const mainLayoutStyles = makeStyles({
 	kanbanTaskCard: {
 		boxSizing: 'border-box',
 		backgroundColor: tokens.colorNeutralBackground1,
-		border: `1px solid ${tokens.colorNeutralStroke2}`,
-		borderRadius: tokens.borderRadiusMedium,
-		padding: tokens.spacingHorizontalM,
-		boxShadow: tokens.shadow2,
+
+
+
+
 		cursor: 'grab',
 		display: 'flex',
 		flexDirection: 'column',

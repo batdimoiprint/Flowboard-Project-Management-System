@@ -25,7 +25,6 @@ export default function Sidebar({ refreshSignal }: SidebarProps) {
     const [openCategories, setOpenCategories] = useState<string[]>(['projects']);
     const s = mainLayoutStyles();
     const navigate = useNavigate();
-    const handleProjectsNav = () => navigate('/home/project');
 
     // Allow multiple categories open (adjust if single-open behavior is desired)
     const isMultiple = true;
@@ -71,7 +70,7 @@ export default function Sidebar({ refreshSignal }: SidebarProps) {
                     </NavItem>
 
                     {/* Project List Section */}
-                    <ProjectList openCategories={openCategories} onNavigateToProjects={handleProjectsNav} refreshSignal={refreshSignal} />
+                    <ProjectList refreshSignal={refreshSignal} />
 
                     {/* moved create button into Projects header (icon-only) */}
 

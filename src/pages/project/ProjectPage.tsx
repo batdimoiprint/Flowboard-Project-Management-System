@@ -225,7 +225,7 @@ export default function ProjectPage() {
     return 'Project';
   }, [decodedParam, project?.projectName]);
 
-  const subtitle = project?.description || 'For the IPT Project';
+  const subtitle = project?.description;
 
   const isOwner = useMemo(() => {
     if (!currentUser || !project) return false;
@@ -354,8 +354,12 @@ export default function ProjectPage() {
         teamMembers: project.teamMembers,
       });
       setIsEditingProject(false);
+      // Navigate to updated project route
+      const newSlug = toSlug(editedName.trim());
+      // Refresh data and notify parent before navigating so lists update
       refreshProject();
       outlet?.bumpProjects?.();
+      navigate(`/home/project/${encodeURIComponent(newSlug)}`);
     } catch (err) {
       console.error('Failed to update project:', err);
       alert('Failed to update project');

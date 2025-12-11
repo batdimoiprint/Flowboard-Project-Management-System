@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
     DndContext,
     DragOverlay,
@@ -52,6 +52,9 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
     const [editProject, setEditProject] = useState<Project | null>(null);
     type EditFormType = CreateFormType & { categoryId?: string };
     const [editForm, setEditForm] = useState<EditFormType | null>(null);
+    // Debounce timeouts for title and description
+    const titleDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const descriptionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // MainTask dialog state
     const [createMainTaskOpen, setCreateMainTaskOpen] = useState(false);
@@ -716,19 +719,51 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                     open={editTaskOpen}
                     onOpenChange={setEditTaskOpen}
                     form={editForm}
-                    onInputChange={(e) => {
-                        const { name, value } = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-                        const key = name as keyof EditFormType;
-                        setEditForm(prev => prev ? { ...prev, [key]: value } : prev);
+                    onTitleChange={(title: string) => {
+                        setEditForm(prev => prev ? { ...prev, title } : prev);
 
-                        // Immediately update for selects and dates
-                        const target = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-                        const isSelect = target.tagName === 'SELECT';
-                        const isDate = 'type' in target && (target as HTMLInputElement).type === 'date';
-
-                        if (isSelect || isDate) {
-                            handleFieldUpdate(selectedTask.id, name, value);
+                        // Clear previous timeout
+                        if (titleDebounceRef.current) {
+                            clearTimeout(titleDebounceRef.current);
                         }
+
+                        // Set new timeout
+                        titleDebounceRef.current = setTimeout(() => {
+                            handleFieldUpdate(selectedTask.id, 'title', title);
+                        }, 400);
+                    }}
+                    onDescriptionChange={(description: string) => {
+                        setEditForm(prev => prev ? { ...prev, description } : prev);
+
+                        // Clear previous timeout
+                        if (descriptionDebounceRef.current) {
+                            clearTimeout(descriptionDebounceRef.current);
+                        }
+
+                        // Set new timeout
+                        descriptionDebounceRef.current = setTimeout(() => {
+                            handleFieldUpdate(selectedTask.id, 'description', description);
+                        }, 400);
+                    }}
+                    onPriorityChange={async (priority: string) => {
+                        setEditForm(prev => prev ? { ...prev, priority } : prev);
+                        await handleFieldUpdate(selectedTask.id, 'priority', priority);
+                    }}
+                    onStatusChange={async (status: string) => {
+                        setEditForm(prev => prev ? { ...prev, status } : prev);
+                        await handleFieldUpdate(selectedTask.id, 'status', status);
+                    }}
+                    onStartDateChange={async (startDate: string) => {
+                        setEditForm(prev => prev ? { ...prev, startDate } : prev);
+                        await handleFieldUpdate(selectedTask.id, 'startDate', startDate);
+                    }}
+                    onEndDateChange={async (endDate: string) => {
+                        setEditForm(prev => prev ? { ...prev, endDate } : prev);
+                        await handleFieldUpdate(selectedTask.id, 'endDate', endDate);
+                    }}
+                    onAssignedToChange={async (assignedTo: string[]) => {
+                        setEditForm(prev => prev ? { ...prev, assignedTo } : prev);
+                        await handleFieldUpdate(selectedTask.id, 'assignedTo', assignedTo);
                     }}
                     onSubmit={async (e) => {
                         e.preventDefault();

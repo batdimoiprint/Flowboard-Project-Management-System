@@ -33,7 +33,13 @@ export interface EditTaskDialogProps {
         projectId?: string | null;
         comments?: string;
     };
-    onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+    onTitleChange?: (title: string) => Promise<void> | void;
+    onDescriptionChange?: (description: string) => Promise<void> | void;
+    onPriorityChange?: (priority: string) => Promise<void> | void;
+    onStatusChange?: (status: string) => Promise<void> | void;
+    onStartDateChange?: (startDate: string) => Promise<void> | void;
+    onEndDateChange?: (endDate: string) => Promise<void> | void;
+    onAssignedToChange?: (assignedTo: string[]) => Promise<void> | void;
     onSubmit: (e: React.FormEvent) => void;
     assignableUsers?: User[];
     isLoadingAssignableUsers?: boolean;
@@ -67,7 +73,13 @@ export default function EditTaskDialog({
     open,
     onOpenChange,
     form,
-    onInputChange,
+    onTitleChange,
+    onDescriptionChange,
+    onPriorityChange,
+    onStatusChange,
+    onStartDateChange,
+    onEndDateChange,
+    onAssignedToChange,
     onSubmit,
     onDeleteClick,
     isSubmitting = false,
@@ -104,17 +116,9 @@ export default function EditTaskDialog({
 
     function handleAssignedUserSelect(_: unknown, data: { optionValue?: string | number; selectedOptions: string[] }) {
         const selectedIds = data.selectedOptions;
-
-        const syntheticEvent = {
-            target: {
-                name: 'assignedTo',
-                value: selectedIds,
-                tagName: 'SELECT',
-                type: 'select-multiple',
-            },
-        } as unknown as React.ChangeEvent<HTMLSelectElement>;
-
-        onInputChange(syntheticEvent);
+        if (onAssignedToChange) {
+            onAssignedToChange(selectedIds);
+        }
     }
 
     function handleTitleBlur() {
@@ -140,32 +144,25 @@ export default function EditTaskDialog({
         return isNaN(date.getTime()) ? undefined : date;
     }
 
-    // Helper to convert Date to YYYY-MM-DD string
+    // Helper to convert Date to YYYY-MM-DD string using local timezone
     function formatDateToString(date: Date): string {
-        return date.toISOString().split('T')[0];
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     function handleStartDateSelect(date: Date): void {
-        const syntheticEvent = {
-            target: {
-                name: 'startDate',
-                value: formatDateToString(date),
-                type: 'date',
-            },
-        } as React.ChangeEvent<HTMLInputElement>;
-        onInputChange(syntheticEvent);
+        if (onStartDateChange) {
+            onStartDateChange(formatDateToString(date));
+        }
         setStartDatePopoverOpen(false);
     }
 
     function handleEndDateSelect(date: Date): void {
-        const syntheticEvent = {
-            target: {
-                name: 'endDate',
-                value: formatDateToString(date),
-                type: 'date',
-            },
-        } as React.ChangeEvent<HTMLInputElement>;
-        onInputChange(syntheticEvent);
+        if (onEndDateChange) {
+            onEndDateChange(formatDateToString(date));
+        }
         setEndDatePopoverOpen(false);
     }
 
@@ -200,7 +197,11 @@ export default function EditTaskDialog({
                                 <Input
                                     name="title"
                                     value={form.title}
-                                    onChange={onInputChange}
+                                    onChange={(e) => {
+                                        if (onTitleChange) {
+                                            onTitleChange(e.target.value);
+                                        }
+                                    }}
                                     onBlur={handleTitleBlur}
                                     onKeyDown={handleTitleKeyDown}
                                     ref={inputRef}
@@ -406,19 +407,44 @@ export default function EditTaskDialog({
                     </div>
                     {/* Row 3: Description */}
                     <Field label="Description" style={{ marginBottom: 16 }}>
-                        <Input name="description" value={form.description} onChange={onInputChange} placeholder="Build low-fidelity wireframes for the dashboard layout and task management screens." />
+                        <Input
+                            name="description"
+                            value={form.description}
+                            onChange={(e) => {
+                                if (onDescriptionChange) {
+                                    onDescriptionChange(e.target.value);
+                                }
+                            }}
+                            placeholder="Build low-fidelity wireframes for the dashboard layout and task management screens."
+                        />
                     </Field>
                     {/* Row 4: Status, Priority */}
                     <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
                         <Field label="Status" style={{ flex: 1 }}>
-                            <Select name="status" value={form.status} onChange={onInputChange}>
+                            <Select
+                                name="status"
+                                value={form.status}
+                                onChange={(e) => {
+                                    if (onStatusChange) {
+                                        onStatusChange(e.target.value);
+                                    }
+                                }}
+                            >
                                 <option value="To Do">To Do</option>
                                 <option value="In Progress">In Progress</option>
                                 <option value="Done">Done</option>
                             </Select>
                         </Field>
                         <Field label="Priority" style={{ flex: 1 }}>
-                            <Select name="priority" value={form.priority} onChange={onInputChange}>
+                            <Select
+                                name="priority"
+                                value={form.priority}
+                                onChange={(e) => {
+                                    if (onPriorityChange) {
+                                        onPriorityChange(e.target.value);
+                                    }
+                                }}
+                            >
                                 <option value="Low">Low</option>
                                 <option value="Medium">Medium</option>
                                 <option value="Important">Important</option>
