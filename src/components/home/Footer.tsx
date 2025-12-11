@@ -12,7 +12,7 @@ export default function Footer() {
                 {/* Terms and Conditions */}
                 <a href="#" className={styles.footerLink}>
                     <img 
-                        src="/public/images/homeicon.png" 
+                        src="/images/home.png" 
                         alt="Icon" 
                         className={mergeClasses(styles.footerIcon, darkMode && styles.footerIconDark)}
                     />
@@ -22,7 +22,7 @@ export default function Footer() {
                 {/* Privacy Policy */}
                 <a href="#" className={styles.footerLink}>
                     <img 
-                        src="/public/images/privacy.jfif" 
+                        src="/images/privacy1.png" 
                         alt="Icon" 
                         className={mergeClasses(styles.footerIcon, darkMode && styles.footerIconDark)}
                     />
@@ -32,7 +32,7 @@ export default function Footer() {
                 {/* Cookie Policy */}
                 <a href="#" className={styles.footerLink}>
                     <img 
-                        src="/public/images/cookie.jfif" 
+                        src="/images/cookie1.png" 
                         alt="Icon" 
                         className={mergeClasses(styles.footerIcon, darkMode && styles.footerIconDark)}
                     />
@@ -42,7 +42,7 @@ export default function Footer() {
                 {/* About */}
                 <a href="#" className={styles.footerLink}>
                     <img 
-                        src="/public/images/about.jfif" 
+                        src="/images/about1.png" 
                         alt="Icon" 
                         className={mergeClasses(styles.footerIcon, darkMode && styles.footerIconDark)}
                     />
@@ -52,7 +52,7 @@ export default function Footer() {
                 {/* FAQ */}
                 <a href="#" className={styles.footerLink}>
                     <img 
-                        src="/public/images/faqu.jfif" 
+                        src="/images/faq.png" 
                         alt="Icon" 
                         className={mergeClasses(styles.footerIcon, darkMode && styles.footerIconDark)}
                     />

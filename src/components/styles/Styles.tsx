@@ -990,12 +990,17 @@ export const mainLayoutStyles = makeStyles({
 		lineHeight: '1.2',
 	},
 
-	teamMemberRole: {
-		...typographyStyles.caption1,
-		color: tokens.colorNeutralForeground2,
-		textAlign: 'center',
-		lineHeight: '1.3',
-	},
+teamMemberRole: {
+    ...typographyStyles.caption1,
+    color: tokens.colorNeutralForeground2,
+    textAlign: 'center',
+    lineHeight: '1.2',
+    fontSize: tokens.fontSizeBase200,
+    wordBreak: 'break-word',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    maxWidth: '100%',
+},
 
 	///////////////////////////
 	// CTA Section (with animations)
