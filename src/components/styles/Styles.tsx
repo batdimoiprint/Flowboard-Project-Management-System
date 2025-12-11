@@ -819,41 +819,42 @@ export const mainLayoutStyles = makeStyles({
 		borderRadius: '0',
 	},
 
-	///////////////////////////
-	// Team Section (with animations)
-	///////////////////////////
-	teamSection: {
-		display: 'flex',
-		flexDirection: 'column',
-		alignItems: 'center',
-		padding: `${tokens.spacingVerticalXXL} ${tokens.spacingHorizontalL}`,
-		backgroundColor: 'transparent',
-		width: '100%',
-		maxWidth: '100%',
-		boxSizing: 'border-box',
-		gap: tokens.spacingVerticalXXL,
-	},
 
-	teamLabelContainer: {
-		width: '100%',
-		maxWidth: '100%',
-		backgroundColor: tokens.colorNeutralBackground1,
-		borderRadius: '20px',
-		boxShadow: tokens.shadow4,
-		display: 'flex',
-		flexDirection: 'column',
-		alignItems: 'center',
-		padding: `${tokens.spacingVerticalXXL} ${tokens.spacingHorizontalXL}`,
-		marginBottom: tokens.spacingVerticalXL,
-		boxSizing: 'border-box',
-		animationName: {
-			from: { opacity: 0, transform: 'scale(0.95)' },
-			to: { opacity: 1, transform: 'scale(1)' }
-		},
-		animationDuration: '0.6s',
-		animationTimingFunction: 'ease-out',
-		animationFillMode: 'both',
-	},
+///////////////////////////
+// Team Section (with animations)
+///////////////////////////
+teamSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: `${tokens.spacingVerticalXXS} ${tokens.spacingHorizontalS}`,
+    backgroundColor: 'transparent',
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+    gap: tokens.spacingVerticalXXS,
+},
+
+teamLabelContainer: {
+    width: '100%',
+    maxWidth: '100%',
+    backgroundColor: tokens.colorNeutralBackground1,
+    borderRadius: '20px',
+    boxShadow: tokens.shadow4,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: `${tokens.spacingVerticalXXL} ${tokens.spacingHorizontalXL}`,
+    marginBottom: tokens.spacingVerticalXXS,
+    boxSizing: 'border-box',
+    animationName: {
+        from: { opacity: 0, transform: 'scale(0.95)' },
+        to: { opacity: 1, transform: 'scale(1)' }
+    },
+    animationDuration: '0.6s',
+    animationTimingFunction: 'ease-out',
+    animationFillMode: 'both',
+},
 
 	teamCardsContainer: {
 		width: '100%',
@@ -888,113 +889,122 @@ export const mainLayoutStyles = makeStyles({
 		fontWeight: tokens.fontWeightBold,
 	},
 
-	teamGrid: {
-		display: 'grid',
-		gridTemplateColumns: 'repeat(5, minmax(200px, 220px))',
-		gridAutoRows: 'minmax(320px, auto)',
-		gap: `${tokens.spacingVerticalL} ${tokens.spacingHorizontalL}`,
-		width: 'fit-content',
-		maxWidth: '100%',
-		boxSizing: 'border-box',
-		justifyContent: 'center',
-		'@media (max-width: 1300px)': {
-			gridTemplateColumns: 'repeat(3, minmax(200px, 220px))',
-		},
-		'@media (max-width: 900px)': {
-			gridTemplateColumns: 'repeat(2, minmax(200px, 220px))',
-		},
-		'@media (max-width: 600px)': {
-			gridTemplateColumns: '1fr',
-		},
-	},
+teamGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(200px, 250px))', // 3 columns for 3x3 layout
+    gridAutoRows: 'minmax(340px, auto)', // Keeping the taller card height
+    gap: `${tokens.spacingVerticalL} ${tokens.spacingHorizontalXXL}`,
+    width: 'fit-content',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+    justifyContent: 'center',
+    // Responsive behavior for 3-column layout
+    '@media (max-width: 1100px)': {
+        gridTemplateColumns: 'repeat(3, minmax(200px, 220px))',
+    },
+    '@media (max-width: 900px)': {
+        gridTemplateColumns: 'repeat(2, minmax(200px, 220px))',
+    },
+    '@media (max-width: 650px)': {
+        gridTemplateColumns: '1fr',
+        maxWidth: '350px',
+    },
+},
 
-	teamCard: {
-		display: 'flex',
-		flexDirection: 'column',
-		alignItems: 'center',
-		backgroundColor: tokens.colorNeutralBackground1,
-		borderRadius: '20px',
-		boxShadow: tokens.shadow4,
-		padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalM}`,
-		gap: tokens.spacingVerticalM,
-		height: '320px',
-		transition: 'transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.3s ease',
-		boxSizing: 'border-box',
-		width: '100%',
-		animationName: {
-			from: { opacity: 0, transform: 'scale(0.9)' },
-			to: { opacity: 1, transform: 'scale(1)' }
-		},
-		animationDuration: '0.5s',
-		animationTimingFunction: 'ease-out',
-		animationFillMode: 'both',
-		'&:hover': {
-			transform: 'translateY(-15px) scale(1.05)',
-			boxShadow: tokens.shadow16,
-			animationName: {
-				'0%, 100%': {
-					transform: 'translateY(-15px) scale(1.05)',
-				},
-				'50%': {
-					transform: 'translateY(-20px) scale(1.07)',
-				}
-			},
-			animationDuration: '0.6s',
-			animationTimingFunction: 'ease-in-out',
-		}
-	},
+teamCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    backgroundColor: tokens.colorNeutralBackground1,
+    borderRadius: '20px',
+    boxShadow: tokens.shadow4,
+    padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalM}`,
+    gap: tokens.spacingVerticalM,
+    height: '340px', // Keeping the taller rectangular shape
+    minHeight: '340px',
+    transition: 'transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.3s ease',
+    boxSizing: 'border-box',
+    width: '100%',
+    animationName: {
+        from: { opacity: 0, transform: 'scale(0.9)' },
+        to: { opacity: 1, transform: 'scale(1)' }
+    },
+    animationDuration: '0.5s',
+    animationTimingFunction: 'ease-out',
+    animationFillMode: 'both',
+    '&:hover': {
+        transform: 'translateY(-15px) scale(1.05)',
+        boxShadow: tokens.shadow16,
+    },
+    // Bounce animation keyframes
+    '@keyframes bounce': {
+        '0%, 100%': {
+            transform: 'translateY(-15px) scale(1.05)',
+        },
+        '50%': {
+            transform: 'translateY(-20px) scale(1.07)',
+        }
+    }
+},
 
-	teamImageContainer: {
-		width: '95%',
-		height: '220px',
-		borderRadius: '0',
-		overflow: 'hidden',
-		backgroundColor: tokens.colorNeutralBackground3,
-		display: 'flex',
-		alignItems: 'center',
-		justifyContent: 'center',
-		marginTop: tokens.spacingVerticalS,
-		marginBottom: tokens.spacingVerticalS,
-		transition: 'transform 0.3s ease',
-		'&:hover': {
-			transform: 'scale(1.02)',
-		},
-	},
+teamImageContainer: {
+    width: '95%',
+    height: '240px', // Keeping the taller image container
+    borderRadius: '16px',
+    overflow: 'hidden',
+    backgroundColor: tokens.colorNeutralBackground3,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: tokens.spacingVerticalS,
+    marginBottom: tokens.spacingVerticalS,
+    transition: 'transform 0.3s ease',
+    '&:hover': {
+        transform: 'scale(1.02)',
+    },
+},
 
-	teamImage: {
-		width: '100%',
-		height: '100%',
-		objectFit: 'cover',
-		borderRadius: '0',
-		transition: 'transform 0.3s ease',
-		'&:hover': {
-			transform: 'scale(1.05)',
-		},
-	},
+teamImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    borderRadius: '16px',
+    transition: 'transform 0.3s ease',
+    '&:hover': {
+        transform: 'scale(1.05)',
+    },
+},
 
-	teamInfo: {
-		display: 'flex',
-		flexDirection: 'column',
-		alignItems: 'center',
-		textAlign: 'center',
-		gap: tokens.spacingVerticalXXS,
-		width: '100%',
-		padding: `0 ${tokens.spacingHorizontalS}`,
-	},
+teamInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    gap: tokens.spacingVerticalXXS,
+    width: '100%',
+    padding: `0 ${tokens.spacingHorizontalS}`,
+    flex: 1,
+    justifyContent: 'center',
+},
 
-	teamMemberName: {
-		...typographyStyles.subtitle1,
-		fontWeight: tokens.fontWeightSemibold,
-		color: tokens.colorNeutralForeground1,
-		textAlign: 'center',
-		lineHeight: '1.2',
-	},
+teamMemberName: {
+    ...typographyStyles.subtitle1,
+    fontWeight: tokens.fontWeightSemibold,
+    color: tokens.colorNeutralForeground1,
+    textAlign: 'center',
+    lineHeight: '1.2',
+    fontSize: tokens.fontSizeBase500,
+    wordBreak: 'break-word',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    maxWidth: '100%',
+},
 
 teamMemberRole: {
     ...typographyStyles.caption1,
     color: tokens.colorNeutralForeground2,
     textAlign: 'center',
-    lineHeight: '1.2',
+    lineHeight: '1.3',
     fontSize: tokens.fontSizeBase200,
     wordBreak: 'break-word',
     overflow: 'hidden',
@@ -1008,7 +1018,7 @@ teamMemberRole: {
 	ctaSection: {
 		width: '100%',
 		maxWidth: '100%',
-		marginTop: tokens.spacingVerticalXXL,
+		marginTop: tokens.spacingVerticalXXS,
 		marginBottom: tokens.spacingVerticalXXL,
 		position: 'relative',
 		overflow: 'hidden',
