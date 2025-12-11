@@ -68,7 +68,7 @@ export default function ProjectListPage() {
                     <Label>Projects List</Label>
                 </div>
                 <div className={mergeClasses(styles.actionsRight, styles.alignCenter)}>
-                    <Button appearance="primary" onClick={() => navigate('/home/project/create')}>
+                    <Button appearance="primary" onClick={() => navigate('/home/create')}>
                         Create Project
                     </Button>
 

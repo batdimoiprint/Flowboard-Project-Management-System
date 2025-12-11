@@ -489,12 +489,15 @@ export default function ProjectPage() {
                   <TableRow>
                     <TableHeaderCell>Member Name</TableHeaderCell>
                     <TableHeaderCell>Email</TableHeaderCell>
-                    <TableHeaderCell>Actions</TableHeaderCell>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {members.map((member) => (
-                    <TableRow key={member.id}>
+                    <TableRow
+                      key={member.id}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => navigate(`/home/member?userId=${member.id}`)}
+                    >
                       <TableCell>
                         <div className={styles.personaRow}>
                           <Avatar size={32} name={member.displayName} color="colorful" />
@@ -510,7 +513,10 @@ export default function ProjectPage() {
                           <Button
                             appearance="secondary"
                             size="small"
-                            onClick={() => handleRemoveMember(member.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveMember(member.id);
+                            }}
                             disabled={actionLoading}
                           >
                             Remove Member

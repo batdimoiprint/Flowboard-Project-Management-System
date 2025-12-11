@@ -617,6 +617,7 @@ export default function Register() {
                         <Text className={styles.errorText}>{errors.birthDate.message}</Text>
                     )}
                 </div>
+
             </div>
         </div>
     );

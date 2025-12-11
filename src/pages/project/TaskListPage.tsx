@@ -171,16 +171,15 @@ export default function TaskListPage() {
                 const findSlug = (name: string) => encodeURIComponent(name.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-'));
                 const matched = all.find(p => findSlug(p.projectName) === (titleSlug ? titleSlug.replace(/-/g, '-') : ''));
                 if (matched) {
+                    console.log('Project matched:', matched, 'ID:', matched.id);
                     setProject(matched);
-                    // Load categories and users for this project
+                    // Load categories for this project
                     if (matched.id) {
                         setIsLoadingCategories(true);
                         categoriesApi.getCategoriesByProject(matched.id)
                             .then(cats => { if (active) setCategories(cats); })
                             .catch(err => console.error('Failed to load categories:', err))
                             .finally(() => { if (active) setIsLoadingCategories(false); });
-
-                        fetchAssignableUsers();
                     }
                 } else {
                     setError('Project not found');
@@ -196,6 +195,15 @@ export default function TaskListPage() {
         return () => { active = false; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [titleSlug]);
+
+    // Fetch assignable users when project is loaded
+    useEffect(() => {
+        if (project?.id) {
+            console.log('Project state updated, fetching assignable users with ID:', project.id);
+            fetchAssignableUsers();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [project?.id]);
 
     useEffect(() => {
         if (project?.id) {
@@ -353,9 +361,13 @@ export default function TaskListPage() {
         try {
             let unique: User[] = [];
 
+            console.log('fetchAssignableUsers started, project.id:', project?.id);
+
             if (project?.id) {
                 try {
                     const projectMembers = await projectsApi.getProjectMembers(project.id);
+                    console.log('Project members fetched:', projectMembers);
+
                     unique = projectMembers.map(member => ({
                         id: member.id,
                         userName: member.userName,
@@ -365,17 +377,22 @@ export default function TaskListPage() {
                         email: member.email,
                         userIMG: member.userIMG,
                     } as User));
+                    console.log('Project members mapped to User objects:', unique);
                 } catch (projectErr) {
                     console.error('Failed to fetch project members:', projectErr);
                 }
+            } else {
+                console.warn('No project ID available');
             }
 
-            if (user && !unique.some((u) => u.id === user.id)) unique.push(user);
+            console.log('Final assignable users list:', unique);
             setAssignableUsers(unique);
+            console.log('setAssignableUsers state updated');
         } catch (err) {
             console.error('Failed to fetch users:', err);
         } finally {
             setIsLoadingAssignableUsers(false);
+            console.log('fetchAssignableUsers completed, loading state set to false');
         }
     }
 

@@ -16,7 +16,6 @@ const useProjectListStyles = makeStyles({
         overflowX: "hidden",
         display: "flex",
         flexDirection: "column",
-        gap: tokens.spacingVerticalXS,
     },
     sectionHeader: {
         display: 'flex',
@@ -29,7 +28,7 @@ const useProjectListStyles = makeStyles({
         paddingBlock: tokens.spacingVerticalS,
         display: 'flex',
         alignItems: 'center',
-        gap: tokens.spacingHorizontalS,
+        background: tokens.colorNeutralBackground2,
     },
     navItemLabel: {
         overflow: 'hidden',
@@ -39,8 +38,9 @@ const useProjectListStyles = makeStyles({
         maxWidth: '100%'
     },
     selectedItem: {
-        backgroundColor: tokens.colorNeutralBackground3,
-        borderRadius: tokens.borderRadiusMedium,
+        backgroundColor: tokens.colorNeutralBackground1Selected,
+        color: tokens.colorBrandBackground,
+        fontWeight: tokens.fontWeightBold
     },
 });
 

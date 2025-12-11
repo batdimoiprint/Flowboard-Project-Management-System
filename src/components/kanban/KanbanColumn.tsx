@@ -112,7 +112,11 @@ export default function KanbanColumn({ column, onTaskClick, onDeleteColumn, onUp
                             appearance="transparent"
                             icon={<Delete20Regular />}
                             size="small"
-                            onClick={() => onDeleteColumn(column.id)}
+                            onClick={() => {
+                                if (window.confirm(`Are you sure you want to delete the category "${column.title}"? `)) {
+                                    onDeleteColumn(column.id);
+                                }
+                            }}
                         />
                     )}
                 </div>

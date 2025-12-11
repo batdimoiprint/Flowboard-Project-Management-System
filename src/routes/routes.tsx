@@ -16,6 +16,7 @@ import LoginPage from "../pages/auth/LoginPage";
 import RegisterPage from "../pages/auth/RegisterPage";
 import Landing from "../pages/landing/Landing";
 import MyProfile from "../pages/user/MyProfile";
+import MemberProfile from "../pages/user/MemberProfile";
 import AnalyticsPage from "../pages/user/AnalyticsPage";
 
 
@@ -62,6 +63,7 @@ export default function AppRoutes() {
                 {/* My Tasks*/}
                 <Route index element={<MyTasks />} />
                 <Route path="profile" element={<MyProfile />} />
+                <Route path="member" element={<MemberProfile />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
 
                 {/* Create Project Page - outside project routes */}

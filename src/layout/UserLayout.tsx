@@ -21,6 +21,7 @@ export default function UserLayout() {
     const isProjectRoot = normalizedPath === "/home/project";
     const isProjectWithName = /^\/home\/project\/[^/]+(\/.*)?$/.test(normalizedPath);
     const isCreate = normalizedPath === "/home/create";
+    const isMemberProfile = normalizedPath === "/home/member";
 
     return (
         <main className={mergeClasses(s.userLayout,
@@ -32,7 +33,7 @@ export default function UserLayout() {
 
             <section className={mergeClasses(s.contentsLayout)}>
 
-                {!isProfile && !isProjectRoot && !isCreate && (
+                {!isProfile && !isProjectRoot && !isCreate && !isMemberProfile && (
                     <div className={s.largeGap}>
                         {isHome ? (
                             <HomeHeader />
@@ -43,9 +44,9 @@ export default function UserLayout() {
                                 <NavigationHeader />
                             </>
                         )}
-
                     </div>
                 )}
+
                 <Outlet context={{ bumpProjects: () => setProjectsRefreshCounter((c: number) => c + 1), projectsRefreshCounter }} />
             </section >
         </main >

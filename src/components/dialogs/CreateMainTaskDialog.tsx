@@ -60,6 +60,27 @@ export interface CreateMainTaskDialogProps {
     onSubTaskCreated?: () => void;
 }
 
+// Helper to convert YYYY-MM-DD string or ISO string to Date object
+function parseFormDate(dateStr: string): Date | undefined {
+    if (!dateStr) return undefined;
+    // If already an ISO string (contains 'T'), parse directly
+    if (dateStr.includes('T')) {
+        const date = new Date(dateStr);
+        return isNaN(date.getTime()) ? undefined : date;
+    }
+    // Otherwise, assume YYYY-MM-DD format
+    const date = new Date(dateStr + 'T00:00:00');
+    return isNaN(date.getTime()) ? undefined : date;
+}
+
+// Helper to convert Date to YYYY-MM-DD string using local timezone
+function formatDateToString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 export default function CreateMainTaskDialog({
     open,
     onOpenChange,
@@ -161,6 +182,14 @@ export default function CreateMainTaskDialog({
         if (e.key === 'Enter') {
             setEditingTitle(false);
         }
+    }
+
+    function handleStartDateSelect(date: Date): void {
+        onDateChange('startDate', formatDateToString(date));
+    }
+
+    function handleEndDateSelect(date: Date): void {
+        onDateChange('endDate', formatDateToString(date));
     }
 
     const handleAddSubTask = () => {
@@ -345,8 +374,12 @@ export default function CreateMainTaskDialog({
                         <Field label="Start Date" style={{ flex: '1 1 200px' }}>
                             <DatePicker
                                 placeholder="mm/dd/yyyy"
-                                value={form.startDate ? new Date(form.startDate) : null}
-                                onSelectDate={(date) => onDateChange('startDate', date ? date.toISOString().split('T')[0] : '')}
+                                value={parseFormDate(form.startDate)}
+                                onSelectDate={(date) => {
+                                    if (date) {
+                                        handleStartDateSelect(date);
+                                    }
+                                }}
                                 size="medium"
                                 style={{ width: '100%' }}
                             />
@@ -354,8 +387,12 @@ export default function CreateMainTaskDialog({
                         <Field label="End Date" style={{ flex: '1 1 200px' }}>
                             <DatePicker
                                 placeholder="mm/dd/yyyy"
-                                value={form.endDate ? new Date(form.endDate) : null}
-                                onSelectDate={(date) => onDateChange('endDate', date ? date.toISOString().split('T')[0] : '')}
+                                value={parseFormDate(form.endDate)}
+                                onSelectDate={(date) => {
+                                    if (date) {
+                                        handleEndDateSelect(date);
+                                    }
+                                }}
                                 size="medium"
                                 style={{ width: '100%' }}
                             />

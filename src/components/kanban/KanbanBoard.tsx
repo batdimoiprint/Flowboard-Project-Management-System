@@ -151,9 +151,11 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                     .filter(t => !t.categoryId)
                     .map(mapTaskResponse);
 
-                const cols = uncategorized.length
-                    ? [{ id: 'uncategorized', title: 'Uncategorized', tasks: uncategorized }, ...columnsFromCategories]
-                    : [...columnsFromCategories];
+                // Always show uncategorized column, even if empty
+                const cols = [
+                    { id: 'uncategorized', title: 'Uncategorized', tasks: uncategorized },
+                    ...columnsFromCategories
+                ];
 
                 setColumns(cols);
             })
