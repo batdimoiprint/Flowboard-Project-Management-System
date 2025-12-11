@@ -16,7 +16,7 @@ export default function FeaturesSection() {
                     </Text>
                 </div>
                 <div className={styles.topImageContainer}>
-                    <img src="/public/images/smallfeature.jpg" alt="Feature preview" className={styles.topImage} />
+                    <img src="/images/smallf.jpg" alt="Feature preview" className={styles.topImage} />
                 </div>
             </Card>
 
@@ -24,13 +24,13 @@ export default function FeaturesSection() {
             <div className={mergeClasses(styles.flexRowFill, styles.boxContainer)}>
                 {/* Left box */}
                 <Card className={styles.leftBox}>
-                    <img src="/public/images/kanban.jpg" alt="Kanban preview" className={styles.leftBoxImage} />
+                    <img src="/images/kanban1.jpg" alt="Kanban preview" className={styles.leftBoxImage} />
                     <button className={styles.leftBoxButton}>Get Started</button>
                 </Card>
 
                 {/* Right box */}
                 <Card className={styles.rightBox}>
-                    <img src="/public/images/feature.jpg" alt="Feature preview" className={styles.rightBoxImage} />
+                    <img src="/images/bigfeature.jpg" alt="Feature preview" className={styles.rightBoxImage} />
                 </Card>
             </div>
 
@@ -42,7 +42,7 @@ export default function FeaturesSection() {
                     </Text>
                 </div>
                 <div className={styles.topImageContainer}>
-                    <img src="/public/images/smallfeature.jpg" alt="Feature preview" className={styles.topImage} />
+                    <img src="/images/smallfeature1.jpg" alt="Feature preview" className={styles.topImage} />
                 </div>
             </Card>
 
@@ -52,7 +52,7 @@ export default function FeaturesSection() {
                 <Card className={mergeClasses(styles.smallCard, smallCardDelays[0])}>
                     <Text className={styles.smallCardTitle}>Easily Manage your Teams</Text>
                     <div className={styles.smallCardImageContainer}>
-                        <img src="/public/images/easymanage.jpg" alt="Easily Manage your Teams" className={styles.smallCardImage} />
+                        <img src="/images/manage.jpg" alt="Easily Manage your Teams" className={styles.smallCardImage} />
                     </div>
                 </Card>
 
@@ -60,7 +60,7 @@ export default function FeaturesSection() {
                 <Card className={mergeClasses(styles.smallCard, smallCardDelays[1])}>
                     <Text className={styles.smallCardTitle}>Sidebar for Projects</Text>
                     <div className={styles.smallCardImageContainer}>
-                        <img src="/public/images/sidebarproj.jpg" alt="Sidebar for Projects" className={styles.smallCardImage} />
+                        <img src="/images/sideproj.jpg" alt="Sidebar for Projects" className={styles.smallCardImage} />
                     </div>
                 </Card>
 
@@ -68,7 +68,7 @@ export default function FeaturesSection() {
                 <Card className={mergeClasses(styles.smallCard, smallCardDelays[2])}>
                     <Text className={styles.smallCardTitle}>Your Job Title says it all</Text>
                     <div className={styles.smallCardImageContainer}>
-                        <img src="/public/images/yourjob.jpg" alt="Your Job Title says it all" className={styles.smallCardImage} />
+                        <img src="/images/job.jpg" alt="Your Job Title says it all" className={styles.smallCardImage} />
                     </div>
                 </Card>
 
@@ -76,7 +76,7 @@ export default function FeaturesSection() {
                 <Card className={mergeClasses(styles.smallCard, smallCardDelays[3])}>
                     <Text className={styles.smallCardTitle}>Performance Tasks</Text>
                     <div className={styles.smallCardImageContainer}>
-                        <img src="/public/images/performative.jpg" alt="Performance Tasks" className={styles.smallCardImage} />
+                        <img src="/images/performative1.jpg" alt="Performance Tasks" className={styles.smallCardImage} />
                     </div>
                 </Card>
             </div>

@@ -6,16 +6,16 @@ export default function TeamSection() {
 
     // Team member data
     const teamMembers = [
-        { name: "Sean Andrei Tagle", role: "Project Manager", image: "/public/images/sean.png" },
-        { name: "Kenny Reyes", role: "Full Stack Developer", image: "/public/images/reyes.jpg" },
-        { name: "Marcel Angelo B. Boborol", role: "Backend Developer", image: "/public/images/boborol.jpg" },
-        { name: "Samie Jumuad", role: "Backend Developer", image: "/public/images/jumuad.jpg" },
-        { name: "Julianna Laurencio", role: "Backend Developer", image: "/public/images/laurencio.jpg" },
-        { name: "Jhan Anthony Alejo", role: "Documentation Specialist", image: "/public/images/alejo.jpg" },
-        { name: "Aaron Cañada", role: "Documentation Specialist", image: "/public/images/ako.jpg" },
-        { name: "Erica Balili", role: "Documentation Specialist", image: "/public/images/balili.jpg" },
-        { name: "Wiljhon Suico", role: "Database Designer", image: "/public/images/suico.jpg" },
-    ];
+    { name: "Sean Andrei Tagle", role: "Project Manager", image: "/images/seansean.png" },
+    { name: "Kenny Reyes", role: "Full Stack Developer", image: "/images/reyes1.jpg" },
+    { name: "Marcel Angelo B. Boborol", role: "Backend Developer", image: "/images/boborol1.jpg" },
+    { name: "Julianna Laurencio", role: "Backend Developer", image: "/images/laurencio1.jpg" },
+    { name: "Samie Jumuad", role: "Backend Developer", image: "/images/jumuad1.jpg" },
+    { name: "Erica Balili", role: "Documentation Specialist", image: "/images/balili1.jpg" },
+    { name: "Jhan Anthony Alejo", role: "Documentation Specialist", image: "/images/alejo1.jpg" },
+    { name: "Aaron Cañada", role: "Documentation Specialist", image: "/images/ako1.jpg" }, // Check if you have this
+    { name: "Wiljhon Suico", role: "Database Designer", image: "/images/suico1.jpg" },
+];
 
     // Animation delay classes for 3x3 grid
     const delayClasses = [

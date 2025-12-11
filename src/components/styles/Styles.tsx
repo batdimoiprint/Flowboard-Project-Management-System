@@ -1017,7 +1017,7 @@ teamMemberRole: {
     ...typographyStyles.caption1,
     color: tokens.colorNeutralForeground2,
     textAlign: 'center',
-    lineHeight: '1.3',
+    lineHeight: '1.2',
     fontSize: tokens.fontSizeBase200,
     wordBreak: 'break-word',
     overflow: 'hidden',
